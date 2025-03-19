@@ -34,7 +34,7 @@ export interface IStorage {
   calcularPrestamo(datos: CalculoPrestamo): ResultadoCalculoPrestamo;
   
   // Sesión
-  sessionStore: session.SessionStore;
+  sessionStore: any; // Tipo simplificado para la store de sesión
 }
 
 export class MemStorage implements IStorage {
@@ -46,7 +46,7 @@ export class MemStorage implements IStorage {
   private currentClienteId: number;
   private currentPrestamoId: number;
   private currentPagoId: number;
-  sessionStore: session.SessionStore;
+  sessionStore: any; // Tipo simplificado para la store de sesión
 
   constructor() {
     this.users = new Map();
@@ -139,12 +139,20 @@ export class MemStorage implements IStorage {
     // Calcular próxima fecha de pago (7 días después de la fecha de préstamo)
     const proximaFechaPago = addDays(fechaPrestamo, 7);
     
+    // Asegurar que todos los campos requeridos estén presentes
     const nuevoPrestamo: Prestamo = {
-      ...prestamo,
       id,
+      cliente_id: prestamo.cliente_id,
+      monto_prestado: prestamo.monto_prestado,
+      tasa_interes: prestamo.tasa_interes,
+      fecha_prestamo: prestamo.fecha_prestamo,
+      frecuencia_pago: prestamo.frecuencia_pago || "SEMANAL",
+      numero_semanas: prestamo.numero_semanas || 4,
+      pago_semanal: prestamo.pago_semanal || "0",
+      monto_total_pagar: prestamo.monto_total_pagar || "0",
       estado: "ACTIVO",
       semanas_pagadas: 0,
-      proxima_fecha_pago: proximaFechaPago
+      proxima_fecha_pago: format(proximaFechaPago, 'yyyy-MM-dd')
     };
     
     this.prestamos.set(id, nuevoPrestamo);
@@ -205,7 +213,7 @@ export class MemStorage implements IStorage {
     // Actualizar préstamo
     await this.updatePrestamo(prestamo.id, {
       semanas_pagadas: semanasActualizadas,
-      proxima_fecha_pago: nuevaProximaFechaPago,
+      proxima_fecha_pago: format(nuevaProximaFechaPago, 'yyyy-MM-dd'),
       estado: estadoPrestamo
     });
     
@@ -213,7 +221,7 @@ export class MemStorage implements IStorage {
     const nuevoPago: Pago = {
       ...pago,
       id,
-      fecha_pago: new Date(),
+      fecha_pago: format(new Date(), 'yyyy-MM-dd'),
       numero_semana: semanasActualizadas,
       estado
     };

@@ -35,7 +35,10 @@ export function setupAuth(app: Express) {
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
-      maxAge: 24 * 60 * 60 * 1000 // 24 horas
+      maxAge: 24 * 60 * 60 * 1000, // 24 horas
+      httpOnly: true,
+      secure: false, // Cambiar a true en producción con HTTPS
+      sameSite: 'lax' // Importante para que las cookies funcionen en desarrollo
     }
   };
 
@@ -91,7 +94,7 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: any, user: Express.User | false, info: any) => {
       if (err) return next(err);
       if (!user) return res.status(401).send("Credenciales inválidas");
       
