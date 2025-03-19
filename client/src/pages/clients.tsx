@@ -1,0 +1,240 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { formatDate, getInitials } from "@/lib/utils";
+import Sidebar from "@/components/navigation/sidebar";
+import MobileHeader from "@/components/navigation/mobile-header";
+import ClientForm from "@/components/forms/client-form";
+import { Cliente } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { Input } from "@/components/ui/input";
+import { Search, UserPlus, Edit } from "lucide-react";
+
+export default function Clients() {
+  const [clientFormOpen, setClientFormOpen] = useState(false);
+  const [clienteToEdit, setClienteToEdit] = useState<Cliente | undefined>(undefined);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Cargar la lista de clientes
+  const { data: clientes = [], isLoading } = useQuery<Cliente[]>({
+    queryKey: ['/api/clientes'],
+  });
+
+  // Filtrar clientes por búsqueda
+  const filteredClientes = clientes.filter(cliente => 
+    cliente.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    cliente.telefono.includes(searchTerm) ||
+    cliente.documento_identidad.includes(searchTerm)
+  );
+
+  // Paginación
+  const totalPages = Math.ceil(filteredClientes.length / itemsPerPage);
+  const paginatedClientes = filteredClientes.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handleEditCliente = (cliente: Cliente) => {
+    setClienteToEdit(cliente);
+    setClientFormOpen(true);
+  };
+
+  const handleNewCliente = () => {
+    setClienteToEdit(undefined);
+    setClientFormOpen(true);
+  };
+
+  const handleFormClose = () => {
+    setClientFormOpen(false);
+    setClienteToEdit(undefined);
+  };
+
+  return (
+    <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+      <Sidebar />
+      <MobileHeader />
+      
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 mt-16 md:mt-0">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Clientes</h1>
+            <p className="text-sm text-gray-600">Gestión de clientes del sistema</p>
+          </div>
+          
+          <Button 
+            className="mt-4 md:mt-0 bg-primary hover:bg-blue-600"
+            onClick={handleNewCliente}
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Nuevo Cliente
+          </Button>
+        </div>
+        
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+              <CardTitle>Lista de Clientes</CardTitle>
+              <div className="relative mt-2 md:mt-0 md:w-64">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  type="search"
+                  placeholder="Buscar cliente..."
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="text-center py-4">Cargando clientes...</div>
+            ) : paginatedClientes.length === 0 ? (
+              <div className="text-center py-4 text-gray-500">
+                {searchTerm 
+                  ? "No se encontraron clientes con ese criterio de búsqueda" 
+                  : "No hay clientes registrados"}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12"></TableHead>
+                      <TableHead>Nombre</TableHead>
+                      <TableHead>Teléfono</TableHead>
+                      <TableHead>Dirección</TableHead>
+                      <TableHead>Documento</TableHead>
+                      <TableHead>Fecha Registro</TableHead>
+                      <TableHead className="w-12"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedClientes.map((cliente) => (
+                      <TableRow key={cliente.id}>
+                        <TableCell>
+                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                            <span className="text-xs font-medium text-gray-600">
+                              {getInitials(cliente.nombre)}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-medium">{cliente.nombre}</TableCell>
+                        <TableCell>{cliente.telefono}</TableCell>
+                        <TableCell>{cliente.direccion}</TableCell>
+                        <TableCell>{cliente.documento_identidad}</TableCell>
+                        <TableCell>{formatDate(cliente.fecha_registro)}</TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handleEditCliente(cliente)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+            
+            {totalPages > 1 && (
+              <Pagination className="mt-4">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      href="#" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (currentPage > 1) setCurrentPage(currentPage - 1);
+                      }} 
+                    />
+                  </PaginationItem>
+                  
+                  {Array.from({ length: totalPages }).map((_, index) => {
+                    const page = index + 1;
+                    // Mostrar primeras, última y páginas alrededor de la actual
+                    if (
+                      page === 1 || 
+                      page === totalPages || 
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            href="#"
+                            isActive={page === currentPage}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setCurrentPage(page);
+                            }}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    }
+                    
+                    // Añadir elipsis solo una vez entre bloques
+                    if (
+                      (page === 2 && currentPage > 3) ||
+                      (page === totalPages - 1 && currentPage < totalPages - 2)
+                    ) {
+                      return (
+                        <PaginationItem key={page}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      );
+                    }
+                    
+                    return null;
+                  })}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      href="#" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+                      }} 
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
+          </CardContent>
+        </Card>
+        
+        <ClientForm 
+          open={clientFormOpen} 
+          onOpenChange={handleFormClose}
+          cliente={clienteToEdit}
+        />
+      </main>
+    </div>
+  );
+}

@@ -1,0 +1,269 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { formatCurrency, formatDate, getDateTimeFormat, getPaymentStatus } from "@/lib/utils";
+import Sidebar from "@/components/navigation/sidebar";
+import MobileHeader from "@/components/navigation/mobile-header";
+import PaymentForm from "@/components/forms/payment-form";
+import { Pago, Prestamo, Cliente } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Search, Plus } from "lucide-react";
+
+export default function Payments() {
+  const [paymentFormOpen, setPaymentFormOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("TODOS");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Cargar la lista de pagos
+  const { data: pagos = [], isLoading: loadingPagos } = useQuery<Pago[]>({
+    queryKey: ['/api/pagos'],
+  });
+
+  // Cargar la lista de préstamos
+  const { data: prestamos = [], isLoading: loadingPrestamos } = useQuery<Prestamo[]>({
+    queryKey: ['/api/prestamos'],
+  });
+
+  // Cargar la lista de clientes
+  const { data: clientes = [], isLoading: loadingClientes } = useQuery<Cliente[]>({
+    queryKey: ['/api/clientes'],
+  });
+
+  // Filtrar y ordenar pagos
+  const filteredPagos = pagos
+    .filter(pago => {
+      const prestamo = prestamos.find(p => p.id === pago.prestamo_id);
+      const cliente = prestamo ? clientes.find(c => c.id === prestamo.cliente_id) : undefined;
+      const clienteName = cliente?.nombre || '';
+      
+      // Filtrar por estado si es diferente de TODOS
+      const matchesStatus = statusFilter === "TODOS" || pago.estado === statusFilter;
+      
+      // Filtrar por término de búsqueda (nombre de cliente, semana o monto)
+      const matchesSearch = 
+        clienteName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        pago.numero_semana.toString().includes(searchTerm) ||
+        pago.monto_pagado.toString().includes(searchTerm);
+      
+      return matchesStatus && matchesSearch;
+    })
+    .sort((a, b) => {
+      // Ordenar por fecha de pago (más reciente primero)
+      return new Date(b.fecha_pago).getTime() - new Date(a.fecha_pago).getTime();
+    });
+
+  // Paginación
+  const totalPages = Math.ceil(filteredPagos.length / itemsPerPage);
+  const paginatedPagos = filteredPagos.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const isLoading = loadingPagos || loadingPrestamos || loadingClientes;
+
+  return (
+    <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+      <Sidebar />
+      <MobileHeader />
+      
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 mt-16 md:mt-0">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Pagos</h1>
+            <p className="text-sm text-gray-600">Gestión de pagos de préstamos</p>
+          </div>
+          
+          <Button 
+            className="mt-4 md:mt-0 bg-primary hover:bg-blue-600"
+            onClick={() => setPaymentFormOpen(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Registrar Pago
+          </Button>
+        </div>
+        
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+              <CardTitle>Historial de Pagos</CardTitle>
+              
+              <div className="flex flex-col md:flex-row gap-2 mt-3 md:mt-0">
+                <Select 
+                  defaultValue="TODOS" 
+                  onValueChange={setStatusFilter}
+                >
+                  <SelectTrigger className="w-full md:w-40">
+                    <SelectValue placeholder="Estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TODOS">Todos</SelectItem>
+                    <SelectItem value="A_TIEMPO">A tiempo</SelectItem>
+                    <SelectItem value="ATRASADO">Atrasados</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    type="search"
+                    placeholder="Buscar pago..."
+                    className="pl-8 w-full md:w-64"
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="text-center py-4">Cargando pagos...</div>
+            ) : paginatedPagos.length === 0 ? (
+              <div className="text-center py-4 text-gray-500">
+                {searchTerm || statusFilter !== "TODOS"
+                  ? "No se encontraron pagos con esos criterios de búsqueda" 
+                  : "No hay pagos registrados"}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Préstamo</TableHead>
+                      <TableHead>Monto Pagado</TableHead>
+                      <TableHead>Fecha Pago</TableHead>
+                      <TableHead>Semana</TableHead>
+                      <TableHead>Estado</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedPagos.map((pago) => {
+                      const prestamo = prestamos.find(p => p.id === pago.prestamo_id);
+                      const cliente = prestamo ? clientes.find(c => c.id === prestamo.cliente_id) : undefined;
+                      const { label, className } = getPaymentStatus(pago.estado);
+                      
+                      return (
+                        <TableRow key={pago.id}>
+                          <TableCell className="font-medium">{cliente?.nombre || 'Cliente desconocido'}</TableCell>
+                          <TableCell>{prestamo ? formatCurrency(prestamo.monto_prestado) : 'N/A'}</TableCell>
+                          <TableCell className="text-green-600 font-medium">{formatCurrency(pago.monto_pagado)}</TableCell>
+                          <TableCell>{getDateTimeFormat(pago.fecha_pago)}</TableCell>
+                          <TableCell>{pago.numero_semana}</TableCell>
+                          <TableCell>
+                            <Badge className={className}>{label}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+            
+            {totalPages > 1 && (
+              <Pagination className="mt-4">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      href="#" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (currentPage > 1) setCurrentPage(currentPage - 1);
+                      }} 
+                    />
+                  </PaginationItem>
+                  
+                  {Array.from({ length: totalPages }).map((_, index) => {
+                    const page = index + 1;
+                    // Mostrar primeras, última y páginas alrededor de la actual
+                    if (
+                      page === 1 || 
+                      page === totalPages || 
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            href="#"
+                            isActive={page === currentPage}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setCurrentPage(page);
+                            }}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    }
+                    
+                    // Añadir elipsis solo una vez entre bloques
+                    if (
+                      (page === 2 && currentPage > 3) ||
+                      (page === totalPages - 1 && currentPage < totalPages - 2)
+                    ) {
+                      return (
+                        <PaginationItem key={page}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      );
+                    }
+                    
+                    return null;
+                  })}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      href="#" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+                      }} 
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
+          </CardContent>
+        </Card>
+        
+        <PaymentForm 
+          open={paymentFormOpen} 
+          onOpenChange={setPaymentFormOpen}
+        />
+      </main>
+    </div>
+  );
+}

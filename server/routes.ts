@@ -1,0 +1,254 @@
+import type { Express, Request, Response } from "express";
+import { createServer, type Server } from "http";
+import { storage } from "./storage";
+import { setupAuth } from "./auth";
+import { ZodError } from "zod";
+import { formatISO } from "date-fns";
+import { insertClienteSchema, insertPrestamoSchema, insertPagoSchema, calculoPrestamoSchema } from "@shared/schema";
+import { fromZodError } from "zod-validation-error";
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup authentication routes
+  setupAuth(app);
+
+  // Auth middleware
+  const isAuthenticated = (req: Request, res: Response, next: Function) => {
+    if (req.isAuthenticated()) {
+      return next();
+    }
+    return res.status(401).json({ message: "No autorizado" });
+  };
+
+  // Ruta para cálculo de préstamo
+  app.post("/api/calcular-prestamo", isAuthenticated, async (req, res, next) => {
+    try {
+      const datos = calculoPrestamoSchema.parse(req.body);
+      const resultado = storage.calcularPrestamo(datos);
+      res.json(resultado);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: "Datos de cálculo inválidos", 
+          errors: fromZodError(error).message 
+        });
+      }
+      next(error);
+    }
+  });
+
+  // Rutas para clientes
+  app.get("/api/clientes", isAuthenticated, async (req, res, next) => {
+    try {
+      const clientes = await storage.getAllClientes();
+      res.json(clientes);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/clientes/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const cliente = await storage.getCliente(parseInt(req.params.id));
+      if (!cliente) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+      res.json(cliente);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/clientes", isAuthenticated, async (req, res, next) => {
+    try {
+      const clienteData = insertClienteSchema.parse(req.body);
+      const cliente = await storage.createCliente(clienteData);
+      res.status(201).json(cliente);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: "Datos del cliente inválidos", 
+          errors: fromZodError(error).message 
+        });
+      }
+      next(error);
+    }
+  });
+
+  app.put("/api/clientes/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const clienteData = insertClienteSchema.parse(req.body);
+      const cliente = await storage.updateCliente(parseInt(req.params.id), clienteData);
+      if (!cliente) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+      res.json(cliente);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: "Datos del cliente inválidos", 
+          errors: fromZodError(error).message 
+        });
+      }
+      next(error);
+    }
+  });
+
+  // Rutas para préstamos
+  app.get("/api/prestamos", isAuthenticated, async (req, res, next) => {
+    try {
+      // Si se proporciona un cliente_id como query param, filtrar por cliente
+      const clienteId = req.query.cliente_id ? parseInt(req.query.cliente_id as string) : undefined;
+      
+      if (clienteId) {
+        const prestamos = await storage.getPrestamosByClienteId(clienteId);
+        return res.json(prestamos);
+      }
+      
+      const prestamos = await storage.getAllPrestamos();
+      res.json(prestamos);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/prestamos/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const prestamo = await storage.getPrestamo(parseInt(req.params.id));
+      if (!prestamo) {
+        return res.status(404).json({ message: "Préstamo no encontrado" });
+      }
+      res.json(prestamo);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/prestamos", isAuthenticated, async (req, res, next) => {
+    try {
+      const prestamoData = insertPrestamoSchema.parse(req.body);
+      
+      // Validar que el cliente existe
+      const cliente = await storage.getCliente(prestamoData.cliente_id);
+      if (!cliente) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+      
+      // Crear préstamo
+      const prestamo = await storage.createPrestamo(prestamoData);
+      res.status(201).json(prestamo);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: "Datos del préstamo inválidos", 
+          errors: fromZodError(error).message 
+        });
+      }
+      next(error);
+    }
+  });
+
+  // Rutas para pagos
+  app.get("/api/pagos", isAuthenticated, async (req, res, next) => {
+    try {
+      // Si se proporciona un prestamo_id como query param, filtrar por préstamo
+      const prestamoId = req.query.prestamo_id ? parseInt(req.query.prestamo_id as string) : undefined;
+      
+      if (prestamoId) {
+        const pagos = await storage.getPagosByPrestamoId(prestamoId);
+        return res.json(pagos);
+      }
+      
+      const pagos = await storage.getAllPagos();
+      res.json(pagos);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/pagos", isAuthenticated, async (req, res, next) => {
+    try {
+      const pagoData = insertPagoSchema.parse(req.body);
+      
+      // Validar que el préstamo existe
+      const prestamo = await storage.getPrestamo(pagoData.prestamo_id);
+      if (!prestamo) {
+        return res.status(404).json({ message: "Préstamo no encontrado" });
+      }
+      
+      // Validar que el préstamo no está pagado
+      if (prestamo.estado === "PAGADO") {
+        return res.status(400).json({ message: "El préstamo ya está pagado completamente" });
+      }
+      
+      // Crear pago
+      const pago = await storage.createPago(pagoData);
+      res.status(201).json(pago);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: "Datos del pago inválidos", 
+          errors: fromZodError(error).message 
+        });
+      }
+      next(error);
+    }
+  });
+
+  // Estadísticas para dashboard
+  app.get("/api/estadisticas", isAuthenticated, async (req, res, next) => {
+    try {
+      const prestamos = await storage.getAllPrestamos();
+      const pagos = await storage.getAllPagos();
+      const clientes = await storage.getAllClientes();
+      
+      // Préstamos activos
+      const prestamosActivos = prestamos.filter(p => p.estado === "ACTIVO").length;
+      
+      // Total prestado
+      const totalPrestado = prestamos.reduce((sum, p) => sum + Number(p.monto_prestado), 0);
+      
+      // Pagos del día
+      const hoy = new Date();
+      const inicio = new Date(hoy.setHours(0, 0, 0, 0));
+      const fin = new Date(hoy.setHours(23, 59, 59, 999));
+      
+      const pagosHoy = pagos.filter(p => {
+        const fecha = new Date(p.fecha_pago);
+        return fecha >= inicio && fecha <= fin;
+      });
+      
+      const montosPagosHoy = pagosHoy.reduce((sum, p) => sum + Number(p.monto_pagado), 0);
+      
+      // Pagos atrasados
+      const prestamosAtrasados = prestamos.filter(p => p.estado === "ATRASADO").length;
+      
+      // Actividad reciente (últimos 5 de cada categoría)
+      const ultimosPrestamos = [...prestamos]
+        .sort((a, b) => new Date(b.fecha_prestamo).getTime() - new Date(a.fecha_prestamo).getTime())
+        .slice(0, 5);
+      
+      const ultimosPagos = [...pagos]
+        .sort((a, b) => new Date(b.fecha_pago).getTime() - new Date(a.fecha_pago).getTime())
+        .slice(0, 5);
+      
+      const ultimosClientes = [...clientes]
+        .sort((a, b) => new Date(b.fecha_registro).getTime() - new Date(a.fecha_registro).getTime())
+        .slice(0, 5);
+      
+      res.json({
+        prestamosActivos,
+        totalPrestado,
+        montosPagosHoy,
+        prestamosAtrasados,
+        ultimosPrestamos,
+        ultimosPagos,
+        ultimosClientes,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  const httpServer = createServer(app);
+  return httpServer;
+}

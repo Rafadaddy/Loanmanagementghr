@@ -1,0 +1,233 @@
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useState } from "react";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { insertPagoSchema, Prestamo, Cliente } from "@shared/schema";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { formatCurrency } from "@/lib/utils";
+
+// Esquema para validación de pago
+const paymentFormSchema = z.object({
+  prestamo_id: z.string().min(1, "Debe seleccionar un préstamo"),
+  monto_pagado: z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, {
+    message: "El monto debe ser un número positivo"
+  })
+});
+
+type PaymentFormValues = z.infer<typeof paymentFormSchema>;
+
+interface PaymentFormProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
+}
+
+interface PrestamoConCliente extends Prestamo {
+  cliente?: Cliente;
+}
+
+export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFormProps) {
+  const { toast } = useToast();
+  const [prestamoSeleccionado, setPrestamoSeleccionado] = useState<PrestamoConCliente | null>(null);
+
+  // Obtener la lista de préstamos activos
+  const { data: prestamos = [] } = useQuery<Prestamo[]>({ 
+    queryKey: ["/api/prestamos"],
+    select: (data) => data.filter(p => p.estado !== "PAGADO")
+  });
+
+  // Obtener la lista de clientes (para mostrar nombre del cliente)
+  const { data: clientes = [] } = useQuery<Cliente[]>({ 
+    queryKey: ["/api/clientes"]
+  });
+
+  // Combinar préstamos con datos de clientes
+  const prestamosConCliente: PrestamoConCliente[] = prestamos.map(prestamo => {
+    const cliente = clientes.find(c => c.id === prestamo.cliente_id);
+    return { ...prestamo, cliente };
+  });
+
+  const form = useForm<PaymentFormValues>({
+    resolver: zodResolver(paymentFormSchema),
+    defaultValues: {
+      prestamo_id: "",
+      monto_pagado: ""
+    }
+  });
+
+  // Al cambiar el préstamo seleccionado, obtener detalles y actualizar el monto sugerido
+  const handlePrestamoChange = (id: string) => {
+    if (!id) {
+      setPrestamoSeleccionado(null);
+      form.setValue("monto_pagado", "");
+      return;
+    }
+    
+    const prestamo = prestamosConCliente.find(p => p.id === parseInt(id));
+    if (prestamo) {
+      setPrestamoSeleccionado(prestamo);
+      form.setValue("monto_pagado", prestamo.pago_semanal.toString());
+    }
+  };
+
+  // Mutation para registrar pago
+  const registrarPagoMutation = useMutation({
+    mutationFn: async (values: any) => {
+      const res = await apiRequest("POST", "/api/pagos", values);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pagos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/prestamos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/estadisticas"] });
+      toast({
+        title: "Pago registrado",
+        description: "El pago ha sido registrado con éxito"
+      });
+      form.reset();
+      setPrestamoSeleccionado(null);
+      onOpenChange(false);
+      if (onSuccess) onSuccess();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `No se pudo registrar el pago: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  });
+
+  function onSubmit(values: PaymentFormValues) {
+    const dataToSend = {
+      prestamo_id: parseInt(values.prestamo_id),
+      monto_pagado: parseFloat(values.monto_pagado)
+    };
+    
+    registrarPagoMutation.mutate(dataToSend);
+  }
+
+  // Resetear form cuando se cierra
+  useEffect(() => {
+    if (!open) {
+      form.reset();
+      setPrestamoSeleccionado(null);
+    }
+  }, [open, form]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Registrar Pago</DialogTitle>
+        </DialogHeader>
+        
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="prestamo_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Préstamo</FormLabel>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      handlePrestamoChange(value);
+                    }}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccione un préstamo" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {prestamosConCliente.map((prestamo) => (
+                        <SelectItem key={prestamo.id} value={prestamo.id.toString()}>
+                          {prestamo.cliente?.nombre} - {formatCurrency(prestamo.monto_prestado)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {prestamoSeleccionado && (
+              <div className="bg-gray-50 p-4 rounded-md mb-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Información del Préstamo</h4>
+                
+                <div className="grid grid-cols-2 gap-4 mb-3">
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Cliente</p>
+                    <p className="text-sm font-medium text-gray-800">{prestamoSeleccionado.cliente?.nombre}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Monto del Préstamo</p>
+                    <p className="text-sm font-medium text-gray-800">{formatCurrency(prestamoSeleccionado.monto_prestado)}</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Semanas Pagadas</p>
+                    <p className="text-sm font-medium text-gray-800">
+                      {prestamoSeleccionado.semanas_pagadas} de {prestamoSeleccionado.numero_semanas}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Pago Semanal</p>
+                    <p className="text-sm font-medium text-gray-800">
+                      {formatCurrency(prestamoSeleccionado.pago_semanal)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <FormField
+              control={form.control}
+              name="monto_pagado"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Monto a Pagar</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                      <Input className="pl-6" {...field} />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <DialogFooter className="gap-2 mt-4">
+              <DialogClose asChild>
+                <Button type="button" variant="outline">Cancelar</Button>
+              </DialogClose>
+              <Button 
+                type="submit" 
+                disabled={registrarPagoMutation.isPending}
+                className="bg-primary hover:bg-blue-600"
+              >
+                {registrarPagoMutation.isPending ? "Registrando..." : "Registrar Pago"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
