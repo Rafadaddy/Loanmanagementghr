@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useContext, useEffect } from "react";
 import {
   useQuery,
   useMutation,
@@ -16,6 +16,7 @@ type AuthContextType = {
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
+  refetchUser: () => Promise<void>;
 };
 
 type LoginData = Pick<InsertUser, "username" | "password">;
@@ -29,24 +30,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     data: user,
     error,
     isLoading,
+    refetch,
   } = useQuery<SelectUser | undefined, Error>({
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
+    retry: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
   });
+
+  // Función para recargar el estado del usuario
+  const refetchUser = async () => {
+    await refetch();
+  };
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
       const res = await apiRequest("POST", "/api/login", credentials);
       return await res.json();
     },
-    onSuccess: (user: SelectUser) => {
+    onSuccess: async (user: SelectUser) => {
+      // Actualizar la caché con los datos del usuario
       queryClient.setQueryData(["/api/user"], user);
+      
+      // Mostrar notificación
       toast({
         title: "Inicio de sesión exitoso",
         description: `Bienvenido ${user.nombre}`,
       });
-      // Redirigir al dashboard después de iniciar sesión
-      navigate("/dashboard");
+      
+      // Esperar un momento para asegurar que la actualización del estado se complete
+      setTimeout(() => {
+        // Redirigir al dashboard después de iniciar sesión
+        navigate("/dashboard");
+      }, 100);
     },
     onError: (error: Error) => {
       toast({
@@ -62,14 +80,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/register", credentials);
       return await res.json();
     },
-    onSuccess: (user: SelectUser) => {
+    onSuccess: async (user: SelectUser) => {
+      // Actualizar la caché con los datos del usuario
       queryClient.setQueryData(["/api/user"], user);
+      
+      // Mostrar notificación
       toast({
         title: "Registro exitoso",
         description: `Bienvenido ${user.nombre}`,
       });
-      // Redirigir al dashboard después de registrarse
-      navigate("/dashboard");
+      
+      // Esperar un momento para asegurar que la actualización del estado se complete
+      setTimeout(() => {
+        // Redirigir al dashboard después de registrarse
+        navigate("/dashboard");
+      }, 100);
     },
     onError: (error: Error) => {
       toast({
@@ -85,12 +110,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiRequest("POST", "/api/logout");
     },
     onSuccess: () => {
+      // Limpiar la caché
       queryClient.setQueryData(["/api/user"], null);
+      
+      // Mostrar notificación
       toast({
         title: "Sesión cerrada",
         description: "Has cerrado sesión correctamente",
       });
-      // Redirigir a la página de login después de cerrar sesión
+      
+      // Redirigir a la página de autenticación
       navigate("/auth");
     },
     onError: (error: Error) => {
@@ -111,6 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginMutation,
         logoutMutation,
         registerMutation,
+        refetchUser,
       }}
     >
       {children}
@@ -121,7 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error("useAuth debe ser usado dentro de un AuthProvider");
   }
   return context;
 }

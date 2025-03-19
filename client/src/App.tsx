@@ -36,7 +36,7 @@ function AppContent() {
       <ProtectedRoute path="/reportes" component={Reports} />
       <ProtectedRoute path="/calculadora" component={LoanCalculatorPage} />
       <Route>
-        <NotFound />
+        {() => <NotFound />}
       </Route>
     </Switch>
   );

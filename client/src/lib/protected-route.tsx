@@ -13,31 +13,25 @@ export function ProtectedRoute({
   const { user, isLoading } = useAuth();
   const [, navigate] = useLocation();
 
-  return (
-    <Route
-      path={path}
-      component={() => {
-        // Si está cargando, mostrar pantalla de carga
-        if (isLoading) {
-          return (
-            <div className="flex items-center justify-center min-h-screen">
-              <Loader2 className="h-8 w-8 animate-spin text-border" />
-            </div>
-          );
-        }
+  // Movemos el useEffect fuera de condiciones para cumplir las reglas de hooks
+  useEffect(() => {
+    // Solo redirigir si no estamos cargando y no hay usuario autenticado
+    if (!isLoading && !user) {
+      navigate("/auth");
+    }
+  }, [isLoading, user, navigate]);
 
-        // Si no hay usuario autenticado, redirigir a /auth
-        if (!user) {
-          // Usamos useEffect para asegurarnos de que el redireccionamiento ocurra
-          // después del renderizado, evitando problemas con React Router
-          useEffect(() => {
-            navigate("/auth");
-          }, []);
-          
+  return (
+    <Route path={path}>
+      {() => {
+        // Si está cargando o no hay usuario, mostrar pantalla de carga
+        if (isLoading || !user) {
           return (
             <div className="flex items-center justify-center min-h-screen">
               <Loader2 className="h-8 w-8 animate-spin text-border" />
-              <span className="ml-2">Redirigiendo a la página de autenticación...</span>
+              {!isLoading && !user && 
+                <span className="ml-2">Redirigiendo a la página de autenticación...</span>
+              }
             </div>
           );
         }
@@ -45,6 +39,6 @@ export function ProtectedRoute({
         // Si hay usuario, renderizar el componente
         return <Component />;
       }}
-    />
+    </Route>
   );
 }

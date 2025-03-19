@@ -51,7 +51,12 @@ export default function LoanDetails() {
 
   if (isNaN(prestamoId)) {
     navigate("/prestamos");
-    return null;
+    // Renderizamos un placeholder mientras se redirecciona
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <span>Redirigiendo...</span>
+      </div>
+    );
   }
 
   // Cargar datos del préstamo
