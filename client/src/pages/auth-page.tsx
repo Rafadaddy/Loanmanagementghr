@@ -38,7 +38,7 @@ export default function AuthPage() {
   // Redirigir si el usuario ya está autenticado
   if (user) {
     navigate("/dashboard");
-    return null;
+    return <div>Redirigiendo al dashboard...</div>;
   }
 
   return (
