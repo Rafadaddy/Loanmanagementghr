@@ -7,6 +7,7 @@ import Loans from "@/pages/loans";
 import Payments from "@/pages/payments";
 import Reports from "@/pages/reports";
 import LoanDetails from "@/pages/loan-details";
+import LoanCalculatorPage from "@/pages/loan-calculator-page";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 
@@ -59,6 +60,11 @@ function AppContent() {
       <Route path="/reportes">
         <ProtectedRoute>
           <Reports />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/calculadora">
+        <ProtectedRoute>
+          <LoanCalculatorPage />
         </ProtectedRoute>
       </Route>
       <Route>
