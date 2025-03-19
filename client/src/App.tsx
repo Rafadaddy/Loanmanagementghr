@@ -24,7 +24,9 @@ function App() {
 function AppContent() {
   return (
     <Switch>
-      <Route path="/auth" component={AuthPage} />
+      <Route path="/auth">
+        <AuthPage />
+      </Route>
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/dashboard" component={Dashboard} />
       <ProtectedRoute path="/clientes" component={Clients} />
@@ -33,7 +35,9 @@ function AppContent() {
       <ProtectedRoute path="/pagos" component={Payments} />
       <ProtectedRoute path="/reportes" component={Reports} />
       <ProtectedRoute path="/calculadora" component={LoanCalculatorPage} />
-      <Route component={NotFound} />
+      <Route>
+        <NotFound />
+      </Route>
     </Switch>
   );
 }
