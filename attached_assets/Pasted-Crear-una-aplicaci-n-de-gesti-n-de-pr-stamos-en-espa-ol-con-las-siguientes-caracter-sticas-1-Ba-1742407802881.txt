@@ -1,0 +1,95 @@
+Crear una aplicación de gestión de préstamos en español con las siguientes características:
+
+1. Base de Datos:
+- Tabla clientes:
+  - id (primary key)
+  - nombre (texto, requerido)
+  - telefono (texto, requerido)
+  - direccion (texto, requerido)
+  - documento_identidad (texto, requerido)
+  - fecha_registro (timestamp, default current_timestamp)
+
+- Tabla prestamos:
+  - id (primary key)
+  - cliente_id (foreign key referencia a clientes)
+  - monto_prestado (numeric(10,2), requerido)
+  - tasa_interes (numeric(5,2), requerido)
+  - fecha_prestamo (date, requerido)
+  - frecuencia_pago (texto, default 'SEMANAL')
+  - estado (texto, default 'ACTIVO', check in ['ACTIVO', 'PAGADO', 'ATRASADO'])
+  - monto_total_pagar (numeric(10,2), requerido)
+  - numero_semanas (integer, default 12)
+  - pago_semanal (numeric(10,2), default 0)
+  - semanas_pagadas (integer, default 0)
+  - proxima_fecha_pago (date)
+
+- Tabla pagos:
+  - id (primary key)
+  - prestamo_id (foreign key referencia a prestamos)
+  - monto_pagado (numeric(10,2), requerido)
+  - fecha_pago (timestamp, default current_timestamp)
+  - numero_semana (integer, default 1)
+  - estado (texto, default 'A_TIEMPO', check in ['A_TIEMPO', 'ATRASADO'])
+
+Funciones necesarias:
+- Calcular Préstamo (calcula montos y pagos semanales)
+- Crear Préstamo (registra nuevo préstamo)
+- Obtener Préstamo (obtiene detalles de un préstamo)
+- Registrar Pago (registra pagos de préstamos)
+
+3. Páginas requeridas:
+- Página de inicio de sesión (/account/signin)
+- Página de registro (/account/signup)
+- Dashboard principal (/dashboard)
+- Página de clientes (/clientes)
+- Página de préstamos (/prestamos)
+- Página de pagos (/pagos)
+- Página de reportes (/reportes)
+- Página de detalles del préstamo (/prestamos/[id])
+
+4. Componentes:
+- Menú de navegación con:
+  - Logo "Sistema de Préstamos"
+  - Enlaces a: Inicio, Clientes, Préstamos, Pagos, Reportes
+  - Información del usuario y botón de cerrar sesión
+
+5. Dashboard principal debe mostrar:
+- Estadísticas:
+  - Préstamos activos
+  - Total prestado
+  - Pagos del día
+  - Pagos atrasados
+- Accesos rápidos:
+  - Registrar nuevo cliente
+  - Crear nuevo préstamo
+  - Registrar pago
+- Actividad reciente con:
+  - Pagos recibidos
+  - Préstamos nuevos
+  - Clientes registrados
+
+6. Características de autenticación:
+- Registro con email y contraseña
+- Inicio de sesión con email y contraseña
+- Redirección al dashboard después de autenticación
+- Protección de rutas para usuarios no autenticados
+
+7. Diseño:
+- Usar gradientes azules para fondos (from-blue-50 to-indigo-50)
+- Tarjetas blancas con sombras para contenido
+- Iconos de FontAwesome
+- Diseño responsive
+- Botones azules (#357AFF) para acciones principales
+- Botón rojo para cerrar sesión
+
+8. Validaciones:
+- Campos requeridos en formularios
+- Validación de montos y fechas en préstamos
+- Validación de documentos de identidad
+- Control de estados de préstamos y pagos
+
+9. Características adicionales:
+- Cálculo automático de pagos semanales
+- Seguimiento de pagos atrasados
+- Historial de transacciones
+- Estado de préstamos actualizado automáticamente"
