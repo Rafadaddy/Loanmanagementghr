@@ -24,52 +24,16 @@ function App() {
 function AppContent() {
   return (
     <Switch>
-      <Route path="/auth">
-        <AuthPage />
-      </Route>
-      <Route path="/">
-        <ProtectedRoute>
-          <Dashboard />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/dashboard">
-        <ProtectedRoute>
-          <Dashboard />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/clientes">
-        <ProtectedRoute>
-          <Clients />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/prestamos">
-        <ProtectedRoute>
-          <Loans />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/prestamos/:id">
-        <ProtectedRoute>
-          <LoanDetails />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/pagos">
-        <ProtectedRoute>
-          <Payments />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/reportes">
-        <ProtectedRoute>
-          <Reports />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/calculadora">
-        <ProtectedRoute>
-          <LoanCalculatorPage />
-        </ProtectedRoute>
-      </Route>
-      <Route>
-        <NotFound />
-      </Route>
+      <Route path="/auth" component={AuthPage} />
+      <ProtectedRoute path="/" component={Dashboard} />
+      <ProtectedRoute path="/dashboard" component={Dashboard} />
+      <ProtectedRoute path="/clientes" component={Clients} />
+      <ProtectedRoute path="/prestamos" component={Loans} />
+      <ProtectedRoute path="/prestamos/:id" component={LoanDetails} />
+      <ProtectedRoute path="/pagos" component={Payments} />
+      <ProtectedRoute path="/reportes" component={Reports} />
+      <ProtectedRoute path="/calculadora" component={LoanCalculatorPage} />
+      <Route component={NotFound} />
     </Switch>
   );
 }
