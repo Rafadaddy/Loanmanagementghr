@@ -98,7 +98,7 @@ export default function Clients() {
         description: error.message,
         variant: "destructive"
       });
-    },
+    }
   });
 
   // Filtrar clientes por búsqueda
