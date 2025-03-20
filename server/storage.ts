@@ -238,7 +238,7 @@ export class MemStorage implements IStorage {
     const nuevoPago: Pago = {
       ...pago,
       id,
-      fecha_pago: format(new Date(), 'yyyy-MM-dd'),
+      fecha_pago: new Date(), // Usamos un objeto Date directamente
       numero_semana: semanasActualizadas,
       estado
     };

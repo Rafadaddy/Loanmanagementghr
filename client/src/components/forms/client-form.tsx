@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState, useEffect } from "react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -31,13 +32,25 @@ export default function ClientForm({ open, onOpenChange, cliente, onSuccess }: C
 
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientFormSchema),
-    defaultValues: cliente || {
-      nombre: "",
-      telefono: "",
-      direccion: "",
-      documento_identidad: ""
+    defaultValues: {
+      nombre: cliente?.nombre || "",
+      telefono: cliente?.telefono || "",
+      direccion: cliente?.direccion || "",
+      documento_identidad: cliente?.documento_identidad || ""
     }
   });
+  
+  // Actualizar valores del formulario cuando cambia el cliente
+  useEffect(() => {
+    if (cliente) {
+      form.reset({
+        nombre: cliente.nombre,
+        telefono: cliente.telefono,
+        direccion: cliente.direccion,
+        documento_identidad: cliente.documento_identidad
+      });
+    }
+  }, [cliente, form]);
 
   const mutation = useMutation({
     mutationFn: async (values: ClientFormValues) => {

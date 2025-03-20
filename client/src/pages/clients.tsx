@@ -199,13 +199,25 @@ export default function Clients() {
                         <TableCell>{cliente.documento_identidad}</TableCell>
                         <TableCell>{formatDate(cliente.fecha_registro)}</TableCell>
                         <TableCell>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => handleEditCliente(cliente)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => handleEditCliente(cliente)}
+                              title="Editar cliente"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => handleDeleteCliente(cliente)}
+                              title="Eliminar cliente"
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -286,6 +298,39 @@ export default function Clients() {
           onOpenChange={handleFormClose}
           cliente={clienteToEdit}
         />
+        
+        {/* Diálogo de confirmación para eliminar cliente */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {clienteToDelete ? (
+                  <>
+                    <p>Estás a punto de eliminar al cliente:</p>
+                    <p className="font-semibold mt-2">{clienteToDelete.nombre}</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Esta acción no se puede deshacer. Si el cliente tiene préstamos asociados,
+                      no podrá ser eliminado.
+                    </p>
+                  </>
+                ) : (
+                  "Estás a punto de eliminar este cliente. Esta acción no se puede deshacer."
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={confirmDelete}
+                className="bg-red-500 hover:bg-red-600"
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? "Eliminando..." : "Eliminar"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );
