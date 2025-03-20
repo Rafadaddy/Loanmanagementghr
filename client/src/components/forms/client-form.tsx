@@ -63,8 +63,11 @@ export default function ClientForm({ open, onOpenChange, cliente, onSuccess }: C
       }
     },
     onSuccess: () => {
+      // Invalidamos las consultas relevantes para refrescar los datos automáticamente
       queryClient.invalidateQueries({ queryKey: ["/api/clientes"] });
       queryClient.invalidateQueries({ queryKey: ["/api/estadisticas"] });
+      // También refrescamos estadísticas ya que pueden depender de los clientes
+      
       toast({
         title: isEditing ? "Cliente actualizado" : "Cliente registrado",
         description: isEditing 

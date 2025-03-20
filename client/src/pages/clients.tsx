@@ -62,12 +62,15 @@ export default function Clients() {
       return res.json();
     },
     onSuccess: () => {
+      // Invalidar consultas para actualizar los datos automáticamente
       queryClient.invalidateQueries({ queryKey: ['/api/clientes'] });
       queryClient.invalidateQueries({ queryKey: ['/api/estadisticas'] });
+      
       toast({
         title: "Cliente eliminado",
         description: "El cliente ha sido eliminado con éxito"
       });
+      
       setDeleteDialogOpen(false);
       setClienteToDelete(undefined);
     },

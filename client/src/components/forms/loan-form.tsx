@@ -98,12 +98,21 @@ export default function LoanForm({ open, onOpenChange, onSuccess }: LoanFormProp
       return res.json();
     },
     onSuccess: () => {
+      // Invalidar múltiples consultas para actualizar los datos automáticamente
       queryClient.invalidateQueries({ queryKey: ["/api/prestamos"] });
       queryClient.invalidateQueries({ queryKey: ["/api/estadisticas"] });
+      // Invalidar también consultas específicas por cliente
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          query.queryKey[0] === "/api/prestamos" && 
+          query.queryKey.length > 1 
+      });
+      
       toast({
         title: "Préstamo creado",
         description: "El préstamo ha sido creado con éxito"
       });
+      
       form.reset();
       onOpenChange(false);
       if (onSuccess) onSuccess();
