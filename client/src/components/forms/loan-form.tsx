@@ -126,19 +126,30 @@ export default function LoanForm({ open, onOpenChange, onSuccess }: LoanFormProp
   }
 
   function onSubmit(values: LoanFormValues) {
-    // Convertir strings a números antes de enviar
+    // Verificamos que el cálculo se ha realizado
+    if (!calculoResultado) {
+      toast({
+        title: "Cálculo pendiente",
+        description: "Debe calcular el préstamo antes de crearlo",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Convertir valores y asegurar que son del tipo correcto
     const dataToSend = {
       cliente_id: parseInt(values.cliente_id),
-      monto_prestado: parseFloat(values.monto_prestado),
-      tasa_interes: parseFloat(values.tasa_interes),
+      monto_prestado: values.monto_prestado,  // Enviamos como string
+      tasa_interes: values.tasa_interes,      // Enviamos como string
       fecha_prestamo: values.fecha_prestamo,
       numero_semanas: parseInt(values.numero_semanas),
       frecuencia_pago: values.frecuencia_pago,
-      monto_total_pagar: parseFloat(values.monto_total_pagar),
-      pago_semanal: parseFloat(values.pago_semanal),
+      monto_total_pagar: calculoResultado.monto_total_pagar.toString(), // Convertimos a string
+      pago_semanal: calculoResultado.pago_semanal.toString(),           // Convertimos a string
       proxima_fecha_pago: values.fecha_prestamo // Inicialmente la misma que fecha de préstamo
     };
     
+    console.log("Datos a enviar:", dataToSend);
     crearPrestamoMutation.mutate(dataToSend);
   }
 

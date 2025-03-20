@@ -125,18 +125,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/prestamos", isAuthenticated, async (req, res, next) => {
     try {
-      const prestamoData = insertPrestamoSchema.parse(req.body);
+      console.log("Datos recibidos:", req.body);
       
-      // Validar que el cliente existe
-      const cliente = await storage.getCliente(prestamoData.cliente_id);
+      // Validar que el cliente existe antes de validar todo el esquema
+      const clienteId = parseInt(req.body.cliente_id);
+      if (isNaN(clienteId)) {
+        return res.status(400).json({ message: "ID de cliente inválido" });
+      }
+      
+      const cliente = await storage.getCliente(clienteId);
       if (!cliente) {
         return res.status(404).json({ message: "Cliente no encontrado" });
       }
+      
+      // Validar y parsear los datos
+      const prestamoData = insertPrestamoSchema.parse({
+        ...req.body,
+        cliente_id: clienteId,
+        monto_prestado: req.body.monto_prestado,
+        tasa_interes: req.body.tasa_interes,
+        fecha_prestamo: req.body.fecha_prestamo,
+        numero_semanas: parseInt(req.body.numero_semanas),
+        frecuencia_pago: req.body.frecuencia_pago,
+        monto_total_pagar: req.body.monto_total_pagar,
+        pago_semanal: req.body.pago_semanal,
+        proxima_fecha_pago: req.body.proxima_fecha_pago || req.body.fecha_prestamo,
+      });
       
       // Crear préstamo
       const prestamo = await storage.createPrestamo(prestamoData);
       res.status(201).json(prestamo);
     } catch (error) {
+      console.error("Error al crear préstamo:", error);
       if (error instanceof ZodError) {
         return res.status(400).json({ 
           message: "Datos del préstamo inválidos", 
