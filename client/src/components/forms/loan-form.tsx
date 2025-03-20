@@ -47,6 +47,13 @@ export default function LoanForm({ open, onOpenChange, onSuccess }: LoanFormProp
   const { data: clientes = [] } = useQuery<Cliente[]>({ 
     queryKey: ["/api/clientes"]
   });
+  
+  // Estado para filtrar clientes
+  const [filtroCliente, setFiltroCliente] = useState<string>("");
+  const clientesFiltrados = clientes.filter(cliente => 
+    cliente.nombre.toLowerCase().includes(filtroCliente.toLowerCase()) ||
+    cliente.documento_identidad.toLowerCase().includes(filtroCliente.toLowerCase())
+  );
 
   const form = useForm<LoanFormValues>({
     resolver: zodResolver(loanFormSchema),
@@ -162,33 +169,52 @@ export default function LoanForm({ open, onOpenChange, onSuccess }: LoanFormProp
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="cliente_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cliente</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccione un cliente" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {clientes.map((cliente) => (
-                        <SelectItem key={cliente.id} value={cliente.id.toString()}>
-                          {cliente.nombre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="filtroCliente" className="text-sm font-medium">
+                  Buscar Cliente
+                </label>
+                <Input
+                  id="filtroCliente"
+                  value={filtroCliente}
+                  onChange={(e) => setFiltroCliente(e.target.value)}
+                  placeholder="Buscar por nombre o documento..."
+                  className="mt-1"
+                />
+              </div>
+              
+              <FormField
+                control={form.control}
+                name="cliente_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Seleccionar Cliente</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccione un cliente" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {clientesFiltrados.length === 0 ? (
+                          <div className="p-2 text-sm text-gray-500">No se encontraron clientes</div>
+                        ) : (
+                          clientesFiltrados.map((cliente) => (
+                            <SelectItem key={cliente.id} value={cliente.id.toString()}>
+                              {cliente.nombre} - {cliente.documento_identidad}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
