@@ -7,11 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { insertPrestamoSchema, CalculoPrestamo, ResultadoCalculoPrestamo, Cliente } from "@shared/schema";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/utils";
+import { Search } from "lucide-react";
 
 // Extender el esquema para validación
 const loanFormSchema = z.object({
@@ -169,52 +171,64 @@ export default function LoanForm({ open, onOpenChange, onSuccess }: LoanFormProp
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="filtroCliente" className="text-sm font-medium">
-                  Buscar Cliente
-                </label>
-                <Input
-                  id="filtroCliente"
-                  value={filtroCliente}
-                  onChange={(e) => setFiltroCliente(e.target.value)}
-                  placeholder="Buscar por nombre o documento..."
-                  className="mt-1"
-                />
-              </div>
-              
-              <FormField
-                control={form.control}
-                name="cliente_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Seleccionar Cliente</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccione un cliente" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {clientesFiltrados.length === 0 ? (
-                          <div className="p-2 text-sm text-gray-500">No se encontraron clientes</div>
-                        ) : (
-                          clientesFiltrados.map((cliente) => (
-                            <SelectItem key={cliente.id} value={cliente.id.toString()}>
-                              {cliente.nombre} - {cliente.documento_identidad}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="cliente_id"
+              render={({ field }) => (
+                <FormItem className="space-y-4">
+                  <FormLabel>Cliente</FormLabel>
+                  
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                      <Search className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <Input
+                      className="pl-9"
+                      placeholder="Buscar por nombre o documento..."
+                      value={filtroCliente}
+                      onChange={(e) => setFiltroCliente(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="border rounded-md max-h-48 overflow-auto">
+                    <ScrollArea className="h-full">
+                      {clientesFiltrados.length === 0 ? (
+                        <div className="p-3 text-sm text-gray-500 text-center">
+                          No se encontraron clientes
+                        </div>
+                      ) : (
+                        <div className="p-1">
+                          {clientesFiltrados.map((cliente) => (
+                            <div
+                              key={cliente.id}
+                              className={`p-2 text-sm rounded-md cursor-pointer mb-1 hover:bg-gray-100 
+                                ${cliente.id.toString() === field.value 
+                                  ? "bg-primary/10 border border-primary/20" 
+                                  : ""
+                                }`}
+                              onClick={() => form.setValue("cliente_id", cliente.id.toString())}
+                            >
+                              <div className="font-medium">{cliente.nombre}</div>
+                              <div className="text-xs text-gray-500">
+                                Documento: {cliente.documento_identidad}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </div>
+                  
+                  {field.value && (
+                    <div className="p-2 bg-gray-50 rounded-md text-sm">
+                      <span className="font-semibold">Cliente seleccionado:</span>{" "}
+                      {clientes.find(c => c.id.toString() === field.value)?.nombre}
+                    </div>
+                  )}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
