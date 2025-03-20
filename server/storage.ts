@@ -17,6 +17,7 @@ export interface IStorage {
   getCliente(id: number): Promise<Cliente | undefined>;
   createCliente(cliente: InsertCliente): Promise<Cliente>;
   updateCliente(id: number, cliente: InsertCliente): Promise<Cliente | undefined>;
+  deleteCliente(id: number): Promise<boolean>;
   
   // Préstamos
   getAllPrestamos(): Promise<Prestamo[]>;
@@ -115,6 +116,22 @@ export class MemStorage implements IStorage {
     
     this.clientes.set(id, clienteActualizado);
     return clienteActualizado;
+  }
+  
+  async deleteCliente(id: number): Promise<boolean> {
+    const clienteExistente = this.clientes.get(id);
+    if (!clienteExistente) {
+      return false;
+    }
+    
+    // Verificar si existen préstamos asociados al cliente
+    const prestamosCliente = await this.getPrestamosByClienteId(id);
+    if (prestamosCliente.length > 0) {
+      // No permitir eliminar clientes con préstamos
+      return false;
+    }
+    
+    return this.clientes.delete(id);
   }
 
   // Métodos para préstamos

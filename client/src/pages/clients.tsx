@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { formatDate, getInitials } from "@/lib/utils";
 import Sidebar from "@/components/navigation/sidebar";
 import MobileHeader from "@/components/navigation/mobile-header";
@@ -25,18 +25,59 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Input } from "@/components/ui/input";
-import { Search, UserPlus, Edit } from "lucide-react";
+import { Search, UserPlus, Edit, Trash2 } from "lucide-react";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Clients() {
   const [clientFormOpen, setClientFormOpen] = useState(false);
   const [clienteToEdit, setClienteToEdit] = useState<Cliente | undefined>(undefined);
+  const [clienteToDelete, setClienteToDelete] = useState<Cliente | undefined>(undefined);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const { toast } = useToast();
 
   // Cargar la lista de clientes
   const { data: clientes = [], isLoading } = useQuery<Cliente[]>({
     queryKey: ['/api/clientes'],
+  });
+  
+  // Mutación para eliminar cliente
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/clientes/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/clientes'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/estadisticas'] });
+      toast({
+        title: "Cliente eliminado",
+        description: "El cliente ha sido eliminado con éxito"
+      });
+      setDeleteDialogOpen(false);
+      setClienteToDelete(undefined);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error al eliminar cliente",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   });
 
   // Filtrar clientes por búsqueda
@@ -66,6 +107,17 @@ export default function Clients() {
   const handleFormClose = () => {
     setClientFormOpen(false);
     setClienteToEdit(undefined);
+  };
+  
+  const handleDeleteCliente = (cliente: Cliente) => {
+    setClienteToDelete(cliente);
+    setDeleteDialogOpen(true);
+  };
+  
+  const confirmDelete = () => {
+    if (clienteToDelete) {
+      deleteMutation.mutate(clienteToDelete.id);
+    }
   };
 
   return (

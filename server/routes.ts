@@ -92,6 +92,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
+  
+  app.delete("/api/clientes/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verificar si el cliente existe
+      const cliente = await storage.getCliente(id);
+      if (!cliente) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+      
+      // Verificar si el cliente tiene préstamos asociados
+      const prestamos = await storage.getPrestamosByClienteId(id);
+      if (prestamos.length > 0) {
+        return res.status(400).json({ 
+          message: "No se puede eliminar el cliente porque tiene préstamos asociados" 
+        });
+      }
+      
+      // Eliminar el cliente
+      const result = await storage.deleteCliente(id);
+      if (result) {
+        res.status(200).json({ message: "Cliente eliminado correctamente" });
+      } else {
+        res.status(500).json({ message: "Error al eliminar el cliente" });
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
 
   // Rutas para préstamos
   app.get("/api/prestamos", isAuthenticated, async (req, res, next) => {
