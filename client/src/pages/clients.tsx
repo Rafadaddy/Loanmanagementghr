@@ -58,13 +58,31 @@ export default function Clients() {
   // Mutación para eliminar cliente
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest("DELETE", `/api/clientes/${id}`);
-      return res.json();
+      try {
+        const res = await apiRequest("DELETE", `/api/clientes/${id}`);
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || 'Error al eliminar el cliente');
+        }
+        return await res.json();
+      } catch (error) {
+        if (error instanceof Error) {
+          throw error;
+        }
+        throw new Error('Error al eliminar el cliente');
+      }
     },
     onSuccess: () => {
       // Invalidar consultas para actualizar los datos automáticamente
       queryClient.invalidateQueries({ queryKey: ['/api/clientes'] });
       queryClient.invalidateQueries({ queryKey: ['/api/estadisticas'] });
+      
+      // Invalidar consultas relacionadas con clientes en préstamos y pagos
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          query.queryKey[0] === "/api/prestamos" ||
+          (query.queryKey[0] === "/api/clientes" && query.queryKey.length > 1)
+      });
       
       toast({
         title: "Cliente eliminado",
@@ -80,7 +98,7 @@ export default function Clients() {
         description: error.message,
         variant: "destructive"
       });
-    }
+    },
   });
 
   // Filtrar clientes por búsqueda

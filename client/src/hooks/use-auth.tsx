@@ -54,17 +54,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Actualizar la caché con los datos del usuario
       queryClient.setQueryData(["/api/user"], user);
       
+      // Refetch para asegurar que tenemos los datos más recientes
+      await refetchUser();
+      
       // Mostrar notificación
       toast({
         title: "Inicio de sesión exitoso",
         description: `Bienvenido ${user.nombre}`,
       });
       
-      // Esperar un momento para asegurar que la actualización del estado se complete
-      setTimeout(() => {
-        // Redirigir al dashboard después de iniciar sesión
-        navigate("/dashboard");
-      }, 100);
+      // Invalidar cualquier otra consulta que pueda depender del estado de autenticación
+      queryClient.invalidateQueries();
+      
+      // Navegar al dashboard
+      navigate("/dashboard");
     },
     onError: (error: Error) => {
       toast({
@@ -84,17 +87,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Actualizar la caché con los datos del usuario
       queryClient.setQueryData(["/api/user"], user);
       
+      // Refetch para asegurar que tenemos los datos más recientes
+      await refetchUser();
+      
       // Mostrar notificación
       toast({
         title: "Registro exitoso",
         description: `Bienvenido ${user.nombre}`,
       });
       
-      // Esperar un momento para asegurar que la actualización del estado se complete
-      setTimeout(() => {
-        // Redirigir al dashboard después de registrarse
-        navigate("/dashboard");
-      }, 100);
+      // Invalidar cualquier otra consulta que pueda depender del estado de autenticación
+      queryClient.invalidateQueries();
+      
+      // Navegar al dashboard
+      navigate("/dashboard");
     },
     onError: (error: Error) => {
       toast({
