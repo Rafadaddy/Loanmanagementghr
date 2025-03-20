@@ -66,7 +66,13 @@ export default function ClientForm({ open, onOpenChange, cliente, onSuccess }: C
       // Invalidamos las consultas relevantes para refrescar los datos automáticamente
       queryClient.invalidateQueries({ queryKey: ["/api/clientes"] });
       queryClient.invalidateQueries({ queryKey: ["/api/estadisticas"] });
-      // También refrescamos estadísticas ya que pueden depender de los clientes
+      
+      // Invalidar también consultas de préstamos, ya que pueden mostrar datos de clientes
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          query.queryKey[0] === "/api/prestamos" ||
+          (query.queryKey[0] === "/api/clientes" && query.queryKey.length > 1)
+      });
       
       toast({
         title: isEditing ? "Cliente actualizado" : "Cliente registrado",
@@ -74,6 +80,7 @@ export default function ClientForm({ open, onOpenChange, cliente, onSuccess }: C
           ? "Los datos del cliente se han actualizado correctamente." 
           : "El nuevo cliente ha sido registrado con éxito."
       });
+      
       form.reset();
       onOpenChange(false);
       if (onSuccess) onSuccess();

@@ -84,13 +84,23 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
       return res.json();
     },
     onSuccess: () => {
+      // Invalidar todas las consultas relevantes
       queryClient.invalidateQueries({ queryKey: ["/api/pagos"] });
       queryClient.invalidateQueries({ queryKey: ["/api/prestamos"] });
       queryClient.invalidateQueries({ queryKey: ["/api/estadisticas"] });
+      
+      // Invalidar también consultas específicas por préstamo y cliente
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          (query.queryKey[0] === "/api/pagos" || query.queryKey[0] === "/api/prestamos") && 
+          query.queryKey.length > 1 
+      });
+      
       toast({
         title: "Pago registrado",
         description: "El pago ha sido registrado con éxito"
       });
+      
       form.reset();
       setPrestamoSeleccionado(null);
       onOpenChange(false);
