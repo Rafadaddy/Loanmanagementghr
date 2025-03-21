@@ -288,6 +288,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Ruta para actualizar un pago (editar un pago erróneo)
+  app.put("/api/pagos/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de pago inválido" });
+      }
+      
+      // Verificar si existe el pago
+      const pagos = await storage.getAllPagos();
+      const pago = pagos.find(p => p.id === id);
+      
+      if (!pago) {
+        return res.status(404).json({ message: "Pago no encontrado" });
+      }
+      
+      // Validar datos de actualización
+      try {
+        // Solo permitimos actualizar el monto pagado por ahora
+        const { monto_pagado } = req.body;
+        
+        if (!monto_pagado || isNaN(Number(monto_pagado)) || Number(monto_pagado) <= 0) {
+          return res.status(400).json({ message: "El monto pagado debe ser un número positivo" });
+        }
+        
+        // Actualizar el pago
+        const pagoActualizado = await storage.updatePago(id, { monto_pagado });
+        
+        if (pagoActualizado) {
+          res.status(200).json(pagoActualizado);
+        } else {
+          res.status(500).json({ message: "Error al actualizar el pago" });
+        }
+      } catch (error) {
+        console.error("Error de validación en actualización de pago:", error);
+        return res.status(400).json({ message: "Datos inválidos para actualizar el pago" });
+      }
+    } catch (error) {
+      console.error("Error al actualizar pago:", error);
+      next(error);
+    }
+  });
+  
   // Ruta para eliminar un pago (revertir un pago erróneo)
   app.delete("/api/pagos/:id", isAuthenticated, async (req, res, next) => {
     try {

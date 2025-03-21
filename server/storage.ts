@@ -31,6 +31,7 @@ export interface IStorage {
   getAllPagos(): Promise<Pago[]>;
   getPagosByPrestamoId(prestamoId: number): Promise<Pago[]>;
   createPago(pago: InsertPago): Promise<Pago>;
+  updatePago(id: number, pago: Partial<Pago>): Promise<Pago | undefined>;
   deletePago(id: number): Promise<boolean>;
   
   // Cálculos
@@ -563,6 +564,56 @@ export class MemStorage implements IStorage {
     console.log("DEBUG - Nuevo pago creado:", nuevoPago);
     this.pagos.set(id, nuevoPago);
     return nuevoPago;
+  }
+
+  // Método para actualizar un pago
+  async updatePago(id: number, pago: Partial<Pago>): Promise<Pago | undefined> {
+    console.log("DEBUG - Iniciando actualización de pago:", id, pago);
+    
+    // Obtener el pago existente
+    const pagoExistente = this.pagos.get(id);
+    if (!pagoExistente) {
+      console.log("DEBUG - Pago no encontrado:", id);
+      return undefined;
+    }
+    
+    // Verificar si el monto del pago ha cambiado
+    const montoAnterior = Number(pagoExistente.monto_pagado);
+    const nuevoMonto = pago.monto_pagado ? Number(pago.monto_pagado) : montoAnterior;
+    
+    console.log("DEBUG - Pago existente:", pagoExistente);
+    console.log("DEBUG - Monto anterior:", montoAnterior);
+    console.log("DEBUG - Nuevo monto:", nuevoMonto);
+    
+    // Obtener el préstamo asociado
+    const prestamo = await this.getPrestamo(pagoExistente.prestamo_id);
+    if (!prestamo) {
+      console.log("DEBUG - Préstamo asociado no encontrado:", pagoExistente.prestamo_id);
+      return undefined;
+    }
+    
+    // Actualizar el pago
+    const pagoActualizado: Pago = {
+      ...pagoExistente,
+      ...pago
+    };
+    
+    // Determinar si es pago parcial
+    const montoSemanal = Number(prestamo.pago_semanal);
+    const esPagoParcial = nuevoMonto < montoSemanal;
+    const montoRestante = esPagoParcial ? (montoSemanal - nuevoMonto).toString() : "0";
+    
+    pagoActualizado.es_pago_parcial = esPagoParcial ? "true" : "false";
+    pagoActualizado.monto_restante = montoRestante;
+    
+    // Guardar el pago actualizado
+    this.pagos.set(id, pagoActualizado);
+    console.log("DEBUG - Pago actualizado:", pagoActualizado);
+    
+    // Actualizar el estado del préstamo si es necesario
+    await this.actualizarEstadoPrestamo(prestamo.id);
+    
+    return pagoActualizado;
   }
 
   // Método para eliminar un pago
