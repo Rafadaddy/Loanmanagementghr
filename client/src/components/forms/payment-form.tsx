@@ -149,6 +149,9 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
       monto_pagado: montoPagado
     };
     
+    // Depuración
+    console.log("Datos de pago a enviar:", dataToSend);
+    
     registrarPagoMutation.mutate(dataToSend);
   }
 
@@ -173,6 +176,8 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
       prestamo_id: parseInt(values.prestamo_id),
       monto_pagado: parseFloat(values.monto_pagado)
     };
+    
+    console.log("Datos de pago parcial a enviar:", dataToSend);
     
     registrarPagoMutation.mutate(dataToSend);
     setShowParcialAlert(false);

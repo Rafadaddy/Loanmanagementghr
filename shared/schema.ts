@@ -78,7 +78,8 @@ export const insertPagoSchema = createInsertSchema(pagos).omit({
   fecha_pago: true,
   estado: true,
   es_pago_parcial: true,
-  monto_restante: true
+  monto_restante: true,
+  numero_semana: true
 });
 
 // Tipos exportados

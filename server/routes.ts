@@ -217,29 +217,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/pagos", isAuthenticated, async (req, res, next) => {
     try {
-      const pagoData = insertPagoSchema.parse(req.body);
+      console.log("Datos de pago recibidos:", req.body);
       
-      // Validar que el préstamo existe
-      const prestamo = await storage.getPrestamo(pagoData.prestamo_id);
-      if (!prestamo) {
-        return res.status(404).json({ message: "Préstamo no encontrado" });
+      // Validar con el esquema
+      try {
+        const pagoData = insertPagoSchema.parse(req.body);
+        
+        // Validar que el préstamo existe
+        const prestamo = await storage.getPrestamo(pagoData.prestamo_id);
+        if (!prestamo) {
+          return res.status(404).json({ message: "Préstamo no encontrado" });
+        }
+        
+        // Validar que el préstamo no está pagado
+        if (prestamo.estado === "PAGADO") {
+          return res.status(400).json({ message: "El préstamo ya está pagado completamente" });
+        }
+        
+        // Crear pago
+        const pago = await storage.createPago(pagoData);
+        res.status(201).json(pago);
+      } catch (zodError) {
+        if (zodError instanceof ZodError) {
+          console.error("Error de validación:", zodError.errors);
+          return res.status(400).json({ 
+            message: "Datos del pago inválidos", 
+            errors: fromZodError(zodError).message,
+            details: zodError.errors 
+          });
+        }
+        throw zodError;
       }
-      
-      // Validar que el préstamo no está pagado
-      if (prestamo.estado === "PAGADO") {
-        return res.status(400).json({ message: "El préstamo ya está pagado completamente" });
-      }
-      
-      // Crear pago
-      const pago = await storage.createPago(pagoData);
-      res.status(201).json(pago);
     } catch (error) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ 
-          message: "Datos del pago inválidos", 
-          errors: fromZodError(error).message 
-        });
-      }
+      console.error("Error al crear pago:", error);
       next(error);
     }
   });
