@@ -7,7 +7,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -252,7 +252,7 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
           
           <DialogHeader>
             <DialogTitle>Registrar Pago</DialogTitle>
-            <p className="sr-only">Formulario para registrar un nuevo pago</p>
+            <DialogDescription>Formulario para registrar un nuevo pago</DialogDescription>
           </DialogHeader>
           
           <Form {...form}>
@@ -303,7 +303,7 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
                             <SelectValue placeholder="Seleccione un préstamo" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="z-[10001]">
                           {filteredPrestamos.length > 0 ? (
                             filteredPrestamos.map((prestamo: PrestamoConCliente) => (
                               <SelectItem key={prestamo.id} value={prestamo.id.toString()}>
