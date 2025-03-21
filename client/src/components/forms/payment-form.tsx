@@ -93,7 +93,14 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
   // Mutation para registrar pago
   const registrarPagoMutation = useMutation({
     mutationFn: async (values: any) => {
-      const res = await apiRequest("POST", "/api/pagos", values);
+      console.log("Valores en mutación antes de la llamada API:", values);
+      // Asegurarse de que los tipos son correctos para la API
+      const dataToSend = {
+        prestamo_id: Number(values.prestamo_id),
+        monto_pagado: Number(values.monto_pagado)
+      };
+      console.log("Datos a enviar a la API:", dataToSend);
+      const res = await apiRequest("POST", "/api/pagos", dataToSend);
       return res.json();
     },
     onSuccess: () => {
@@ -131,8 +138,8 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
   function onSubmit(values: PaymentFormValues) {
     if (!prestamoSeleccionado) return;
     
-    const montoPagado = parseFloat(values.monto_pagado);
-    const montoSemanal = parseFloat(prestamoSeleccionado.pago_semanal.toString());
+    const montoPagado = Number(values.monto_pagado);
+    const montoSemanal = Number(prestamoSeleccionado.pago_semanal);
     
     // Verificar si es un pago parcial
     const esPagoParcial = montoPagado < montoSemanal;
@@ -145,7 +152,7 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
     
     // Si no es parcial o ya está confirmado, proceder con el pago
     const dataToSend = {
-      prestamo_id: parseInt(values.prestamo_id),
+      prestamo_id: Number(values.prestamo_id),
       monto_pagado: montoPagado
     };
     
@@ -173,8 +180,8 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
     // Volver a enviar el formulario
     const values = form.getValues();
     const dataToSend = {
-      prestamo_id: parseInt(values.prestamo_id),
-      monto_pagado: parseFloat(values.monto_pagado)
+      prestamo_id: Number(values.prestamo_id),
+      monto_pagado: Number(values.monto_pagado)
     };
     
     console.log("Datos de pago parcial a enviar:", dataToSend);
@@ -185,7 +192,7 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
 
   // Calcular la diferencia para el diálogo de pago parcial
   const diferenciaPago = prestamoSeleccionado ? 
-    parseFloat(prestamoSeleccionado.pago_semanal.toString()) - parseFloat(form.getValues().monto_pagado || "0") 
+    Number(prestamoSeleccionado.pago_semanal) - Number(form.getValues().monto_pagado || "0") 
     : 0;
 
   return (

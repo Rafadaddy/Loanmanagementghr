@@ -203,23 +203,33 @@ export class MemStorage implements IStorage {
   }
 
   async createPago(pago: InsertPago): Promise<Pago> {
+    console.log("DEBUG - Iniciando creación de pago:", pago);
     const id = this.currentPagoId++;
     const prestamo = await this.getPrestamo(pago.prestamo_id);
     
     if (!prestamo) {
+      console.error("ERROR - Préstamo no encontrado:", pago.prestamo_id);
       throw new Error("El préstamo no existe");
     }
+    
+    console.log("DEBUG - Préstamo encontrado:", prestamo);
     
     // Determinar si el pago está atrasado comparando con la fecha proxima_fecha_pago
     const hoy = new Date();
     const fechaProximoPago = new Date(prestamo.proxima_fecha_pago);
     const estado = hoy > fechaProximoPago ? "ATRASADO" : "A_TIEMPO";
+    console.log("DEBUG - Estado del pago:", estado);
     
     // Verificar si es un pago parcial (menos que el monto semanal)
     const montoPagado = Number(pago.monto_pagado);
     const montoSemanal = Number(prestamo.pago_semanal);
     const esPagoParcial = montoPagado < montoSemanal;
     const montoRestante = esPagoParcial ? (montoSemanal - montoPagado) : 0;
+    
+    console.log("DEBUG - Monto pagado:", montoPagado);
+    console.log("DEBUG - Monto semanal requerido:", montoSemanal);
+    console.log("DEBUG - ¿Es pago parcial?:", esPagoParcial);
+    console.log("DEBUG - Monto restante:", montoRestante);
     
     // Solo incrementamos semanas pagadas si el pago es completo o supera el monto semanal
     let semanasActualizadas = prestamo.semanas_pagadas;
@@ -228,6 +238,10 @@ export class MemStorage implements IStorage {
     if (!esPagoParcial) {
       semanasActualizadas += 1;
       nuevaProximaFechaPago = addDays(fechaProximoPago, 7);
+      console.log("DEBUG - Incrementando semanas pagadas a:", semanasActualizadas);
+      console.log("DEBUG - Nueva fecha de próximo pago:", format(nuevaProximaFechaPago, 'yyyy-MM-dd'));
+    } else {
+      console.log("DEBUG - No se incrementan semanas pagadas por ser pago parcial");
     }
     
     // Actualizar estado del préstamo
@@ -240,6 +254,8 @@ export class MemStorage implements IStorage {
     } else if (estado === "ATRASADO") {
       estadoPrestamo = "ATRASADO";
     }
+    
+    console.log("DEBUG - Nuevo estado del préstamo:", estadoPrestamo);
     
     // Actualizar préstamo
     await this.updatePrestamo(prestamo.id, {
@@ -259,6 +275,7 @@ export class MemStorage implements IStorage {
       monto_restante: montoRestante.toString()
     };
     
+    console.log("DEBUG - Nuevo pago creado:", nuevoPago);
     this.pagos.set(id, nuevoPago);
     return nuevoPago;
   }
