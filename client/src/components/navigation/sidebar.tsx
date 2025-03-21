@@ -31,15 +31,15 @@ export default function Sidebar({ className }: SidebarProps) {
           {navItems.map((item) => (
             <li key={item.href} className="mb-1">
               <Link href={item.href}>
-                <a 
+                <div 
                   className={cn(
-                    "flex items-center px-4 py-3 text-gray-600 hover:bg-blue-50 hover:border-l-4 hover:border-primary",
+                    "flex items-center px-4 py-3 text-gray-600 hover:bg-blue-50 hover:border-l-4 hover:border-primary cursor-pointer",
                     location === item.href && "text-gray-700 bg-blue-50 border-l-4 border-primary"
                   )}
                 >
                   <i className={`fas fa-${item.icon} mr-3`}></i>
                   <span>{item.label}</span>
-                </a>
+                </div>
               </Link>
             </li>
           ))}

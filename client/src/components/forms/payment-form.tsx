@@ -97,7 +97,7 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
       // Asegurarse de que los tipos son correctos para la API
       const dataToSend = {
         prestamo_id: Number(values.prestamo_id),
-        monto_pagado: Number(values.monto_pagado)
+        monto_pagado: String(values.monto_pagado)
       };
       console.log("Datos a enviar a la API:", dataToSend);
       const res = await apiRequest("POST", "/api/pagos", dataToSend);
@@ -153,7 +153,7 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
     // Si no es parcial o ya está confirmado, proceder con el pago
     const dataToSend = {
       prestamo_id: Number(values.prestamo_id),
-      monto_pagado: montoPagado
+      monto_pagado: String(montoPagado)
     };
     
     // Depuración
@@ -181,7 +181,7 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
     const values = form.getValues();
     const dataToSend = {
       prestamo_id: Number(values.prestamo_id),
-      monto_pagado: Number(values.monto_pagado)
+      monto_pagado: String(values.monto_pagado)
     };
     
     console.log("Datos de pago parcial a enviar:", dataToSend);
