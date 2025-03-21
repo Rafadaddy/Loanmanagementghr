@@ -166,6 +166,7 @@ export default function Payments() {
                       <TableHead>Fecha Pago</TableHead>
                       <TableHead>Semana</TableHead>
                       <TableHead>Estado</TableHead>
+                      <TableHead>Tipo</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -173,16 +174,35 @@ export default function Payments() {
                       const prestamo = prestamos.find(p => p.id === pago.prestamo_id);
                       const cliente = prestamo ? clientes.find(c => c.id === prestamo.cliente_id) : undefined;
                       const { label, className } = getPaymentStatus(pago.estado);
+                      const esPagoParcial = pago.es_pago_parcial === "true";
                       
                       return (
                         <TableRow key={pago.id}>
                           <TableCell className="font-medium">{cliente?.nombre || 'Cliente desconocido'}</TableCell>
                           <TableCell>{prestamo ? formatCurrency(prestamo.monto_prestado) : 'N/A'}</TableCell>
-                          <TableCell className="text-green-600 font-medium">{formatCurrency(pago.monto_pagado)}</TableCell>
+                          <TableCell className="text-green-600 font-medium">
+                            {formatCurrency(pago.monto_pagado)}
+                            {esPagoParcial && pago.monto_restante && (
+                              <div className="text-xs text-amber-600">
+                                Restante: {formatCurrency(pago.monto_restante)}
+                              </div>
+                            )}
+                          </TableCell>
                           <TableCell>{getDateTimeFormat(pago.fecha_pago)}</TableCell>
                           <TableCell>{pago.numero_semana}</TableCell>
                           <TableCell>
                             <Badge className={className}>{label}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {esPagoParcial ? (
+                              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                                Parcial
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                Completo
+                              </Badge>
+                            )}
                           </TableCell>
                         </TableRow>
                       );

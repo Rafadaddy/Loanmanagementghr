@@ -160,112 +160,173 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
     }
   }, [open, form]);
 
+  // Función para confirmar y proceder con un pago parcial
+  const handleConfirmPagoParcial = () => {
+    if (!prestamoSeleccionado) return;
+    
+    // Establecer es_pago_parcial_confirmado en true en el formulario
+    form.setValue("es_pago_parcial_confirmado", true);
+    
+    // Volver a enviar el formulario
+    const values = form.getValues();
+    const dataToSend = {
+      prestamo_id: parseInt(values.prestamo_id),
+      monto_pagado: parseFloat(values.monto_pagado)
+    };
+    
+    registrarPagoMutation.mutate(dataToSend);
+    setShowParcialAlert(false);
+  };
+
+  // Calcular la diferencia para el diálogo de pago parcial
+  const diferenciaPago = prestamoSeleccionado ? 
+    parseFloat(prestamoSeleccionado.pago_semanal.toString()) - parseFloat(form.getValues().monto_pagado || "0") 
+    : 0;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Registrar Pago</DialogTitle>
-        </DialogHeader>
-        
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="prestamo_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Préstamo</FormLabel>
-                  <Select
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      handlePrestamoChange(value);
-                    }}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccione un préstamo" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {prestamosConCliente.map((prestamo) => (
-                        <SelectItem key={prestamo.id} value={prestamo.id.toString()}>
-                          {prestamo.cliente?.nombre} - {formatCurrency(prestamo.monto_prestado)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            {prestamoSeleccionado && (
-              <div className="bg-gray-50 p-4 rounded-md mb-4">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Información del Préstamo</h4>
-                
-                <div className="grid grid-cols-2 gap-4 mb-3">
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Cliente</p>
-                    <p className="text-sm font-medium text-gray-800">{prestamoSeleccionado.cliente?.nombre}</p>
-                  </div>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Registrar Pago</DialogTitle>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="prestamo_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Préstamo</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        handlePrestamoChange(value);
+                      }}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccione un préstamo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {prestamosConCliente.map((prestamo) => (
+                          <SelectItem key={prestamo.id} value={prestamo.id.toString()}>
+                            {prestamo.cliente?.nombre} - {formatCurrency(prestamo.monto_prestado)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {prestamoSeleccionado && (
+                <div className="bg-gray-50 p-4 rounded-md mb-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Información del Préstamo</h4>
                   
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Monto del Préstamo</p>
-                    <p className="text-sm font-medium text-gray-800">{formatCurrency(prestamoSeleccionado.monto_prestado)}</p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Semanas Pagadas</p>
-                    <p className="text-sm font-medium text-gray-800">
-                      {prestamoSeleccionado.semanas_pagadas} de {prestamoSeleccionado.numero_semanas}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Pago Semanal</p>
-                    <p className="text-sm font-medium text-gray-800">
-                      {formatCurrency(prestamoSeleccionado.pago_semanal)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <FormField
-              control={form.control}
-              name="monto_pagado"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Monto a Pagar</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                      <Input className="pl-6" {...field} />
+                  <div className="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Cliente</p>
+                      <p className="text-sm font-medium text-gray-800">{prestamoSeleccionado.cliente?.nombre}</p>
                     </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                    
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Monto del Préstamo</p>
+                      <p className="text-sm font-medium text-gray-800">{formatCurrency(prestamoSeleccionado.monto_prestado)}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Semanas Pagadas</p>
+                      <p className="text-sm font-medium text-gray-800">
+                        {prestamoSeleccionado.semanas_pagadas} de {prestamoSeleccionado.numero_semanas}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Pago Semanal</p>
+                      <p className="text-sm font-medium text-gray-800">
+                        {formatCurrency(prestamoSeleccionado.pago_semanal)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               )}
-            />
-            
-            <DialogFooter className="gap-2 mt-4">
-              <DialogClose asChild>
-                <Button type="button" variant="outline">Cancelar</Button>
-              </DialogClose>
-              <Button 
-                type="submit" 
-                disabled={registrarPagoMutation.isPending}
-                className="bg-primary hover:bg-blue-600"
-              >
-                {registrarPagoMutation.isPending ? "Registrando..." : "Registrar Pago"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+              
+              <FormField
+                control={form.control}
+                name="monto_pagado"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Monto a Pagar</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                        <Input className="pl-6" {...field} />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter className="gap-2 mt-4">
+                <DialogClose asChild>
+                  <Button type="button" variant="outline">Cancelar</Button>
+                </DialogClose>
+                <Button 
+                  type="submit" 
+                  disabled={registrarPagoMutation.isPending}
+                  className="bg-primary hover:bg-blue-600"
+                >
+                  {registrarPagoMutation.isPending ? "Registrando..." : "Registrar Pago"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de alerta para pagos parciales */}
+      <AlertDialog open={showParcialAlert} onOpenChange={setShowParcialAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Registrar Pago Parcial?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Está a punto de registrar un pago parcial. Esto significa que la semana actual 
+              no se marcará como pagada completamente y quedará un saldo pendiente.</p>
+              
+              <div className="bg-yellow-50 p-3 rounded-md border border-yellow-200 mt-2">
+                <p className="text-sm font-medium text-yellow-800">
+                  Monto semanal requerido: {formatCurrency(prestamoSeleccionado?.pago_semanal || 0)}
+                </p>
+                <p className="text-sm font-medium text-yellow-800">
+                  Monto a pagar ahora: {formatCurrency(form.getValues().monto_pagado || 0)}
+                </p>
+                <p className="text-sm font-medium text-yellow-800">
+                  Saldo pendiente: {formatCurrency(diferenciaPago)}
+                </p>
+              </div>
+              
+              <p className="font-medium mt-2">¿Desea continuar con el pago parcial?</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmPagoParcial}
+              className="bg-primary hover:bg-blue-600"
+            >
+              Confirmar Pago Parcial
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
