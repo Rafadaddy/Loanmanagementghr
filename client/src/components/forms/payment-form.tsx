@@ -49,6 +49,7 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
   const { toast } = useToast();
   const [prestamoSeleccionado, setPrestamoSeleccionado] = useState<PrestamoConCliente | null>(null);
   const [showParcialAlert, setShowParcialAlert] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Obtener la lista de préstamos activos
   const { data: prestamos = [] } = useQuery<Prestamo[]>({ 
@@ -66,6 +67,20 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
     const cliente = clientes.find(c => c.id === prestamo.cliente_id);
     return { ...prestamo, cliente };
   });
+  
+  // Lista filtrada de préstamos según el término de búsqueda
+  const filteredPrestamos = searchTerm.trim() === "" 
+    ? prestamosConCliente 
+    : prestamosConCliente.filter((prestamo: PrestamoConCliente) => {
+        const searchTermLower = searchTerm.toLowerCase();
+        const clienteNombre = prestamo.cliente?.nombre?.toLowerCase() || "";
+        const montoStr = prestamo.monto_prestado.toString();
+        const pagoSemanalStr = prestamo.pago_semanal.toString();
+        
+        return clienteNombre.includes(searchTermLower) || 
+              montoStr.includes(searchTermLower) ||
+              pagoSemanalStr.includes(searchTermLower);
+      });
 
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
@@ -211,26 +226,46 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Préstamo</FormLabel>
-                    <Select
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        handlePrestamoChange(value);
-                      }}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccione un préstamo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {prestamosConCliente.map((prestamo) => (
-                          <SelectItem key={prestamo.id} value={prestamo.id.toString()}>
-                            {prestamo.cliente?.nombre} - {formatCurrency(prestamo.monto_prestado)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                      <div className="relative mb-2">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                          <i className="fas fa-search text-sm"></i>
+                        </span>
+                        <Input 
+                          className="pl-8 bg-gray-50" 
+                          placeholder="Buscar cliente o monto"
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          value={searchTerm}
+                        />
+                      </div>
+                      
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          handlePrestamoChange(value);
+                        }}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccione un préstamo" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {filteredPrestamos.length > 0 ? (
+                            filteredPrestamos.map((prestamo: PrestamoConCliente) => (
+                              <SelectItem key={prestamo.id} value={prestamo.id.toString()}>
+                                {prestamo.cliente?.nombre} - {formatCurrency(prestamo.monto_prestado)}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <div className="p-2 text-center text-gray-500">
+                              No se encontraron préstamos
+                            </div>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
