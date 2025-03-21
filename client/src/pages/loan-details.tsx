@@ -41,8 +41,19 @@ import {
   Clock, 
   Banknote, 
   ArrowUpDown, 
-  AlertTriangle
+  AlertTriangle,
+  Edit
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 export default function LoanDetails() {
   const [paymentFormOpen, setPaymentFormOpen] = useState(false);
@@ -600,6 +611,81 @@ export default function LoanDetails() {
           open={paymentFormOpen} 
           onOpenChange={setPaymentFormOpen}
         />
+
+        {/* Diálogo para editar pagos */}
+        <Dialog open={editPaymentDialogOpen} onOpenChange={setEditPaymentDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Editar Pago</DialogTitle>
+              <DialogDescription>
+                Modifique el monto pagado para este registro. Esta acción actualizará el estado del préstamo.
+              </DialogDescription>
+            </DialogHeader>
+            
+            {selectedPago && (
+              <div className="space-y-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="semana" className="text-right">
+                    Semana
+                  </Label>
+                  <div className="col-span-3">
+                    <Input
+                      id="semana"
+                      value={`Semana ${selectedPago.numero_semana}`}
+                      disabled
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="fecha" className="text-right">
+                    Fecha de pago
+                  </Label>
+                  <div className="col-span-3">
+                    <Input
+                      id="fecha"
+                      value={formatDate(selectedPago.fecha_pago)}
+                      disabled
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="monto" className="text-right">
+                    Monto pagado
+                  </Label>
+                  <div className="col-span-3">
+                    <Input
+                      id="monto"
+                      type="number"
+                      step="0.01"
+                      value={nuevoMontoPagado}
+                      onChange={(e) => setNuevoMontoPagado(e.target.value)}
+                      placeholder="Ingrese el nuevo monto"
+                      className="col-span-3"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditPaymentDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleUpdatePayment} disabled={actualizarPagoMutation.isPending}>
+                {actualizarPagoMutation.isPending ? (
+                  <span className="flex items-center gap-1">
+                    <LoadingButton className="h-4 w-4" />
+                    Actualizando...
+                  </span>
+                ) : (
+                  "Actualizar Pago"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );

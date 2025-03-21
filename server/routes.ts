@@ -332,6 +332,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Ruta para eliminar un pago (revertir un pago erróneo)
+  app.put("/api/pagos/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de pago inválido" });
+      }
+      
+      // Verificar que el monto_pagado esté presente en el body
+      if (!req.body.monto_pagado) {
+        return res.status(400).json({ message: "El monto pagado es requerido" });
+      }
+      
+      // Verificar si existe el pago
+      const pagos = await storage.getAllPagos();
+      const pago = pagos.find(p => p.id === id);
+      
+      if (!pago) {
+        return res.status(404).json({ message: "Pago no encontrado" });
+      }
+      
+      // Actualizar el pago con el nuevo monto
+      const pagoActualizado = await storage.updatePago(id, { 
+        monto_pagado: req.body.monto_pagado 
+      });
+      
+      res.json(pagoActualizado);
+    } catch (error) {
+      console.error("Error actualizando el pago:", error);
+      next(error);
+    }
+  });
+
   app.delete("/api/pagos/:id", isAuthenticated, async (req, res, next) => {
     try {
       const id = parseInt(req.params.id);
