@@ -234,11 +234,11 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[500px] relative">
+      <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
+        <DialogContent className="sm:max-w-[500px] relative z-[9999]">
           {/* Overlay de carga para indicar procesamiento */}
           {registrarPagoMutation.isPending && (
-            <div className="absolute inset-0 z-50 bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center rounded-md">
+            <div className="absolute inset-0 z-[10000] bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center rounded-md">
               <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 shadow-xl border border-white/20">
                 <div className="flex flex-col items-center">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -398,10 +398,10 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
 
       {/* Diálogo de alerta para pagos parciales */}
       <AlertDialog open={showParcialAlert} onOpenChange={setShowParcialAlert}>
-        <AlertDialogContent className="relative">
+        <AlertDialogContent className="relative z-[9999]">
           {/* Overlay de carga para indicar procesamiento */}
           {registrarPagoMutation.isPending && (
-            <div className="absolute inset-0 z-50 bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center rounded-md">
+            <div className="absolute inset-0 z-[10000] bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center rounded-md">
               <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 shadow-xl border border-white/20">
                 <div className="flex flex-col items-center">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
