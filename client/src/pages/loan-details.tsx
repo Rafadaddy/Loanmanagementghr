@@ -8,6 +8,8 @@ import PaymentForm from "@/components/forms/payment-form";
 import { Prestamo, Cliente, Pago } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLoading } from "@/hooks/use-loading";
+import { LoadingData, LoadingButton } from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -133,8 +135,15 @@ export default function LoanDetails() {
     }
   });
 
+  const { startLoading, stopLoading } = useLoading();
+  
   const handleUpdateStatus = (nuevoEstado: string) => {
-    actualizarEstadoMutation.mutate(nuevoEstado);
+    startLoading(`Cambiando estado a ${nuevoEstado}...`);
+    actualizarEstadoMutation.mutate(nuevoEstado, {
+      onSettled: () => {
+        stopLoading();
+      }
+    });
   };
 
   const isLoading = loadingPrestamo || loadingCliente || loadingPagos || loadingTotalPagado;
@@ -158,7 +167,7 @@ export default function LoanDetails() {
             <h1 className="text-2xl font-bold text-gray-800">Cargando detalles...</h1>
           </div>
           <div className="flex justify-center items-center h-96">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            <LoadingData text="Cargando información del préstamo..." />
           </div>
         </main>
       </div>
