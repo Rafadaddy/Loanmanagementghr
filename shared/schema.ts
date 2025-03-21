@@ -41,6 +41,7 @@ export const prestamos = pgTable("prestamos", {
     .references(() => clientes.id),
   monto_prestado: numeric("monto_prestado", { precision: 10, scale: 2 }).notNull(),
   tasa_interes: numeric("tasa_interes", { precision: 5, scale: 2 }).notNull(),
+  tasa_mora: numeric("tasa_mora", { precision: 5, scale: 2 }).default("5").notNull(),
   fecha_prestamo: date("fecha_prestamo").notNull(),
   frecuencia_pago: text("frecuencia_pago").default("SEMANAL").notNull(),
   estado: text("estado")
@@ -51,6 +52,8 @@ export const prestamos = pgTable("prestamos", {
   pago_semanal: numeric("pago_semanal", { precision: 10, scale: 2 }).default("0").notNull(),
   semanas_pagadas: integer("semanas_pagadas").default(0).notNull(),
   proxima_fecha_pago: date("proxima_fecha_pago").notNull(),
+  dias_atraso: integer("dias_atraso").default(0).notNull(),
+  monto_mora_acumulada: numeric("monto_mora_acumulada", { precision: 10, scale: 2 }).default("0").notNull(),
 });
 
 export const insertPrestamoSchema = createInsertSchema(prestamos).omit({
@@ -66,6 +69,7 @@ export const pagos = pgTable("pagos", {
     .notNull()
     .references(() => prestamos.id),
   monto_pagado: numeric("monto_pagado", { precision: 10, scale: 2 }).notNull(),
+  monto_mora: numeric("monto_mora", { precision: 10, scale: 2 }).default("0").notNull(),
   fecha_pago: timestamp("fecha_pago").defaultNow().notNull(),
   numero_semana: integer("numero_semana").default(1).notNull(),
   estado: text("estado")

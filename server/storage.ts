@@ -1,7 +1,7 @@
 import { Cliente, InsertCliente, Prestamo, InsertPrestamo, Pago, InsertPago, User, InsertUser, ResultadoCalculoPrestamo, CalculoPrestamo } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
-import { addDays, format } from "date-fns";
+import { addDays, format, differenceInDays } from "date-fns";
 
 const MemoryStore = createMemoryStore(session);
 
@@ -368,6 +368,7 @@ export class MemStorage implements IStorage {
       cliente_id: prestamo.cliente_id,
       monto_prestado: prestamo.monto_prestado,
       tasa_interes: prestamo.tasa_interes,
+      tasa_mora: prestamo.tasa_mora || "5", // Tasa de mora predeterminada del 5%
       fecha_prestamo: prestamo.fecha_prestamo,
       frecuencia_pago: prestamo.frecuencia_pago || "SEMANAL",
       numero_semanas: prestamo.numero_semanas || 4,
@@ -375,7 +376,9 @@ export class MemStorage implements IStorage {
       monto_total_pagar: prestamo.monto_total_pagar || "0",
       estado: "ACTIVO",
       semanas_pagadas: 0,
-      proxima_fecha_pago: format(proximaFechaPago, 'yyyy-MM-dd')
+      proxima_fecha_pago: format(proximaFechaPago, 'yyyy-MM-dd'),
+      dias_atraso: 0,
+      monto_mora_acumulada: "0"
     };
     
     this.prestamos.set(id, nuevoPrestamo);
@@ -407,6 +410,22 @@ export class MemStorage implements IStorage {
       (pago) => pago.prestamo_id === prestamoId
     );
   }
+  
+  async getTotalPagadoByPrestamoId(prestamoId: number): Promise<number> {
+    const pagos = await this.getPagosByPrestamoId(prestamoId);
+    return pagos.reduce((total, pago) => total + Number(pago.monto_pagado), 0);
+  }
+  
+  async getTotalPagadoByClienteId(clienteId: number): Promise<number> {
+    const prestamos = await this.getPrestamosByClienteId(clienteId);
+    let totalPagado = 0;
+    
+    for (const prestamo of prestamos) {
+      totalPagado += await this.getTotalPagadoByPrestamoId(prestamo.id);
+    }
+    
+    return totalPagado;
+  }
 
   async createPago(pago: InsertPago): Promise<Pago> {
     console.log("DEBUG - Iniciando creación de pago:", pago);
@@ -425,6 +444,27 @@ export class MemStorage implements IStorage {
     const fechaProximoPago = new Date(prestamo.proxima_fecha_pago);
     const estado = hoy > fechaProximoPago ? "ATRASADO" : "A_TIEMPO";
     console.log("DEBUG - Estado del pago:", estado);
+    
+    // Calcular días de atraso para moras
+    let diasAtraso = 0;
+    let montoMora = 0;
+    
+    if (estado === "ATRASADO") {
+      // Calcular días de diferencia entre la fecha de pago programada y hoy
+      diasAtraso = differenceInDays(hoy, fechaProximoPago);
+      if (diasAtraso < 0) diasAtraso = 0; // Por si acaso
+      
+      // Calcular monto de mora basado en la tasa de mora y los días de atraso
+      // Formula: (monto_prestamo * tasa_mora / 100) * (dias_atraso / 30)
+      // Esta fórmula calcula la mora mensual y la prorratea por los días de atraso
+      const tasaMora = Number(prestamo.tasa_mora || 5); // Default 5% si no está definido
+      const montoPrestado = Number(prestamo.monto_prestado);
+      montoMora = (montoPrestado * tasaMora / 100) * (diasAtraso / 30);
+      
+      console.log("DEBUG - Días de atraso:", diasAtraso);
+      console.log("DEBUG - Tasa de mora (%):", tasaMora);
+      console.log("DEBUG - Monto de mora calculado:", montoMora);
+    }
     
     // Verificar si es un pago parcial (menos que el monto semanal)
     const montoPagado = Number(pago.monto_pagado);
@@ -463,17 +503,32 @@ export class MemStorage implements IStorage {
     
     console.log("DEBUG - Nuevo estado del préstamo:", estadoPrestamo);
     
+    // Calcular mora acumulada (añadir mora actual a la acumulada anteriormente)
+    const moraAcumuladaPrevia = Number(prestamo.monto_mora_acumulada || 0);
+    let nuevaMoraAcumulada = moraAcumuladaPrevia;
+    
+    // Si hay mora y el pago actual no cubre la mora, se acumula
+    if (montoMora > 0) {
+      nuevaMoraAcumulada += montoMora;
+    }
+    
+    console.log("DEBUG - Mora acumulada previa:", moraAcumuladaPrevia);
+    console.log("DEBUG - Nueva mora acumulada:", nuevaMoraAcumulada);
+    
     // Actualizar préstamo
     await this.updatePrestamo(prestamo.id, {
       semanas_pagadas: semanasActualizadas,
       proxima_fecha_pago: format(nuevaProximaFechaPago, 'yyyy-MM-dd'),
-      estado: estadoPrestamo
+      estado: estadoPrestamo,
+      dias_atraso: diasAtraso,
+      monto_mora_acumulada: nuevaMoraAcumulada.toString()
     });
     
     // Crear nuevo pago
     const nuevoPago: Pago = {
       ...pago,
       id,
+      monto_mora: montoMora.toString(),
       fecha_pago: new Date(),
       numero_semana: prestamo.semanas_pagadas + 1, // La semana que se está pagando
       estado,
