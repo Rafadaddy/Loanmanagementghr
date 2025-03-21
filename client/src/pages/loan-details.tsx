@@ -46,6 +46,9 @@ import {
 
 export default function LoanDetails() {
   const [paymentFormOpen, setPaymentFormOpen] = useState(false);
+  const [editPaymentDialogOpen, setEditPaymentDialogOpen] = useState(false);
+  const [selectedPago, setSelectedPago] = useState<Pago | null>(null);
+  const [nuevoMontoPagado, setNuevoMontoPagado] = useState<string>("");
   const params = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -135,6 +138,48 @@ export default function LoanDetails() {
     }
   });
 
+  // Mutation para actualizar un pago
+  const actualizarPagoMutation = useMutation({
+    mutationFn: async ({ id, monto_pagado }: { id: number; monto_pagado: string }) => {
+      const res = await apiRequest("PUT", `/api/pagos/${id}`, { monto_pagado });
+      return res.json();
+    },
+    onSuccess: () => {
+      // Invalidar todas las consultas relevantes
+      queryClient.invalidateQueries({ queryKey: [`/api/prestamos/${prestamoId}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/prestamos'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/estadisticas'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/pagos'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/prestamos/${prestamoId}/total-pagado`] });
+      
+      // Forzar la recarga de datos específicos de este préstamo
+      queryClient.refetchQueries({ queryKey: [`/api/prestamos/${prestamoId}`] });
+      queryClient.refetchQueries({ queryKey: ['/api/pagos', { prestamo_id: prestamoId }] });
+      queryClient.refetchQueries({ queryKey: [`/api/prestamos/${prestamoId}/total-pagado`] });
+      
+      setEditPaymentDialogOpen(false);
+      setSelectedPago(null);
+      setNuevoMontoPagado("");
+      
+      toast({
+        title: "Pago actualizado",
+        description: "El pago ha sido actualizado correctamente."
+      });
+      
+      // Recargar la página después de un breve retraso
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `No se pudo actualizar el pago: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  });
+
   const { startLoading, stopLoading } = useLoading();
   
   const handleUpdateStatus = (nuevoEstado: string) => {
@@ -144,6 +189,29 @@ export default function LoanDetails() {
         stopLoading();
       }
     });
+  };
+  
+  const handleEditPayment = (pago: Pago) => {
+    setSelectedPago(pago);
+    setNuevoMontoPagado(pago.monto_pagado);
+    setEditPaymentDialogOpen(true);
+  };
+  
+  const handleUpdatePayment = () => {
+    if (!selectedPago) return;
+    
+    startLoading("Actualizando pago...");
+    actualizarPagoMutation.mutate(
+      { 
+        id: selectedPago.id, 
+        monto_pagado: nuevoMontoPagado 
+      },
+      {
+        onSettled: () => {
+          stopLoading();
+        }
+      }
+    );
   };
 
   const isLoading = loadingPrestamo || loadingCliente || loadingPagos || loadingTotalPagado;
@@ -487,6 +555,7 @@ export default function LoanDetails() {
                       <TableHead>Restante</TableHead>
                       <TableHead>Fecha de Pago</TableHead>
                       <TableHead>Estado</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -506,6 +575,16 @@ export default function LoanDetails() {
                           <TableCell>{formatDate(pago.fecha_pago)}</TableCell>
                           <TableCell>
                             <Badge className={className}>{label}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="h-8 px-2 text-xs"
+                              onClick={() => handleEditPayment(pago)}
+                            >
+                              Editar
+                            </Button>
                           </TableCell>
                         </TableRow>
                       );

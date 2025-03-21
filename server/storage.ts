@@ -610,8 +610,29 @@ export class MemStorage implements IStorage {
     this.pagos.set(id, pagoActualizado);
     console.log("DEBUG - Pago actualizado:", pagoActualizado);
     
-    // Actualizar el estado del préstamo si es necesario
-    await this.actualizarEstadoPrestamo(prestamo.id);
+    // Recalcular el estado del préstamo
+    // 1. Obtener todos los pagos del préstamo
+    const pagosPrestamo = await this.getPagosByPrestamoId(prestamo.id);
+    
+    // 2. Calcular total pagado
+    const totalPagado = pagosPrestamo.reduce(
+      (sum, p) => sum + Number(p.monto_pagado), 0
+    );
+    console.log("DEBUG - Total pagado acumulado después de la edición:", totalPagado);
+    
+    // 3. Actualizar el estado del préstamo según total pagado
+    const montoTotalPagar = Number(prestamo.monto_total_pagar);
+    let nuevoEstado = prestamo.estado;
+    
+    // Si el monto pagado cubre el total, marcar como pagado
+    if (totalPagado >= montoTotalPagar) {
+      nuevoEstado = "PAGADO";
+      console.log("DEBUG - Préstamo PAGADO por monto total cubierto");
+    }
+    
+    if (nuevoEstado !== prestamo.estado) {
+      await this.updatePrestamo(prestamo.id, { estado: nuevoEstado });
+    }
     
     return pagoActualizado;
   }
