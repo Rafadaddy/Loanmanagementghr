@@ -7,7 +7,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -235,7 +235,7 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
-        <DialogContent className="sm:max-w-[500px] fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999]">
+        <DialogContent className="sm:max-w-[500px] z-[9999]">
           {/* Overlay de carga para indicar procesamiento */}
           {registrarPagoMutation.isPending && (
             <div className="absolute inset-0 z-[10000] bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center rounded-md">
@@ -252,7 +252,7 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
           
           <DialogHeader>
             <DialogTitle>Registrar Pago</DialogTitle>
-            <DialogDescription className="sr-only">Formulario para registrar un nuevo pago</DialogDescription>
+            <p className="sr-only">Formulario para registrar un nuevo pago</p>
           </DialogHeader>
           
           <Form {...form}>
@@ -399,7 +399,7 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
 
       {/* Diálogo de alerta para pagos parciales */}
       <AlertDialog open={showParcialAlert} onOpenChange={setShowParcialAlert}>
-        <AlertDialogContent className="relative z-[9999] fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+        <AlertDialogContent className="z-[9999]">
           {/* Overlay de carga para indicar procesamiento */}
           {registrarPagoMutation.isPending && (
             <div className="absolute inset-0 z-[10000] bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center rounded-md">
