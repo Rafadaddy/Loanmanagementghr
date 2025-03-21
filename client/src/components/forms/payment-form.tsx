@@ -236,7 +236,22 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
                           placeholder="Buscar cliente o monto"
                           onChange={(e) => setSearchTerm(e.target.value)}
                           value={searchTerm}
+                          autoComplete="off"
                         />
+                        {searchTerm.trim() !== "" && (
+                          <div className="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>{filteredPrestamos.length} resultados encontrados</span>
+                            {searchTerm.trim() !== "" && (
+                              <button 
+                                type="button" 
+                                className="text-blue-500 hover:text-blue-700"
+                                onClick={() => setSearchTerm("")}
+                              >
+                                Limpiar
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                       
                       <Select

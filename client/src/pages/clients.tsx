@@ -167,17 +167,37 @@ export default function Clients() {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <CardTitle>Lista de Clientes</CardTitle>
               <div className="relative mt-2 md:mt-0 md:w-64">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <span className="absolute left-2.5 top-2.5 text-gray-500">
+                  <i className="fas fa-search text-sm"></i>
+                </span>
                 <Input
                   type="search"
-                  placeholder="Buscar cliente..."
-                  className="pl-8"
+                  placeholder="Buscar por nombre, teléfono o documento..."
+                  className="pl-8 bg-gray-50"
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
                     setCurrentPage(1);
                   }}
+                  autoComplete="off"
                 />
+                {searchTerm.trim() !== "" && (
+                  <div className="absolute right-2 top-2.5 flex items-center">
+                    <span className="text-xs text-gray-500 mr-2">
+                      {filteredClientes.length} resultados
+                    </span>
+                    <button 
+                      type="button"
+                      className="text-gray-400 hover:text-gray-600"
+                      onClick={() => {
+                        setSearchTerm("");
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <i className="fas fa-times"></i>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </CardHeader>

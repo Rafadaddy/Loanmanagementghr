@@ -187,16 +187,31 @@ export default function LoanForm({ open, onOpenChange, onSuccess }: LoanFormProp
                 <FormItem className="space-y-4">
                   <FormLabel>Cliente</FormLabel>
                   
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <Search className="h-4 w-4 text-gray-400" />
+                  <div className="space-y-2">
+                    <div className="relative mb-2">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                        <i className="fas fa-search text-sm"></i>
+                      </span>
+                      <Input
+                        className="pl-8 bg-gray-50"
+                        placeholder="Buscar por nombre o documento..."
+                        value={filtroCliente}
+                        onChange={(e) => setFiltroCliente(e.target.value)}
+                        autoComplete="off"
+                      />
+                      {filtroCliente.trim() !== "" && (
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                          <span>{clientesFiltrados.length} resultados encontrados</span>
+                          <button 
+                            type="button" 
+                            className="text-blue-500 hover:text-blue-700"
+                            onClick={() => setFiltroCliente("")}
+                          >
+                            Limpiar
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    <Input
-                      className="pl-9"
-                      placeholder="Buscar por nombre o documento..."
-                      value={filtroCliente}
-                      onChange={(e) => setFiltroCliente(e.target.value)}
-                    />
                   </div>
                   
                   <div className="border rounded-md max-h-48 overflow-auto">
