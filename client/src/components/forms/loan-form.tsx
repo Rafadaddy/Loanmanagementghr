@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLoading } from "@/hooks/use-loading";
+import { LoadingButton } from "@/components/ui/loading";
 import { insertPrestamoSchema, CalculoPrestamo, ResultadoCalculoPrestamo, Cliente } from "@shared/schema";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/utils";
@@ -46,6 +48,7 @@ interface LoanFormProps {
 
 export default function LoanForm({ open, onOpenChange, onSuccess }: LoanFormProps) {
   const { toast } = useToast();
+  const { startLoading, stopLoading } = useLoading();
   const [calculoResultado, setCalculoResultado] = useState<ResultadoCalculoPrestamo | null>(null);
 
   // Obtener la lista de clientes
@@ -144,7 +147,18 @@ export default function LoanForm({ open, onOpenChange, onSuccess }: LoanFormProp
       return;
     }
     
-    calcularMutation.mutate({ monto_prestado: monto, tasa_interes: tasa, numero_semanas: semanas });
+    // Mostrar indicador de carga global
+    startLoading("Calculando préstamo...");
+    
+    calcularMutation.mutate(
+      { monto_prestado: monto, tasa_interes: tasa, numero_semanas: semanas },
+      {
+        onSettled: () => {
+          // Detener el indicador independientemente del resultado
+          stopLoading();
+        }
+      }
+    );
   }
 
   function onSubmit(values: LoanFormValues) {
@@ -173,7 +187,16 @@ export default function LoanForm({ open, onOpenChange, onSuccess }: LoanFormProp
     };
     
     console.log("Datos a enviar:", dataToSend);
-    crearPrestamoMutation.mutate(dataToSend);
+    
+    // Mostrar indicador de carga global
+    startLoading("Creando préstamo...");
+    
+    crearPrestamoMutation.mutate(dataToSend, {
+      onSettled: () => {
+        // Detener el indicador independientemente del resultado
+        stopLoading();
+      }
+    });
   }
 
   return (
