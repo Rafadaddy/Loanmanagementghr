@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { formatCurrency, formatDate, getDateTimeFormat, getPaymentStatus } from "@/lib/utils";
 import Sidebar from "@/components/navigation/sidebar";
 import MobileHeader from "@/components/navigation/mobile-header";
@@ -7,7 +7,7 @@ import PaymentForm from "@/components/forms/payment-form";
 import { Pago, Prestamo, Cliente } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, X, Plus } from "lucide-react";
+import { Search, X, Plus, Trash2, AlertTriangle } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -32,7 +32,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 
 export default function Payments() {
@@ -40,6 +52,9 @@ export default function Payments() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("TODOS");
   const [currentPage, setCurrentPage] = useState(1);
+  const [pagoAEliminar, setPagoAEliminar] = useState<Pago | null>(null);
+  const [alertDialogOpen, setAlertDialogOpen] = useState(false);
+  const { toast } = useToast();
   const itemsPerPage = 10;
 
   // Cargar la lista de pagos
@@ -86,6 +101,47 @@ export default function Payments() {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  // Mutation para eliminar un pago
+  const eliminarPagoMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest('DELETE', `/api/pagos/${id}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Pago eliminado",
+        description: "El pago ha sido eliminado correctamente.",
+        variant: "default",
+      });
+      // Refrescar los datos
+      queryClient.invalidateQueries({ queryKey: ['/api/pagos'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/prestamos'] });
+      // Cerrar el diálogo
+      setAlertDialogOpen(false);
+      setPagoAEliminar(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: `No se pudo eliminar el pago: ${error.message}`,
+        variant: "destructive",
+      });
+      setAlertDialogOpen(false);
+    },
+  });
+
+  // Función para confirmar eliminación
+  const confirmarEliminacion = () => {
+    if (pagoAEliminar) {
+      eliminarPagoMutation.mutate(pagoAEliminar.id);
+    }
+  };
+
+  // Función para abrir el diálogo de confirmación
+  const handleEliminarPago = (pago: Pago) => {
+    setPagoAEliminar(pago);
+    setAlertDialogOpen(true);
+  };
 
   const isLoading = loadingPagos || loadingPrestamos || loadingClientes;
 
@@ -185,6 +241,7 @@ export default function Payments() {
                       <TableHead>Semana</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead>Tipo</TableHead>
+                      <TableHead>Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -221,6 +278,17 @@ export default function Payments() {
                                 Completo
                               </Badge>
                             )}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEliminarPago(pago)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              title="Eliminar pago"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       );
@@ -301,6 +369,41 @@ export default function Payments() {
           open={paymentFormOpen} 
           onOpenChange={setPaymentFormOpen}
         />
+        
+        {/* Dialog de confirmación para eliminar pago */}
+        <AlertDialog open={alertDialogOpen} onOpenChange={setAlertDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                Confirmar eliminación
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                ¿Está seguro de que desea eliminar este pago? Esta acción revertirá el pago y actualizará el estado del préstamo.
+                {pagoAEliminar && (
+                  <div className="mt-4 p-3 bg-gray-50 rounded-md text-sm">
+                    <div><strong>Cliente:</strong> {clientes.find(c => {
+                      const prestamo = prestamos.find(p => p.id === pagoAEliminar.prestamo_id);
+                      return prestamo ? c.id === prestamo.cliente_id : false;
+                    })?.nombre || 'Cliente desconocido'}</div>
+                    <div><strong>Monto:</strong> {formatCurrency(pagoAEliminar.monto_pagado)}</div>
+                    <div><strong>Fecha:</strong> {getDateTimeFormat(pagoAEliminar.fecha_pago)}</div>
+                    <div><strong>Semana:</strong> {pagoAEliminar.numero_semana}</div>
+                  </div>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmarEliminacion}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Eliminar pago
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );

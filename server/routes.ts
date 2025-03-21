@@ -140,6 +140,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
+  
+  // Ruta para eliminar un préstamo (solo si está pagado)
+  app.delete("/api/prestamos/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de préstamo inválido" });
+      }
+      
+      // Verificar si el préstamo existe
+      const prestamo = await storage.getPrestamo(id);
+      if (!prestamo) {
+        return res.status(404).json({ message: "Préstamo no encontrado" });
+      }
+      
+      // Verificar si el préstamo está pagado
+      if (prestamo.estado !== "PAGADO") {
+        return res.status(400).json({ 
+          message: "Solo se pueden eliminar préstamos pagados" 
+        });
+      }
+      
+      // Eliminar préstamo
+      const resultado = await storage.deletePrestamo(id);
+      if (resultado) {
+        res.status(200).json({ message: "Préstamo eliminado correctamente" });
+      } else {
+        res.status(500).json({ message: "Error al eliminar el préstamo" });
+      }
+    } catch (error) {
+      console.error("Error al eliminar préstamo:", error);
+      next(error);
+    }
+  });
 
   app.get("/api/prestamos/:id", isAuthenticated, async (req, res, next) => {
     try {
@@ -250,6 +284,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("Error al crear pago:", error);
+      next(error);
+    }
+  });
+  
+  // Ruta para eliminar un pago (revertir un pago erróneo)
+  app.delete("/api/pagos/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de pago inválido" });
+      }
+      
+      // Verificar si existe el pago
+      const pagos = await storage.getAllPagos();
+      const pago = pagos.find(p => p.id === id);
+      
+      if (!pago) {
+        return res.status(404).json({ message: "Pago no encontrado" });
+      }
+      
+      // Eliminar pago
+      const resultado = await storage.deletePago(id);
+      if (resultado) {
+        res.status(200).json({ message: "Pago eliminado correctamente" });
+      } else {
+        res.status(500).json({ message: "Error al eliminar el pago" });
+      }
+    } catch (error) {
+      console.error("Error al eliminar pago:", error);
       next(error);
     }
   });
