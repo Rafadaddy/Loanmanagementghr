@@ -7,6 +7,7 @@ import PaymentForm from "@/components/forms/payment-form";
 import { Pago, Prestamo, Cliente } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Search, X, Plus } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -33,7 +34,6 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Search, Plus } from "lucide-react";
 
 export default function Payments() {
   const [paymentFormOpen, setPaymentFormOpen] = useState(false);

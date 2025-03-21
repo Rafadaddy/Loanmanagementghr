@@ -8,6 +8,7 @@ import LoanForm from "@/components/forms/loan-form";
 import { Prestamo, Cliente } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Search, X, Eye, CreditCard, Plus } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -34,7 +35,6 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Search, CreditCard, Eye } from "lucide-react";
 
 export default function Loans() {
   const [loanFormOpen, setLoanFormOpen] = useState(false);
