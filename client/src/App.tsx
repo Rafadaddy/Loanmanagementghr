@@ -10,13 +10,16 @@ import LoanDetails from "@/pages/loan-details";
 import LoanCalculatorPage from "@/pages/loan-calculator-page";
 import CobrosDia from "@/pages/cobros-dia";
 import { AuthProvider } from "@/hooks/use-auth";
+import { LoadingProvider } from "@/hooks/use-loading";
 import { ProtectedRoute } from "./lib/protected-route";
 
 // Componente principal de la aplicación
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <LoadingProvider>
+        <AppContent />
+      </LoadingProvider>
     </AuthProvider>
   );
 }

@@ -11,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, X, Eye, CreditCard, Plus, Trash2, AlertTriangle } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLoading } from "@/hooks/use-loading";
+import { LoadingData, LoadingButton } from "@/components/ui/loading";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -125,7 +127,14 @@ export default function Loans() {
   // Función para confirmar eliminación
   const confirmarEliminacion = () => {
     if (prestamoAEliminar) {
-      eliminarPrestamoMutation.mutate(prestamoAEliminar.id);
+      // Mostrar el loading global
+      startLoading("Eliminando préstamo...");
+      eliminarPrestamoMutation.mutate(prestamoAEliminar.id, {
+        onSettled: () => {
+          // Detener el loading independientemente del resultado
+          stopLoading();
+        }
+      });
     }
   };
 
@@ -136,6 +145,7 @@ export default function Loans() {
   };
 
   const isLoading = loadingPrestamos || loadingClientes;
+  const { startLoading, stopLoading } = useLoading();
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
@@ -215,7 +225,7 @@ export default function Loans() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="text-center py-4">Cargando préstamos...</div>
+              <LoadingData text="Cargando préstamos..." />
             ) : paginatedPrestamos.length === 0 ? (
               <div className="text-center py-4 text-gray-500">
                 {searchTerm || statusFilter !== "TODOS"
