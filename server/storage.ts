@@ -215,14 +215,28 @@ export class MemStorage implements IStorage {
     const fechaProximoPago = new Date(prestamo.proxima_fecha_pago);
     const estado = hoy > fechaProximoPago ? "ATRASADO" : "A_TIEMPO";
     
-    // Incrementar semanas pagadas y actualizar próxima fecha de pago
-    const semanasActualizadas = prestamo.semanas_pagadas + 1;
-    const nuevaProximaFechaPago = addDays(fechaProximoPago, 7);
+    // Verificar si es un pago parcial (menos que el monto semanal)
+    const montoPagado = Number(pago.monto_pagado);
+    const montoSemanal = Number(prestamo.pago_semanal);
+    const esPagoParcial = montoPagado < montoSemanal;
+    const montoRestante = esPagoParcial ? (montoSemanal - montoPagado) : 0;
     
-    // Actualizar estado del préstamo si se ha pagado completamente
+    // Solo incrementamos semanas pagadas si el pago es completo o supera el monto semanal
+    let semanasActualizadas = prestamo.semanas_pagadas;
+    let nuevaProximaFechaPago = fechaProximoPago;
+    
+    if (!esPagoParcial) {
+      semanasActualizadas += 1;
+      nuevaProximaFechaPago = addDays(fechaProximoPago, 7);
+    }
+    
+    // Actualizar estado del préstamo
     let estadoPrestamo = prestamo.estado;
     if (semanasActualizadas >= prestamo.numero_semanas) {
       estadoPrestamo = "PAGADO";
+    } else if (estado === "ATRASADO" && !esPagoParcial) {
+      // Si era atrasado pero hizo un pago completo, pasa a activo
+      estadoPrestamo = "ACTIVO";
     } else if (estado === "ATRASADO") {
       estadoPrestamo = "ATRASADO";
     }
@@ -238,9 +252,11 @@ export class MemStorage implements IStorage {
     const nuevoPago: Pago = {
       ...pago,
       id,
-      fecha_pago: new Date(), // Usamos un objeto Date directamente
-      numero_semana: semanasActualizadas,
-      estado
+      fecha_pago: new Date(),
+      numero_semana: prestamo.semanas_pagadas + 1, // La semana que se está pagando
+      estado,
+      es_pago_parcial: esPagoParcial ? "true" : "false",
+      monto_restante: montoRestante.toString()
     };
     
     this.pagos.set(id, nuevoPago);

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, numeric, timestamp, date, integer, check, foreignKey } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, numeric, timestamp, date, integer, boolean, check, foreignKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -69,12 +69,16 @@ export const pagos = pgTable("pagos", {
   estado: text("estado")
     .default("A_TIEMPO")
     .notNull(),
+  es_pago_parcial: text("es_pago_parcial").default("false").notNull(),
+  monto_restante: numeric("monto_restante", { precision: 10, scale: 2 }).default("0").notNull(),
 });
 
 export const insertPagoSchema = createInsertSchema(pagos).omit({
   id: true,
   fecha_pago: true,
   estado: true,
+  es_pago_parcial: true,
+  monto_restante: true
 });
 
 // Tipos exportados

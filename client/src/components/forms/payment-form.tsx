@@ -7,6 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from "@/components/ui/alert-dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { insertPagoSchema, Prestamo, Cliente } from "@shared/schema";
@@ -18,7 +28,9 @@ const paymentFormSchema = z.object({
   prestamo_id: z.string().min(1, "Debe seleccionar un préstamo"),
   monto_pagado: z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, {
     message: "El monto debe ser un número positivo"
-  })
+  }),
+  // Añadimos un mensaje opcional que no se enviará al servidor
+  es_pago_parcial_confirmado: z.boolean().optional()
 });
 
 type PaymentFormValues = z.infer<typeof paymentFormSchema>;
@@ -36,6 +48,7 @@ interface PrestamoConCliente extends Prestamo {
 export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFormProps) {
   const { toast } = useToast();
   const [prestamoSeleccionado, setPrestamoSeleccionado] = useState<PrestamoConCliente | null>(null);
+  const [showParcialAlert, setShowParcialAlert] = useState(false);
 
   // Obtener la lista de préstamos activos
   const { data: prestamos = [] } = useQuery<Prestamo[]>({ 
@@ -116,9 +129,24 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
   });
 
   function onSubmit(values: PaymentFormValues) {
+    if (!prestamoSeleccionado) return;
+    
+    const montoPagado = parseFloat(values.monto_pagado);
+    const montoSemanal = parseFloat(prestamoSeleccionado.pago_semanal.toString());
+    
+    // Verificar si es un pago parcial
+    const esPagoParcial = montoPagado < montoSemanal;
+    
+    // Si es pago parcial y no está confirmado, mostrar alerta
+    if (esPagoParcial && !values.es_pago_parcial_confirmado) {
+      setShowParcialAlert(true);
+      return;
+    }
+    
+    // Si no es parcial o ya está confirmado, proceder con el pago
     const dataToSend = {
       prestamo_id: parseInt(values.prestamo_id),
-      monto_pagado: parseFloat(values.monto_pagado)
+      monto_pagado: montoPagado
     };
     
     registrarPagoMutation.mutate(dataToSend);
