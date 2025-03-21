@@ -128,7 +128,7 @@ export default function LoanDetails() {
     actualizarEstadoMutation.mutate(nuevoEstado);
   };
 
-  const isLoading = loadingPrestamo || loadingCliente || loadingPagos;
+  const isLoading = loadingPrestamo || loadingCliente || loadingPagos || loadingTotalPagado;
 
   if (isLoading) {
     return (
@@ -312,6 +312,30 @@ export default function LoanDetails() {
                     {formatCurrency(prestamo.monto_total_pagar)}
                   </p>
                 </div>
+
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-500">Total Pagado</p>
+                  <p className="text-xl font-semibold flex items-center">
+                    <Banknote className="h-4 w-4 mr-2 text-blue-600" />
+                    {formatCurrency(totalPagadoData?.totalPagado || 0)}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-500">Mora Acumulada</p>
+                  <p className="text-xl font-semibold flex items-center">
+                    <Percent className="h-4 w-4 mr-2 text-red-600" />
+                    {formatCurrency(prestamo.monto_mora_acumulada || 0)}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-500">Balance Pendiente</p>
+                  <p className="text-xl font-semibold flex items-center">
+                    <Banknote className="h-4 w-4 mr-2 text-orange-600" />
+                    {formatCurrency((parseFloat(prestamo.monto_total_pagar) + parseFloat(prestamo.monto_mora_acumulada || "0")) - (totalPagadoData?.totalPagado || 0))}
+                  </p>
+                </div>
                 
                 <div className="space-y-1">
                   <p className="text-sm text-gray-500">Fecha del Préstamo</p>
@@ -326,6 +350,14 @@ export default function LoanDetails() {
                   <p className="text-base font-medium flex items-center">
                     <Percent className="h-4 w-4 mr-2 text-gray-500" />
                     {prestamo.tasa_interes}%
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-500">Tasa de Mora</p>
+                  <p className="text-base font-medium flex items-center">
+                    <Percent className="h-4 w-4 mr-2 text-gray-500" />
+                    {prestamo.tasa_mora || 0}%
                   </p>
                 </div>
                 
@@ -433,6 +465,8 @@ export default function LoanDetails() {
                     <TableRow>
                       <TableHead>Semana</TableHead>
                       <TableHead>Monto Pagado</TableHead>
+                      <TableHead>Mora</TableHead>
+                      <TableHead>Restante</TableHead>
                       <TableHead>Fecha de Pago</TableHead>
                       <TableHead>Estado</TableHead>
                     </TableRow>
@@ -445,6 +479,12 @@ export default function LoanDetails() {
                         <TableRow key={pago.id}>
                           <TableCell>Semana {pago.numero_semana}</TableCell>
                           <TableCell className="font-medium text-green-600">{formatCurrency(pago.monto_pagado)}</TableCell>
+                          <TableCell className="font-medium text-red-600">
+                            {parseFloat(pago.monto_mora || "0") > 0 ? formatCurrency(pago.monto_mora) : "-"}
+                          </TableCell>
+                          <TableCell className="font-medium text-orange-600">
+                            {parseFloat(pago.monto_restante || "0") > 0 ? formatCurrency(pago.monto_restante) : "-"}
+                          </TableCell>
                           <TableCell>{formatDate(pago.fecha_pago)}</TableCell>
                           <TableCell>
                             <Badge className={className}>{label}</Badge>
