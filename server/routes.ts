@@ -254,6 +254,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rutas para obtener el total pagado
+  app.get("/api/prestamos/:id/total-pagado", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const prestamo = await storage.getPrestamo(id);
+      
+      if (!prestamo) {
+        return res.status(404).json({ message: "Préstamo no encontrado" });
+      }
+      
+      const totalPagado = await storage.getTotalPagadoByPrestamoId(id);
+      res.json({ totalPagado });
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.get("/api/clientes/:id/total-pagado", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const cliente = await storage.getCliente(id);
+      
+      if (!cliente) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+      
+      const totalPagado = await storage.getTotalPagadoByClienteId(id);
+      res.json({ totalPagado });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Estadísticas para dashboard
   app.get("/api/estadisticas", isAuthenticated, async (req, res, next) => {
     try {
@@ -282,6 +315,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Pagos atrasados
       const prestamosAtrasados = prestamos.filter(p => p.estado === "ATRASADO").length;
       
+      // Total de moras acumuladas
+      const totalMoras = prestamos.reduce((sum, p) => sum + Number(p.monto_mora_acumulada || 0), 0);
+      
       // Actividad reciente (últimos 5 de cada categoría)
       const ultimosPrestamos = [...prestamos]
         .sort((a, b) => new Date(b.fecha_prestamo).getTime() - new Date(a.fecha_prestamo).getTime())
@@ -300,6 +336,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalPrestado,
         montosPagosHoy,
         prestamosAtrasados,
+        totalMoras,
         ultimosPrestamos,
         ultimosPagos,
         ultimosClientes,

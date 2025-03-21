@@ -87,6 +87,17 @@ export default function LoanDetails() {
     }
   });
 
+  // Cargar total pagado del préstamo
+  const { data: totalPagadoData, isLoading: loadingTotalPagado } = useQuery<{totalPagado: number}>({
+    queryKey: [`/api/prestamos/${prestamoId}/total-pagado`],
+    enabled: !!prestamoId,
+    queryFn: async () => {
+      const res = await fetch(`/api/prestamos/${prestamoId}/total-pagado`);
+      if (!res.ok) throw new Error("No se pudo cargar el total pagado");
+      return res.json();
+    }
+  });
+
   // Mutation para actualizar estado del préstamo
   const actualizarEstadoMutation = useMutation({
     mutationFn: async (nuevoEstado: string) => {

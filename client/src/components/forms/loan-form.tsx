@@ -24,6 +24,9 @@ const loanFormSchema = z.object({
   tasa_interes: z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0 && Number(val) <= 100, {
     message: "La tasa debe ser entre 0 y 100"
   }),
+  tasa_mora: z.string().default("5").refine(val => !isNaN(Number(val)) && Number(val) >= 0 && Number(val) <= 100, {
+    message: "La tasa de mora debe ser entre 0 y 100"
+  }),
   fecha_prestamo: z.string().min(1, "Debe seleccionar una fecha"),
   numero_semanas: z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, {
     message: "Las semanas deben ser un número positivo"
@@ -63,6 +66,7 @@ export default function LoanForm({ open, onOpenChange, onSuccess }: LoanFormProp
       cliente_id: "",
       monto_prestado: "",
       tasa_interes: "",
+      tasa_mora: "5", // Valor predeterminado del 5%
       fecha_prestamo: new Date().toISOString().split('T')[0],
       numero_semanas: "12",
       frecuencia_pago: "SEMANAL",
@@ -159,6 +163,7 @@ export default function LoanForm({ open, onOpenChange, onSuccess }: LoanFormProp
       cliente_id: parseInt(values.cliente_id),
       monto_prestado: values.monto_prestado,  // Enviamos como string
       tasa_interes: values.tasa_interes,      // Enviamos como string
+      tasa_mora: values.tasa_mora,            // Tasa de mora por pagos atrasados
       fecha_prestamo: values.fecha_prestamo,
       numero_semanas: parseInt(values.numero_semanas),
       frecuencia_pago: values.frecuencia_pago,
@@ -282,6 +287,23 @@ export default function LoanForm({ open, onOpenChange, onSuccess }: LoanFormProp
                       <Input {...field} />
                     </FormControl>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="tasa_mora"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tasa de Mora por atraso (%)</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    <p className="text-xs text-gray-500">Recargo aplicado a pagos atrasados</p>
                   </FormItem>
                 )}
               />
