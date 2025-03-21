@@ -128,14 +128,32 @@ export default function Loans() {
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                   <Input
                     type="search"
-                    placeholder="Buscar préstamo..."
-                    className="pl-8 w-full md:w-64"
+                    placeholder="Buscar por cliente o monto..."
+                    className="pl-8 w-full md:w-64 bg-gray-50"
                     value={searchTerm}
                     onChange={(e) => {
                       setSearchTerm(e.target.value);
                       setCurrentPage(1);
                     }}
+                    autoComplete="off"
                   />
+                  {searchTerm.trim() !== "" && (
+                    <div className="absolute right-2 top-2.5 flex items-center">
+                      <span className="text-xs text-gray-500 mr-2">
+                        {filteredPrestamos.length} coincidencias
+                      </span>
+                      <button 
+                        type="button"
+                        className="text-gray-400 hover:text-gray-600"
+                        onClick={() => {
+                          setSearchTerm("");
+                          setCurrentPage(1);
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

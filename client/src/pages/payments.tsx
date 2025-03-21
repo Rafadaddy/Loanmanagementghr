@@ -134,14 +134,32 @@ export default function Payments() {
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                   <Input
                     type="search"
-                    placeholder="Buscar pago..."
-                    className="pl-8 w-full md:w-64"
+                    placeholder="Buscar por préstamo o cliente..."
+                    className="pl-8 w-full md:w-64 bg-gray-50"
                     value={searchTerm}
+                    autoComplete="off"
                     onChange={(e) => {
                       setSearchTerm(e.target.value);
                       setCurrentPage(1);
                     }}
                   />
+                  {searchTerm.trim() !== "" && (
+                    <div className="absolute right-2 top-2.5 flex items-center">
+                      <span className="text-xs text-gray-500 mr-2">
+                        {filteredPagos.length} coincidencias
+                      </span>
+                      <button 
+                        type="button"
+                        className="text-gray-400 hover:text-gray-600"
+                        onClick={() => {
+                          setSearchTerm("");
+                          setCurrentPage(1);
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
