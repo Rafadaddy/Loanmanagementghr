@@ -118,18 +118,22 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
       const res = await apiRequest("POST", "/api/pagos", dataToSend);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      const prestamoId = Number(form.getValues().prestamo_id);
+      
       // Invalidar todas las consultas relevantes
       queryClient.invalidateQueries({ queryKey: ["/api/pagos"] });
       queryClient.invalidateQueries({ queryKey: ["/api/prestamos"] });
       queryClient.invalidateQueries({ queryKey: ["/api/estadisticas"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/prestamos/${prestamoId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/prestamos/${prestamoId}/total-pagado`] });
       
-      // Invalidar también consultas específicas por préstamo y cliente
-      queryClient.invalidateQueries({ 
-        predicate: (query) => 
-          (query.queryKey[0] === "/api/pagos" || query.queryKey[0] === "/api/prestamos") && 
-          query.queryKey.length > 1 
-      });
+      // Forzar recarga inmediata de las consultas actuales para ver los cambios sin necesidad de refrescar
+      queryClient.refetchQueries({ queryKey: ["/api/pagos"] });
+      queryClient.refetchQueries({ queryKey: ["/api/prestamos"] });
+      queryClient.refetchQueries({ queryKey: [`/api/prestamos/${prestamoId}`] });
+      queryClient.refetchQueries({ queryKey: ['/api/pagos', { prestamo_id: prestamoId }] });
+      queryClient.refetchQueries({ queryKey: [`/api/prestamos/${prestamoId}/total-pagado`] });
       
       toast({
         title: "Pago registrado",
@@ -140,6 +144,14 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
       setPrestamoSeleccionado(null);
       onOpenChange(false);
       if (onSuccess) onSuccess();
+      
+      // Si estamos en la página de detalles del préstamo, forzar una actualización general
+      if (window.location.pathname.includes('/prestamos/')) {
+        setTimeout(() => {
+          queryClient.refetchQueries({ queryKey: ['/api/pagos'] });
+          queryClient.refetchQueries({ queryKey: ['/api/prestamos'] });
+        }, 500);
+      }
     },
     onError: (error) => {
       toast({
@@ -203,6 +215,16 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
     
     registrarPagoMutation.mutate(dataToSend);
     setShowParcialAlert(false);
+    
+    // Asegurar que el cliente vea la actualización después de un pago parcial
+    const prestamoId = Number(form.getValues().prestamo_id);
+    setTimeout(() => {
+      queryClient.refetchQueries({ queryKey: ["/api/pagos"] });
+      queryClient.refetchQueries({ queryKey: ["/api/prestamos"] });
+      queryClient.refetchQueries({ queryKey: [`/api/prestamos/${prestamoId}`] });
+      queryClient.refetchQueries({ queryKey: ['/api/pagos', { prestamo_id: prestamoId }] });
+      queryClient.refetchQueries({ queryKey: [`/api/prestamos/${prestamoId}/total-pagado`] });
+    }, 300);
   };
 
   // Calcular la diferencia para el diálogo de pago parcial

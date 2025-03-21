@@ -107,9 +107,18 @@ export default function LoanDetails() {
       return res.json();
     },
     onSuccess: () => {
+      // Invalidar todas las consultas relevantes
       queryClient.invalidateQueries({ queryKey: [`/api/prestamos/${prestamoId}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/prestamos'] });
       queryClient.invalidateQueries({ queryKey: ['/api/estadisticas'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/pagos'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/prestamos/${prestamoId}/total-pagado`] });
+      
+      // Forzar la recarga de datos específicos de este préstamo
+      queryClient.refetchQueries({ queryKey: [`/api/prestamos/${prestamoId}`] });
+      queryClient.refetchQueries({ queryKey: ['/api/pagos', { prestamo_id: prestamoId }] });
+      queryClient.refetchQueries({ queryKey: [`/api/prestamos/${prestamoId}/total-pagado`] });
+      
       toast({
         title: "Estado actualizado",
         description: "El estado del préstamo ha sido actualizado correctamente."
