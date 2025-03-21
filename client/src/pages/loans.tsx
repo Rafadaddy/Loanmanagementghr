@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { formatCurrency, formatDate, getLoanStatus } from "@/lib/utils";
 import { Link } from "wouter";
 import Sidebar from "@/components/navigation/sidebar";
@@ -8,7 +8,19 @@ import LoanForm from "@/components/forms/loan-form";
 import { Prestamo, Cliente } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, X, Eye, CreditCard, Plus } from "lucide-react";
+import { Search, X, Eye, CreditCard, Plus, Trash2, AlertTriangle } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -41,6 +53,9 @@ export default function Loans() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("TODOS");
   const [currentPage, setCurrentPage] = useState(1);
+  const [prestamoAEliminar, setPrestamoAEliminar] = useState<Prestamo | null>(null);
+  const [alertDialogOpen, setAlertDialogOpen] = useState(false);
+  const { toast } = useToast();
   const itemsPerPage = 10;
 
   // Cargar la lista de préstamos
@@ -79,6 +94,46 @@ export default function Loans() {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  // Mutation para eliminar un préstamo
+  const eliminarPrestamoMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest('DELETE', `/api/prestamos/${id}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Préstamo eliminado",
+        description: "El préstamo ha sido eliminado correctamente.",
+        variant: "default",
+      });
+      // Refrescar los datos
+      queryClient.invalidateQueries({ queryKey: ['/api/prestamos'] });
+      // Cerrar el diálogo
+      setAlertDialogOpen(false);
+      setPrestamoAEliminar(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: `No se pudo eliminar el préstamo: ${error.message}`,
+        variant: "destructive",
+      });
+      setAlertDialogOpen(false);
+    },
+  });
+
+  // Función para confirmar eliminación
+  const confirmarEliminacion = () => {
+    if (prestamoAEliminar) {
+      eliminarPrestamoMutation.mutate(prestamoAEliminar.id);
+    }
+  };
+
+  // Función para abrir el diálogo de confirmación
+  const handleEliminarPrestamo = (prestamo: Prestamo) => {
+    setPrestamoAEliminar(prestamo);
+    setAlertDialogOpen(true);
+  };
 
   const isLoading = loadingPrestamos || loadingClientes;
 
@@ -199,11 +254,23 @@ export default function Loans() {
                             <Badge className={className}>{label}</Badge>
                           </TableCell>
                           <TableCell>
-                            <Link href={`/prestamos/${prestamo.id}`}>
-                              <Button variant="ghost" size="icon">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </Link>
+                            <div className="flex gap-1">
+                              <Link href={`/prestamos/${prestamo.id}`}>
+                                <Button variant="ghost" size="icon">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </Link>
+                              {prestamo.estado === 'PAGADO' && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => handleEliminarPrestamo(prestamo)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
@@ -284,6 +351,38 @@ export default function Loans() {
           open={loanFormOpen} 
           onOpenChange={setLoanFormOpen}
         />
+
+        {/* Diálogo de confirmación para eliminar préstamo */}
+        <AlertDialog open={alertDialogOpen} onOpenChange={setAlertDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-red-500" />
+                Eliminar préstamo
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                ¿Está seguro que desea eliminar este préstamo? Esta acción no se puede deshacer.
+                {prestamoAEliminar && clientes && (
+                  <div className="mt-4 p-3 bg-gray-50 rounded-md">
+                    <p><strong>Cliente:</strong> {clientes.find(c => c.id === prestamoAEliminar.cliente_id)?.nombre || 'Cliente desconocido'}</p>
+                    <p><strong>Monto:</strong> {formatCurrency(prestamoAEliminar.monto_prestado)}</p>
+                    <p><strong>Fecha:</strong> {formatDate(prestamoAEliminar.fecha_prestamo)}</p>
+                  </div>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={eliminarPrestamoMutation.isPending}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmarEliminacion}
+                className="bg-red-500 hover:bg-red-600 text-white"
+                disabled={eliminarPrestamoMutation.isPending}
+              >
+                {eliminarPrestamoMutation.isPending ? "Eliminando..." : "Eliminar"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );
