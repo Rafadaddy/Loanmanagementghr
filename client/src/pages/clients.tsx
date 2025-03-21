@@ -91,6 +91,12 @@ export default function Clients() {
       
       setDeleteDialogOpen(false);
       setClienteToDelete(undefined);
+      
+      // Recargar la página después de un breve retraso
+      // para que el usuario pueda ver el mensaje de éxito
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     },
     onError: (error: Error) => {
       toast({
