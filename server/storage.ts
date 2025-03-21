@@ -494,9 +494,31 @@ export class MemStorage implements IStorage {
     
     // Actualizar estado del préstamo
     let estadoPrestamo = prestamo.estado;
-    if (semanasActualizadas >= prestamo.numero_semanas) {
+    
+    // Obtener todos los pagos del préstamo
+    const pagosPrestamo = await this.getPagosByPrestamoId(prestamo.id);
+    
+    // Calcular el total pagado hasta ahora, incluyendo el pago actual
+    const totalPagado = pagosPrestamo.reduce((sum, p) => sum + Number(p.monto_pagado), 0) + montoPagado;
+    
+    // Monto total a pagar del préstamo
+    const montoTotalPagar = Number(prestamo.monto_total_pagar);
+    
+    console.log("DEBUG - Total pagado acumulado:", totalPagado);
+    console.log("DEBUG - Monto total a pagar:", montoTotalPagar);
+    
+    // Verificar si se ha pagado el monto total, independientemente del número de semanas
+    if (totalPagado >= montoTotalPagar) {
       estadoPrestamo = "PAGADO";
-    } else if (estado === "ATRASADO" && !esPagoParcial) {
+      console.log("DEBUG - Préstamo PAGADO por monto total cubierto");
+    }
+    // Si no está pagado por monto total, verificar si está pagado por semanas
+    else if (semanasActualizadas >= prestamo.numero_semanas) {
+      estadoPrestamo = "PAGADO";
+      console.log("DEBUG - Préstamo PAGADO por semanas completadas");
+    } 
+    // Otros casos de actualización de estado
+    else if (estado === "ATRASADO" && !esPagoParcial) {
       // Si era atrasado pero hizo un pago completo, pasa a activo
       estadoPrestamo = "ACTIVO";
     } else if (estado === "ATRASADO") {
@@ -574,20 +596,35 @@ export class MemStorage implements IStorage {
       prestamoActualizado.semanas_pagadas = semanasActualizadas;
       
       console.log("DEBUG - Actualizando semanas pagadas de", prestamo.semanas_pagadas, "a", semanasActualizadas);
+    }
       
-      // Si el préstamo estaba PAGADO, volver a ACTIVO
-      if (prestamo.estado === "PAGADO") {
+    // Comprobar el estado del préstamo tras eliminar este pago
+    if (prestamo.estado === "PAGADO") {
+      // Verificar el monto total pagado después de eliminar este pago
+      const pagosPrestamo = await this.getPagosByPrestamoId(prestamo.id);
+      // Filtrar para excluir el pago que se va a eliminar
+      const pagosRestantes = pagosPrestamo.filter(p => p.id !== id);
+      
+      // Calcular el total pagado después de quitar este pago
+      const totalPagado = pagosRestantes.reduce((sum, p) => sum + Number(p.monto_pagado), 0);
+      const montoTotalPagar = Number(prestamo.monto_total_pagar);
+      
+      console.log("DEBUG - Total pagado después de eliminar pago:", totalPagado);
+      console.log("DEBUG - Monto total a pagar del préstamo:", montoTotalPagar);
+      
+      // Si después de eliminar el pago, ya no cubre el monto total, volver a ACTIVO
+      if (totalPagado < montoTotalPagar) {
         prestamoActualizado.estado = "ACTIVO";
-        console.log("DEBUG - Cambiando estado de préstamo de PAGADO a ACTIVO");
+        console.log("DEBUG - Cambiando estado de préstamo de PAGADO a ACTIVO (por monto insuficiente)");
       }
+    }
 
-      // Actualizar la fecha de próximo pago si corresponde
-      if (prestamo.semanas_pagadas > 0) {
-        const nuevaFechaPago = new Date(prestamo.proxima_fecha_pago);
-        nuevaFechaPago.setDate(nuevaFechaPago.getDate() - 7);
-        prestamoActualizado.proxima_fecha_pago = format(nuevaFechaPago, 'yyyy-MM-dd');
-        console.log("DEBUG - Actualizando próxima fecha de pago a:", prestamoActualizado.proxima_fecha_pago);
-      }
+    // Actualizar la fecha de próximo pago si corresponde
+    if (prestamo.semanas_pagadas > 0) {
+      const nuevaFechaPago = new Date(prestamo.proxima_fecha_pago);
+      nuevaFechaPago.setDate(nuevaFechaPago.getDate() - 7);
+      prestamoActualizado.proxima_fecha_pago = format(nuevaFechaPago, 'yyyy-MM-dd');
+      console.log("DEBUG - Actualizando próxima fecha de pago a:", prestamoActualizado.proxima_fecha_pago);
     }
 
     // Restar la mora acumulada que se haya agregado con este pago
