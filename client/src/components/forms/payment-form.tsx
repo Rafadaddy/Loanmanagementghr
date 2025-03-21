@@ -148,13 +148,11 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
       onOpenChange(false);
       if (onSuccess) onSuccess();
       
-      // Si estamos en la página de detalles del préstamo, forzar una actualización general
-      if (window.location.pathname.includes('/prestamos/')) {
-        setTimeout(() => {
-          queryClient.refetchQueries({ queryKey: ['/api/pagos'] });
-          queryClient.refetchQueries({ queryKey: ['/api/prestamos'] });
-        }, 500);
-      }
+      // Recargar la página completa después de un breve retraso
+      // para que el usuario pueda ver el mensaje de éxito
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     },
     onError: (error) => {
       toast({

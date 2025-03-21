@@ -56,8 +56,10 @@ export function Loading({
 // Overlay de carga a pantalla completa
 export function FullScreenLoading({ text, className }: { text?: string; className?: string }) {
   return (
-    <div className={cn("fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center", className)}>
-      <Loading text={text} size="lg" />
+    <div className={cn("fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center", className)}>
+      <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 shadow-xl border border-white/20">
+        <Loading text={text || "Procesando operación..."} size="lg" />
+      </div>
     </div>
   );
 }
