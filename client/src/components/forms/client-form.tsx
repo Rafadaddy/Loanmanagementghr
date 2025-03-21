@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLoading } from "@/hooks/use-loading";
+import { LoadingButton } from "@/components/ui/loading";
 import { insertClienteSchema, Cliente } from "@shared/schema";
 import { useMutation } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
@@ -28,6 +30,7 @@ interface ClientFormProps {
 
 export default function ClientForm({ open, onOpenChange, cliente, onSuccess }: ClientFormProps) {
   const { toast } = useToast();
+  const { startLoading, stopLoading } = useLoading();
   const isEditing = !!cliente;
 
   const form = useForm<ClientFormValues>({
@@ -95,7 +98,15 @@ export default function ClientForm({ open, onOpenChange, cliente, onSuccess }: C
   });
 
   function onSubmit(values: ClientFormValues) {
-    mutation.mutate(values);
+    // Mostrar indicador de carga global
+    startLoading(isEditing ? "Actualizando cliente..." : "Registrando cliente...");
+    
+    mutation.mutate(values, {
+      onSettled: () => {
+        // Detener el indicador independientemente del resultado
+        stopLoading();
+      }
+    });
   }
 
   return (

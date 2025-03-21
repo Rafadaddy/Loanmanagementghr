@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLoading } from "@/hooks/use-loading";
+import { LoadingButton } from "@/components/ui/loading";
 import { insertPagoSchema, Prestamo, Cliente } from "@shared/schema";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/utils";
@@ -47,6 +49,7 @@ interface PrestamoConCliente extends Prestamo {
 
 export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFormProps) {
   const { toast } = useToast();
+  const { startLoading, stopLoading } = useLoading();
   const [prestamoSeleccionado, setPrestamoSeleccionado] = useState<PrestamoConCliente | null>(null);
   const [showParcialAlert, setShowParcialAlert] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -186,7 +189,15 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
     // Depuración
     console.log("Datos de pago a enviar:", dataToSend);
     
-    registrarPagoMutation.mutate(dataToSend);
+    // Mostrar indicador de carga global
+    startLoading("Registrando pago...");
+    
+    registrarPagoMutation.mutate(dataToSend, {
+      onSettled: () => {
+        // Detener el indicador independientemente del resultado
+        stopLoading();
+      }
+    });
   }
 
   // Resetear form cuando se cierra
@@ -213,7 +224,16 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
     
     console.log("Datos de pago parcial a enviar:", dataToSend);
     
-    registrarPagoMutation.mutate(dataToSend);
+    // Mostrar indicador de carga global
+    startLoading("Registrando pago parcial...");
+    
+    registrarPagoMutation.mutate(dataToSend, {
+      onSettled: () => {
+        // Detener el indicador independientemente del resultado
+        stopLoading();
+      }
+    });
+    
     setShowParcialAlert(false);
     
     // Asegurar que el cliente vea la actualización después de un pago parcial
