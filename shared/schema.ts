@@ -23,6 +23,8 @@ export const clientes = pgTable("clientes", {
   telefono: text("telefono").notNull(),
   direccion: text("direccion").notNull(),
   documento_identidad: text("documento_identidad").notNull(),
+  email: text("email"),
+  notas: text("notas"),
   fecha_registro: timestamp("fecha_registro").defaultNow().notNull(),
 });
 
@@ -75,11 +77,6 @@ export const pagos = pgTable("pagos", {
 
 export const insertPagoSchema = createInsertSchema(pagos).omit({
   id: true,
-  fecha_pago: true,
-  estado: true,
-  es_pago_parcial: true,
-  monto_restante: true,
-  numero_semana: true
 });
 
 // Tipos exportados

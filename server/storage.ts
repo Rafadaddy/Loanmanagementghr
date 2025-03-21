@@ -61,6 +61,212 @@ export class MemStorage implements IStorage {
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // 24 horas
     });
+    
+    // Inicializar datos de ejemplo
+    this.initializeSampleData();
+  }
+  
+  private async initializeSampleData() {
+    // Crear un usuario administrador si no existe
+    if (this.users.size === 0) {
+      const adminUser: InsertUser = {
+        nombre: "Administrador",
+        username: "super_rafaga@gmail.com",
+        password: "$2b$10$X4jG0tjVN17aFFqIuJYI7u6hHBhTIFxZgnm9jzQ9uE3xsRIRW6D0O" // Contraseña: admin123
+      };
+      await this.createUser(adminUser);
+    }
+    
+    // Crear algunos clientes de ejemplo
+    const clientesEjemplo: InsertCliente[] = [
+      {
+        nombre: "María González",
+        telefono: "555-123-4567",
+        direccion: "Calle Principal 123, Centro",
+        documento_identidad: "12345678A",
+        email: "maria@example.com",
+        notas: "Cliente frecuente, siempre paga a tiempo"
+      },
+      {
+        nombre: "Juan Pérez",
+        telefono: "555-987-6543",
+        direccion: "Avenida Central 456, Norte",
+        documento_identidad: "87654321B",
+        email: "juan@example.com",
+        notas: "Prefiere pagos semanales"
+      },
+      {
+        nombre: "Ana Rodríguez",
+        telefono: "555-456-7890",
+        direccion: "Calle Secundaria 789, Sur",
+        documento_identidad: "56781234C",
+        email: "ana@example.com",
+        notas: "Trabaja en mercado local"
+      },
+      {
+        nombre: "Carlos López",
+        telefono: "555-789-1234",
+        direccion: "Boulevard Principal 321, Este",
+        documento_identidad: "43217865D",
+        email: "carlos@example.com",
+        notas: "Comerciante de abarrotes"
+      },
+      {
+        nombre: "Sofía Martínez",
+        telefono: "555-234-5678",
+        direccion: "Calle Comercial 654, Oeste",
+        documento_identidad: "98761234E",
+        email: "sofia@example.com",
+        notas: "Tiene tienda de ropa"
+      }
+    ];
+    
+    // Crear los clientes solo si no hay clientes existentes
+    if (this.clientes.size === 0) {
+      for (const cliente of clientesEjemplo) {
+        await this.createCliente(cliente);
+      }
+      
+      // Crear préstamos de ejemplo para los clientes
+      const hoy = new Date();
+      const manana = addDays(hoy, 1);
+      const ayer = addDays(hoy, -1);
+      const proximaSemana = addDays(hoy, 7);
+      
+      const prestamosEjemplo: InsertPrestamo[] = [
+        {
+          cliente_id: 1,
+          monto_prestado: "5000",
+          tasa_interes: "20",
+          fecha_prestamo: format(ayer, 'yyyy-MM-dd'),
+          frecuencia_pago: "SEMANAL",
+          numero_semanas: 12,
+          pago_semanal: "458.33",
+          monto_total_pagar: "5500",
+          proxima_fecha_pago: format(manana, 'yyyy-MM-dd')
+        },
+        {
+          cliente_id: 2,
+          monto_prestado: "10000",
+          tasa_interes: "15",
+          fecha_prestamo: format(addDays(hoy, -15), 'yyyy-MM-dd'),
+          frecuencia_pago: "SEMANAL",
+          numero_semanas: 16,
+          pago_semanal: "687.50",
+          monto_total_pagar: "11000",
+          proxima_fecha_pago: format(hoy, 'yyyy-MM-dd')
+        },
+        {
+          cliente_id: 3,
+          monto_prestado: "3000",
+          tasa_interes: "25",
+          fecha_prestamo: format(addDays(hoy, -7), 'yyyy-MM-dd'),
+          frecuencia_pago: "SEMANAL",
+          numero_semanas: 8,
+          pago_semanal: "406.25",
+          monto_total_pagar: "3250",
+          proxima_fecha_pago: format(hoy, 'yyyy-MM-dd')
+        },
+        {
+          cliente_id: 4,
+          monto_prestado: "20000",
+          tasa_interes: "12",
+          fecha_prestamo: format(addDays(hoy, -14), 'yyyy-MM-dd'),
+          frecuencia_pago: "SEMANAL",
+          numero_semanas: 24,
+          pago_semanal: "916.67",
+          monto_total_pagar: "22000",
+          proxima_fecha_pago: format(proximaSemana, 'yyyy-MM-dd')
+        },
+        {
+          cliente_id: 5,
+          monto_prestado: "8000",
+          tasa_interes: "18",
+          fecha_prestamo: format(addDays(hoy, -10), 'yyyy-MM-dd'),
+          frecuencia_pago: "SEMANAL",
+          numero_semanas: 12,
+          pago_semanal: "720",
+          monto_total_pagar: "8640",
+          proxima_fecha_pago: format(addDays(hoy, 4), 'yyyy-MM-dd')
+        }
+      ];
+      
+      for (const prestamo of prestamosEjemplo) {
+        const nuevoPrestamo = await this.createPrestamo(prestamo);
+        
+        // Simular pagos realizados para algunos préstamos
+        if (nuevoPrestamo.id === 2) {
+          // Cliente 2 ya pagó dos semanas
+          await this.createPago({
+            prestamo_id: nuevoPrestamo.id,
+            monto_pagado: nuevoPrestamo.pago_semanal,
+            fecha_pago: new Date(addDays(hoy, -14)),
+            numero_semana: 1,
+            estado: "A_TIEMPO",
+            es_pago_parcial: "false",
+            monto_restante: "0"
+          });
+          
+          await this.createPago({
+            prestamo_id: nuevoPrestamo.id,
+            monto_pagado: nuevoPrestamo.pago_semanal,
+            fecha_pago: format(addDays(hoy, -7), 'yyyy-MM-dd'),
+            numero_semana: 2,
+            estado: "A_TIEMPO",
+            es_pago_parcial: "false",
+            monto_restante: "0"
+          });
+          
+          // Actualizar el préstamo para reflejar los pagos
+          await this.updatePrestamo(nuevoPrestamo.id, {
+            semanas_pagadas: 2,
+            proxima_fecha_pago: format(hoy, 'yyyy-MM-dd')
+          });
+        }
+        
+        if (nuevoPrestamo.id === 3) {
+          // Cliente 3 hizo un pago parcial
+          await this.createPago({
+            prestamo_id: nuevoPrestamo.id,
+            monto_pagado: "300",
+            fecha_pago: format(addDays(hoy, -3), 'yyyy-MM-dd'),
+            numero_semana: 1,
+            estado: "A_TIEMPO", 
+            es_pago_parcial: "true",
+            monto_restante: (parseFloat(nuevoPrestamo.pago_semanal) - 300).toString()
+          });
+        }
+        
+        if (nuevoPrestamo.id === 4) {
+          // Cliente 4 ya pagó dos semanas completas
+          await this.createPago({
+            prestamo_id: nuevoPrestamo.id,
+            monto_pagado: nuevoPrestamo.pago_semanal,
+            fecha_pago: format(addDays(hoy, -14), 'yyyy-MM-dd'),
+            numero_semana: 1,
+            estado: "A_TIEMPO",
+            es_pago_parcial: "false",
+            monto_restante: "0"
+          });
+          
+          await this.createPago({
+            prestamo_id: nuevoPrestamo.id,
+            monto_pagado: nuevoPrestamo.pago_semanal,
+            fecha_pago: format(addDays(hoy, -7), 'yyyy-MM-dd'),
+            numero_semana: 2,
+            estado: "A_TIEMPO",
+            es_pago_parcial: "false",
+            monto_restante: "0"
+          });
+          
+          // Actualizar el préstamo para reflejar los pagos
+          await this.updatePrestamo(nuevoPrestamo.id, {
+            semanas_pagadas: 2,
+            proxima_fecha_pago: format(proximaSemana, 'yyyy-MM-dd')
+          });
+        }
+      }
+    }
   }
 
   // Métodos para usuarios
