@@ -25,11 +25,13 @@ export interface IStorage {
   getPrestamo(id: number): Promise<Prestamo | undefined>;
   createPrestamo(prestamo: InsertPrestamo): Promise<Prestamo>;
   updatePrestamo(id: number, prestamo: Partial<Prestamo>): Promise<Prestamo | undefined>;
+  deletePrestamo(id: number): Promise<boolean>;
   
   // Pagos
   getAllPagos(): Promise<Pago[]>;
   getPagosByPrestamoId(prestamoId: number): Promise<Pago[]>;
   createPago(pago: InsertPago): Promise<Pago>;
+  deletePago(id: number): Promise<boolean>;
   
   // Cálculos
   calcularPrestamo(datos: CalculoPrestamo): ResultadoCalculoPrestamo;
@@ -539,6 +541,96 @@ export class MemStorage implements IStorage {
     console.log("DEBUG - Nuevo pago creado:", nuevoPago);
     this.pagos.set(id, nuevoPago);
     return nuevoPago;
+  }
+
+  // Método para eliminar un pago
+  async deletePago(id: number): Promise<boolean> {
+    console.log("DEBUG - Iniciando eliminación de pago:", id);
+    
+    // Obtener el pago que se va a eliminar
+    const pago = this.pagos.get(id);
+    if (!pago) {
+      console.log("DEBUG - Pago no encontrado:", id);
+      return false;
+    }
+    
+    console.log("DEBUG - Pago encontrado:", pago);
+
+    // Obtener el préstamo asociado al pago
+    const prestamo = await this.getPrestamo(pago.prestamo_id);
+    if (!prestamo) {
+      console.log("DEBUG - Préstamo asociado no encontrado:", pago.prestamo_id);
+      return false;
+    }
+    
+    console.log("DEBUG - Préstamo asociado encontrado:", prestamo);
+
+    // Revertir los efectos del pago en el préstamo
+    const prestamoActualizado: Partial<Prestamo> = {};
+
+    // Si no fue un pago parcial, decrementar semanas pagadas
+    if (pago.es_pago_parcial !== "true") {
+      const semanasActualizadas = Math.max(0, prestamo.semanas_pagadas - 1);
+      prestamoActualizado.semanas_pagadas = semanasActualizadas;
+      
+      console.log("DEBUG - Actualizando semanas pagadas de", prestamo.semanas_pagadas, "a", semanasActualizadas);
+      
+      // Si el préstamo estaba PAGADO, volver a ACTIVO
+      if (prestamo.estado === "PAGADO") {
+        prestamoActualizado.estado = "ACTIVO";
+        console.log("DEBUG - Cambiando estado de préstamo de PAGADO a ACTIVO");
+      }
+
+      // Actualizar la fecha de próximo pago si corresponde
+      if (prestamo.semanas_pagadas > 0) {
+        const nuevaFechaPago = new Date(prestamo.proxima_fecha_pago);
+        nuevaFechaPago.setDate(nuevaFechaPago.getDate() - 7);
+        prestamoActualizado.proxima_fecha_pago = format(nuevaFechaPago, 'yyyy-MM-dd');
+        console.log("DEBUG - Actualizando próxima fecha de pago a:", prestamoActualizado.proxima_fecha_pago);
+      }
+    }
+
+    // Restar la mora acumulada que se haya agregado con este pago
+    const montoMoraDelPago = parseFloat(pago.monto_mora || "0");
+    if (montoMoraDelPago > 0) {
+      const moraActual = parseFloat(prestamo.monto_mora_acumulada || "0");
+      const nuevaMora = Math.max(0, moraActual - montoMoraDelPago);
+      prestamoActualizado.monto_mora_acumulada = nuevaMora.toString();
+      console.log("DEBUG - Actualizando mora acumulada de", moraActual, "a", nuevaMora);
+    }
+
+    // Actualizar el préstamo
+    await this.updatePrestamo(pago.prestamo_id, prestamoActualizado);
+    console.log("DEBUG - Préstamo actualizado después de revertir pago");
+
+    // Eliminar el pago
+    const resultado = this.pagos.delete(id);
+    console.log("DEBUG - Resultado de eliminar pago:", resultado);
+    return resultado;
+  }
+
+  // Método para eliminar un préstamo (solo si está pagado)
+  async deletePrestamo(id: number): Promise<boolean> {
+    console.log("DEBUG - Iniciando eliminación de préstamo:", id);
+    
+    const prestamo = await this.getPrestamo(id);
+    if (!prestamo) {
+      console.log("DEBUG - Préstamo no encontrado:", id);
+      return false;
+    }
+    
+    console.log("DEBUG - Préstamo encontrado:", prestamo);
+
+    // Solo permitir eliminar préstamos pagados
+    if (prestamo.estado !== "PAGADO") {
+      console.log("DEBUG - No se puede eliminar préstamo no pagado. Estado actual:", prestamo.estado);
+      throw new Error("Solo se pueden eliminar préstamos pagados");
+    }
+
+    // Eliminar el préstamo
+    const resultado = this.prestamos.delete(id);
+    console.log("DEBUG - Resultado de eliminar préstamo:", resultado);
+    return resultado;
   }
 
   // Cálculos de préstamos
