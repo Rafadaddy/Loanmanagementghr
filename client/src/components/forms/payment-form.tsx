@@ -2,6 +2,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -187,15 +188,8 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
     // Depuración
     console.log("Datos de pago a enviar:", dataToSend);
     
-    // Mostrar indicador de carga global
-    startLoading("Registrando pago...");
-    
-    registrarPagoMutation.mutate(dataToSend, {
-      onSettled: () => {
-        // Detener el indicador independientemente del resultado
-        stopLoading();
-      }
-    });
+    // Usar directamente el estado de la mutación para mostrar el estado de carga
+    registrarPagoMutation.mutate(dataToSend);
   }
 
   // Resetear form cuando se cierra
@@ -222,27 +216,15 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
     
     console.log("Datos de pago parcial a enviar:", dataToSend);
     
-    // Mostrar indicador de carga global
-    startLoading("Registrando pago parcial...");
-    
-    registrarPagoMutation.mutate(dataToSend, {
-      onSettled: () => {
-        // Detener el indicador independientemente del resultado
-        stopLoading();
-      }
-    });
+    // Ya no usamos el indicador de carga global, usamos el estado de la mutación directamente
+    registrarPagoMutation.mutate(dataToSend);
     
     setShowParcialAlert(false);
     
-    // Asegurar que el cliente vea la actualización después de un pago parcial
-    const prestamoId = Number(form.getValues().prestamo_id);
+    // Recargar la página después de registrar el pago
     setTimeout(() => {
-      queryClient.refetchQueries({ queryKey: ["/api/pagos"] });
-      queryClient.refetchQueries({ queryKey: ["/api/prestamos"] });
-      queryClient.refetchQueries({ queryKey: [`/api/prestamos/${prestamoId}`] });
-      queryClient.refetchQueries({ queryKey: ['/api/pagos', { prestamo_id: prestamoId }] });
-      queryClient.refetchQueries({ queryKey: [`/api/prestamos/${prestamoId}/total-pagado`] });
-    }, 300);
+      window.location.reload();
+    }, 1500);
   };
 
   // Calcular la diferencia para el diálogo de pago parcial
@@ -253,7 +235,21 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] relative">
+          {/* Overlay de carga para indicar procesamiento */}
+          {registrarPagoMutation.isPending && (
+            <div className="absolute inset-0 z-50 bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center rounded-md">
+              <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 shadow-xl border border-white/20">
+                <div className="flex flex-col items-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="mt-2 text-sm font-medium text-white animate-pulse">
+                    Registrando pago...
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <DialogHeader>
             <DialogTitle>Registrar Pago</DialogTitle>
           </DialogHeader>
@@ -379,14 +375,20 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
               
               <DialogFooter className="gap-2 mt-4">
                 <DialogClose asChild>
-                  <Button type="button" variant="outline">Cancelar</Button>
+                  <Button type="button" variant="outline" disabled={registrarPagoMutation.isPending}>Cancelar</Button>
                 </DialogClose>
                 <Button 
                   type="submit" 
                   disabled={registrarPagoMutation.isPending}
                   className="bg-primary hover:bg-blue-600"
                 >
-                  {registrarPagoMutation.isPending ? "Registrando..." : "Registrar Pago"}
+                  {registrarPagoMutation.isPending ? (
+                    <span className="flex items-center gap-2">
+                      <LoadingButton /> Registrando...
+                    </span>
+                  ) : (
+                    "Registrar Pago"
+                  )}
                 </Button>
               </DialogFooter>
             </form>
@@ -396,7 +398,21 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
 
       {/* Diálogo de alerta para pagos parciales */}
       <AlertDialog open={showParcialAlert} onOpenChange={setShowParcialAlert}>
-        <AlertDialogContent>
+        <AlertDialogContent className="relative">
+          {/* Overlay de carga para indicar procesamiento */}
+          {registrarPagoMutation.isPending && (
+            <div className="absolute inset-0 z-50 bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center rounded-md">
+              <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 shadow-xl border border-white/20">
+                <div className="flex flex-col items-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="mt-2 text-sm font-medium text-white animate-pulse">
+                    Registrando pago parcial...
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <AlertDialogHeader>
             <AlertDialogTitle>¿Registrar Pago Parcial?</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
@@ -419,12 +435,19 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={registrarPagoMutation.isPending}>Cancelar</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleConfirmPagoParcial}
               className="bg-primary hover:bg-blue-600"
+              disabled={registrarPagoMutation.isPending}
             >
-              Confirmar Pago Parcial
+              {registrarPagoMutation.isPending ? (
+                <span className="flex items-center gap-2">
+                  <LoadingButton /> Procesando...
+                </span>
+              ) : (
+                "Confirmar Pago Parcial"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
