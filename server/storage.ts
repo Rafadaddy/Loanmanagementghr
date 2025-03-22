@@ -259,7 +259,7 @@ export class MemStorage implements IStorage {
           await this.createPago({
             prestamo_id: nuevoPrestamo.id,
             monto_pagado: "300",
-            fecha_pago: format(addDays(hoy, -3), 'yyyy-MM-dd'),
+            fecha_pago: addDays(hoy, -3), // Usar objeto Date directamente
             numero_semana: 1,
             estado: "A_TIEMPO", 
             es_pago_parcial: "true",
@@ -272,7 +272,7 @@ export class MemStorage implements IStorage {
           await this.createPago({
             prestamo_id: nuevoPrestamo.id,
             monto_pagado: nuevoPrestamo.pago_semanal,
-            fecha_pago: format(addDays(hoy, -14), 'yyyy-MM-dd'),
+            fecha_pago: addDays(hoy, -14), // Usar objeto Date directamente
             numero_semana: 1,
             estado: "A_TIEMPO",
             es_pago_parcial: "false",
