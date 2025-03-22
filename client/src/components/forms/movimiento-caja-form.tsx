@@ -119,11 +119,13 @@ export default function MovimientoCajaForm({ open, onOpenChange, onSuccess }: Mo
         onSuccess();
       }
       
-      // Recargar la página después de un breve retraso
-      setTimeout(() => {
-        stopLoading();
-        window.location.reload();
-      }, 1000);
+      // Invalidar caché para refrescar datos
+      queryClient.invalidateQueries({ queryKey: ["/api/caja/movimientos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/caja/resumen"] });
+      
+      // Detener indicador de carga
+      setIsFormSubmitting(false);
+      stopLoading();
     },
     onError: (error: Error) => {
       toast({
@@ -246,9 +248,9 @@ export default function MovimientoCajaForm({ open, onOpenChange, onSuccess }: Mo
                 <FormItem>
                   <FormLabel>Cliente Relacionado (Opcional)</FormLabel>
                   <Select 
-                    onValueChange={(value) => field.onChange(value ? parseInt(value) : null)} 
-                    defaultValue={field.value ? String(field.value) : ""}
-                    value={field.value ? String(field.value) : ""}
+                    onValueChange={(value) => field.onChange(value === "0" ? null : parseInt(value))} 
+                    defaultValue={field.value ? String(field.value) : "0"}
+                    value={field.value ? String(field.value) : "0"}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -280,9 +282,9 @@ export default function MovimientoCajaForm({ open, onOpenChange, onSuccess }: Mo
                 <FormItem>
                   <FormLabel>Préstamo Relacionado (Opcional)</FormLabel>
                   <Select 
-                    onValueChange={(value) => field.onChange(value ? parseInt(value) : null)} 
-                    defaultValue={field.value ? String(field.value) : ""}
-                    value={field.value ? String(field.value) : ""}
+                    onValueChange={(value) => field.onChange(value === "0" ? null : parseInt(value))} 
+                    defaultValue={field.value ? String(field.value) : "0"}
+                    value={field.value ? String(field.value) : "0"}
                   >
                     <FormControl>
                       <SelectTrigger>
