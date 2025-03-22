@@ -4,7 +4,13 @@ import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { ZodError } from "zod";
 import { formatISO } from "date-fns";
-import { insertClienteSchema, insertPrestamoSchema, insertPagoSchema, calculoPrestamoSchema } from "@shared/schema";
+import { 
+  insertClienteSchema, 
+  insertPrestamoSchema, 
+  insertPagoSchema, 
+  insertMovimientoCajaSchema,
+  calculoPrestamoSchema 
+} from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -480,6 +486,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ultimosClientes,
       });
     } catch (error) {
+      next(error);
+    }
+  });
+
+  // Rutas para movimientos de caja
+  app.get("/api/caja/movimientos", isAuthenticated, async (req, res, next) => {
+    try {
+      // Si se proporcionan fechas, filtrar por rango de fechas
+      const { fechaInicio, fechaFin } = req.query;
+      
+      if (fechaInicio && fechaFin) {
+        const movimientos = await storage.getMovimientosCajaPorFecha(
+          fechaInicio as string, 
+          fechaFin as string
+        );
+        return res.json(movimientos);
+      }
+      
+      const movimientos = await storage.getAllMovimientosCaja();
+      res.json(movimientos);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/caja/resumen", isAuthenticated, async (req, res, next) => {
+    try {
+      const resumen = await storage.getResumenCaja();
+      res.json(resumen);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/caja/movimientos", isAuthenticated, async (req, res, next) => {
+    try {
+      // Validar con el esquema
+      const movimientoData = insertMovimientoCajaSchema.parse({
+        ...req.body,
+        creado_por: req.user!.id, // Agregar el id del usuario autenticado
+        fecha: req.body.fecha || new Date()
+      });
+      
+      // Validar que el tipo sea INGRESO o EGRESO
+      if (!["INGRESO", "EGRESO"].includes(movimientoData.tipo)) {
+        return res.status(400).json({ message: "El tipo debe ser INGRESO o EGRESO" });
+      }
+      
+      // Validar montos positivos
+      if (parseFloat(movimientoData.monto) <= 0) {
+        return res.status(400).json({ message: "El monto debe ser un valor positivo" });
+      }
+      
+      // Si es un movimiento relacionado con un préstamo, validar que exista
+      if (movimientoData.prestamo_id) {
+        const prestamo = await storage.getPrestamo(movimientoData.prestamo_id);
+        if (!prestamo) {
+          return res.status(404).json({ message: "Préstamo no encontrado" });
+        }
+      }
+      
+      // Si es un movimiento relacionado con un cliente, validar que exista
+      if (movimientoData.cliente_id) {
+        const cliente = await storage.getCliente(movimientoData.cliente_id);
+        if (!cliente) {
+          return res.status(404).json({ message: "Cliente no encontrado" });
+        }
+      }
+      
+      // Crear movimiento
+      const movimiento = await storage.createMovimientoCaja(movimientoData);
+      res.status(201).json(movimiento);
+    } catch (error) {
+      console.error("Error al crear movimiento de caja:", error);
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: "Datos del movimiento inválidos", 
+          errors: fromZodError(error).message 
+        });
+      }
+      next(error);
+    }
+  });
+
+  app.delete("/api/caja/movimientos/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de movimiento inválido" });
+      }
+      
+      // Verificar si existe el movimiento
+      const movimiento = await storage.getMovimientoCaja(id);
+      if (!movimiento) {
+        return res.status(404).json({ message: "Movimiento no encontrado" });
+      }
+      
+      // Eliminar movimiento
+      const resultado = await storage.deleteMovimientoCaja(id);
+      if (resultado) {
+        res.status(200).json({ message: "Movimiento eliminado correctamente" });
+      } else {
+        res.status(500).json({ message: "Error al eliminar el movimiento" });
+      }
+    } catch (error) {
+      console.error("Error al eliminar movimiento de caja:", error);
       next(error);
     }
   });

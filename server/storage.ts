@@ -1,4 +1,11 @@
-import { Cliente, InsertCliente, Prestamo, InsertPrestamo, Pago, InsertPago, User, InsertUser, ResultadoCalculoPrestamo, CalculoPrestamo } from "@shared/schema";
+import { 
+  Cliente, InsertCliente, 
+  Prestamo, InsertPrestamo, 
+  Pago, InsertPago, 
+  User, InsertUser, 
+  MovimientoCaja, InsertMovimientoCaja,
+  ResultadoCalculoPrestamo, CalculoPrestamo 
+} from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { addDays, format, differenceInDays } from "date-fns";
@@ -65,15 +72,20 @@ export class MemStorage implements IStorage {
   private currentPagoId: number;
   sessionStore: any; // Tipo simplificado para la store de sesión
 
+  private movimientosCaja: Map<number, MovimientoCaja> = new Map();
+  private currentMovimientoCajaId: number = 1;
+
   constructor() {
     this.users = new Map();
     this.clientes = new Map();
     this.prestamos = new Map();
     this.pagos = new Map();
+    this.movimientosCaja = new Map();
     this.currentUserId = 1;
     this.currentClienteId = 1;
     this.currentPrestamoId = 1;
     this.currentPagoId = 1;
+    this.currentMovimientoCajaId = 1;
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // 24 horas
     });
@@ -774,9 +786,7 @@ export class MemStorage implements IStorage {
     };
   }
 
-  // Movimientos de Caja
-  private movimientosCaja: Map<number, MovimientoCaja> = new Map();
-  private currentMovimientoCajaId: number = 1;
+
 
   async getAllMovimientosCaja(): Promise<MovimientoCaja[]> {
     return Array.from(this.movimientosCaja.values());
