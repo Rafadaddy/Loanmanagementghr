@@ -25,15 +25,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       isAuthenticated: req.isAuthenticated(),
       hasSession: !!req.session,
       hasUser: !!req.user,
-      sessionID: req.sessionID
+      sessionID: req.sessionID,
+      userId: req.user?.id,
+      username: req.user?.username
     });
     
     if (req.isAuthenticated()) {
+      console.log("DEBUG - Usuario autenticado correctamente:", req.user?.username);
       return next();
     }
     
     console.log("DEBUG - Autenticación fallida en", req.path);
-    return res.status(401).json({ message: "No autorizado" });
+    return res.status(401).json({ message: "No autorizado, por favor inicie sesión nuevamente" });
   };
 
   // Ruta para cálculo de préstamo

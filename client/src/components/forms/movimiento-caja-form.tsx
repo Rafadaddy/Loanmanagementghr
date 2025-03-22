@@ -18,6 +18,7 @@ import { insertMovimientoCajaSchema, Cliente, Prestamo } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLoading } from "@/hooks/use-loading";
+import { useAuth } from "@/hooks/use-auth";
 import { formatCurrency, cn } from "@/lib/utils";
 
 // Esquema extendido para validación del formulario
@@ -104,10 +105,22 @@ export default function MovimientoCajaForm({ open, onOpenChange, onSuccess }: Mo
   // Obtener el tipo seleccionado para mostrar categorías adecuadas
   const tipoSeleccionado = form.watch("tipo");
   
+  // Usar el hook de autenticación para asegurar que el usuario está disponible
+  const { user, refetchUser } = useAuth();
+  
   // Mutación para crear movimiento
   const crearMovimientoMutation = useMutation({
     mutationFn: async (values: MovimientoCajaFormValues) => {
       console.log("Enviando datos originales:", values);
+      
+      // Asegurar que el usuario esté autenticado
+      if (!user) {
+        console.error("No hay un usuario autenticado");
+        await refetchUser();
+        if (!user) {
+          throw new Error("Debe iniciar sesión para realizar esta operación");
+        }
+      }
       
       // Procesar datos para asegurar que tienen el formato correcto
       const dataToSend = {
@@ -119,10 +132,12 @@ export default function MovimientoCajaForm({ open, onOpenChange, onSuccess }: Mo
         prestamo_id: values.prestamo_id === 0 ? null : values.prestamo_id,
         // Descripción puede ser null
         descripcion: values.descripcion || null,
+        // Incluir el ID del usuario actual
+        creado_por: user?.id
       };
       
       console.log("Enviando datos procesados:", dataToSend);
-      
+      console.log("Usuario actual:", user?.username, "ID:", user?.id);
       console.log("Enviando petición a /api/caja/movimientos con datos:", dataToSend);
       
       try {
