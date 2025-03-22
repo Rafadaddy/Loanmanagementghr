@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { formatCurrency, formatDate, getLoanStatus, getPaymentStatus } from "@/lib/utils";
-import Sidebar from "@/components/navigation/sidebar";
-import MobileHeader from "@/components/navigation/mobile-header";
+import MainLayout from "@/components/layout/main-layout";
 import { Prestamo, Cliente, Pago } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -197,213 +196,208 @@ export default function Reports() {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-      <Sidebar />
-      <MobileHeader />
-      
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 mt-16 md:mt-0">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Reportes</h1>
-            <p className="text-sm text-gray-600">Análisis y estadísticas del sistema</p>
-          </div>
-          
-          <Button 
-            className="mt-4 md:mt-0 bg-primary hover:bg-blue-600"
-            onClick={exportarCSV}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Exportar Reporte
-          </Button>
+    <MainLayout>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Reportes</h1>
+          <p className="text-sm text-gray-600">Análisis y estadísticas del sistema</p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card className="md:col-span-3">
-            <CardHeader className="pb-1">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                <CardTitle>Reporte de {reportType === "prestamos" ? "Préstamos" : "Pagos"}</CardTitle>
-                
-                <div className="flex items-center gap-2 mt-3 md:mt-0">
-                  <Select 
-                    defaultValue="todo" 
-                    onValueChange={setPeriodoTiempo}
-                  >
-                    <SelectTrigger className="w-full md:w-40">
-                      <SelectValue placeholder="Periodo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="semana">Última semana</SelectItem>
-                      <SelectItem value="mes">Último mes</SelectItem>
-                      <SelectItem value="trimestre">Último trimestre</SelectItem>
-                      <SelectItem value="todo">Todo el tiempo</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+        <Button 
+          className="mt-4 md:mt-0 bg-primary hover:bg-blue-600"
+          onClick={exportarCSV}
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Exportar Reporte
+        </Button>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card className="md:col-span-3">
+          <CardHeader className="pb-1">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+              <CardTitle>Reporte de {reportType === "prestamos" ? "Préstamos" : "Pagos"}</CardTitle>
+              
+              <div className="flex items-center gap-2 mt-3 md:mt-0">
+                <Select 
+                  defaultValue="todo" 
+                  onValueChange={setPeriodoTiempo}
+                >
+                  <SelectTrigger className="w-full md:w-40">
+                    <SelectValue placeholder="Periodo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="semana">Última semana</SelectItem>
+                    <SelectItem value="mes">Último mes</SelectItem>
+                    <SelectItem value="trimestre">Último trimestre</SelectItem>
+                    <SelectItem value="todo">Todo el tiempo</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="grafica" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-6">
-                  <TabsTrigger value="grafica">Gráfica</TabsTrigger>
-                  <TabsTrigger value="tabla">Tabla</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="grafica">
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={montosPorMes()}
-                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="mes" />
-                        <YAxis />
-                        <Tooltip formatter={(value) => formatCurrency(value as number)} />
-                        <Legend />
-                        <Bar dataKey="prestamos" name="Préstamos" fill="#357AFF" />
-                        <Bar dataKey="pagos" name="Pagos" fill="#10B981" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="tabla">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          {reportType === "prestamos" ? (
-                            <>
-                              <TableHead>Cliente</TableHead>
-                              <TableHead>Monto</TableHead>
-                              <TableHead>Interés</TableHead>
-                              <TableHead>Fecha</TableHead>
-                              <TableHead>Semanas</TableHead>
-                              <TableHead>Estado</TableHead>
-                            </>
-                          ) : (
-                            <>
-                              <TableHead>Cliente</TableHead>
-                              <TableHead>Préstamo</TableHead>
-                              <TableHead>Monto Pagado</TableHead>
-                              <TableHead>Fecha Pago</TableHead>
-                              <TableHead>Semana</TableHead>
-                              <TableHead>Estado</TableHead>
-                            </>
-                          )}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="grafica" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="grafica">Gráfica</TabsTrigger>
+                <TabsTrigger value="tabla">Tabla</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="grafica">
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={montosPorMes()}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="mes" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                      <Legend />
+                      <Bar dataKey="prestamos" name="Préstamos" fill="#357AFF" />
+                      <Bar dataKey="pagos" name="Pagos" fill="#10B981" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="tabla">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
                         {reportType === "prestamos" ? (
-                          prestamosFiltrados.length === 0 ? (
-                            <TableRow>
-                              <TableCell colSpan={6} className="text-center">No hay préstamos en este periodo</TableCell>
-                            </TableRow>
-                          ) : (
-                            prestamosFiltrados.map(prestamo => {
-                              const cliente = clientes.find(c => c.id === prestamo.cliente_id);
-                              const { label, className } = getLoanStatus(prestamo.estado);
-                              
-                              return (
-                                <TableRow key={prestamo.id}>
-                                  <TableCell className="font-medium">{cliente?.nombre || 'Cliente desconocido'}</TableCell>
-                                  <TableCell>{formatCurrency(prestamo.monto_prestado)}</TableCell>
-                                  <TableCell>{prestamo.tasa_interes}%</TableCell>
-                                  <TableCell>{formatDate(prestamo.fecha_prestamo)}</TableCell>
-                                  <TableCell>{prestamo.semanas_pagadas} / {prestamo.numero_semanas}</TableCell>
-                                  <TableCell>
-                                    <Badge className={className}>{label}</Badge>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })
-                          )
+                          <>
+                            <TableHead>Cliente</TableHead>
+                            <TableHead>Monto</TableHead>
+                            <TableHead>Interés</TableHead>
+                            <TableHead>Fecha</TableHead>
+                            <TableHead>Semanas</TableHead>
+                            <TableHead>Estado</TableHead>
+                          </>
                         ) : (
-                          pagosFiltrados.length === 0 ? (
-                            <TableRow>
-                              <TableCell colSpan={6} className="text-center">No hay pagos en este periodo</TableCell>
-                            </TableRow>
-                          ) : (
-                            pagosFiltrados.map(pago => {
-                              const prestamo = prestamos.find(p => p.id === pago.prestamo_id);
-                              const cliente = prestamo ? clientes.find(c => c.id === prestamo.cliente_id) : undefined;
-                              const { label, className } = getPaymentStatus(pago.estado);
-                              
-                              return (
-                                <TableRow key={pago.id}>
-                                  <TableCell className="font-medium">{cliente?.nombre || 'Cliente desconocido'}</TableCell>
-                                  <TableCell>{prestamo ? formatCurrency(prestamo.monto_prestado) : 'N/A'}</TableCell>
-                                  <TableCell className="text-green-600 font-medium">{formatCurrency(pago.monto_pagado)}</TableCell>
-                                  <TableCell>{formatDate(pago.fecha_pago)}</TableCell>
-                                  <TableCell>{pago.numero_semana}</TableCell>
-                                  <TableCell>
-                                    <Badge className={className}>{label}</Badge>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })
-                          )
+                          <>
+                            <TableHead>Cliente</TableHead>
+                            <TableHead>Préstamo</TableHead>
+                            <TableHead>Monto Pagado</TableHead>
+                            <TableHead>Fecha Pago</TableHead>
+                            <TableHead>Semana</TableHead>
+                            <TableHead>Estado</TableHead>
+                          </>
                         )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Tipos de Reportes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Button 
-                  variant={reportType === "prestamos" ? "default" : "outline"}
-                  className={`w-full justify-start ${reportType === "prestamos" ? "bg-primary" : ""}`}
-                  onClick={() => setReportType("prestamos")}
-                >
-                  <i className="fas fa-file-invoice-dollar mr-2"></i>
-                  Préstamos
-                </Button>
-                <Button 
-                  variant={reportType === "pagos" ? "default" : "outline"}
-                  className={`w-full justify-start ${reportType === "pagos" ? "bg-primary" : ""}`}
-                  onClick={() => setReportType("pagos")}
-                >
-                  <i className="fas fa-money-bill-wave mr-2"></i>
-                  Pagos
-                </Button>
-                
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <p className="text-sm font-medium mb-3">Estado de Préstamos</p>
-                  <div className="h-[180px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={datosPrestamosEstado}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={60}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {datosPrestamosEstado.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => `${value} préstamos`} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {reportType === "prestamos" ? (
+                        prestamosFiltrados.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center">No hay préstamos en este periodo</TableCell>
+                          </TableRow>
+                        ) : (
+                          prestamosFiltrados.map(prestamo => {
+                            const cliente = clientes.find(c => c.id === prestamo.cliente_id);
+                            const { label, className } = getLoanStatus(prestamo.estado);
+                            
+                            return (
+                              <TableRow key={prestamo.id}>
+                                <TableCell className="font-medium">{cliente?.nombre || 'Cliente desconocido'}</TableCell>
+                                <TableCell>{formatCurrency(prestamo.monto_prestado)}</TableCell>
+                                <TableCell>{prestamo.tasa_interes}%</TableCell>
+                                <TableCell>{formatDate(prestamo.fecha_prestamo)}</TableCell>
+                                <TableCell>{prestamo.semanas_pagadas} / {prestamo.numero_semanas}</TableCell>
+                                <TableCell>
+                                  <Badge className={className}>{label}</Badge>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })
+                        )
+                      ) : (
+                        pagosFiltrados.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center">No hay pagos en este periodo</TableCell>
+                          </TableRow>
+                        ) : (
+                          pagosFiltrados.map(pago => {
+                            const prestamo = prestamos.find(p => p.id === pago.prestamo_id);
+                            const cliente = prestamo ? clientes.find(c => c.id === prestamo.cliente_id) : undefined;
+                            const { label, className } = getPaymentStatus(pago.estado);
+                            
+                            return (
+                              <TableRow key={pago.id}>
+                                <TableCell className="font-medium">{cliente?.nombre || 'Cliente desconocido'}</TableCell>
+                                <TableCell>{prestamo ? formatCurrency(prestamo.monto_prestado) : 'N/A'}</TableCell>
+                                <TableCell className="text-green-600 font-medium">{formatCurrency(pago.monto_pagado)}</TableCell>
+                                <TableCell>{formatDate(pago.fecha_pago)}</TableCell>
+                                <TableCell>{pago.numero_semana}</TableCell>
+                                <TableCell>
+                                  <Badge className={className}>{label}</Badge>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })
+                        )
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Tipos de Reportes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Button 
+                variant={reportType === "prestamos" ? "default" : "outline"}
+                className={`w-full justify-start ${reportType === "prestamos" ? "bg-primary" : ""}`}
+                onClick={() => setReportType("prestamos")}
+              >
+                <i className="fas fa-file-invoice-dollar mr-2"></i>
+                Préstamos
+              </Button>
+              <Button 
+                variant={reportType === "pagos" ? "default" : "outline"}
+                className={`w-full justify-start ${reportType === "pagos" ? "bg-primary" : ""}`}
+                onClick={() => setReportType("pagos")}
+              >
+                <i className="fas fa-money-bill-wave mr-2"></i>
+                Pagos
+              </Button>
+              
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <p className="text-sm font-medium mb-3">Estado de Préstamos</p>
+                <div className="h-[180px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={datosPrestamosEstado}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={60}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {datosPrestamosEstado.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => `${value} préstamos`} />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </MainLayout>
   );
 }
