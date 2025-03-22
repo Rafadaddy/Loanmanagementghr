@@ -18,7 +18,9 @@ const scryptAsync = promisify(scrypt);
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
+  const hashedResult = `${buf.toString("hex")}.${salt}`;
+  console.log(`DEBUG - Contraseña hasheada generada: ${hashedResult}`);
+  return hashedResult;
 }
 
 async function comparePasswords(supplied: string, stored: string) {
@@ -103,16 +105,51 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err: any, user: Express.User | false, info: any) => {
-      if (err) return next(err);
-      if (!user) return res.status(401).send("Credenciales inválidas");
+  app.post("/api/login", async (req, res, next) => {
+    console.log("DEBUG - Intento de login con:", {
+      username: req.body.username,
+      passwordProvided: !!req.body.password
+    });
+    
+    // Buscar el usuario manualmente primero
+    try {
+      const user = await storage.getUserByUsername(req.body.username);
+      console.log("DEBUG - Usuario encontrado en DB:", user ? { id: user.id, username: user.username } : null);
       
+      if (!user) {
+        console.log("DEBUG - Usuario no encontrado");
+        return res.status(401).send("Credenciales inválidas");
+      }
+      
+      // Intentar verificar la contraseña manualmente
+      const passwordValid = await comparePasswords(req.body.password, user.password);
+      console.log("DEBUG - Contraseña válida:", passwordValid);
+      
+      if (!passwordValid) {
+        console.log("DEBUG - Contraseña inválida");
+        return res.status(401).send("Credenciales inválidas");
+      }
+      
+      // Si llegamos aquí, el usuario y contraseña son correctos, autenticar
       req.login(user, (err) => {
-        if (err) return next(err);
+        if (err) {
+          console.error("DEBUG - Error en req.login:", err);
+          return next(err);
+        }
+        
+        console.log("DEBUG - Login exitoso, sesión creada:", {
+          user: { id: user.id, username: user.username },
+          session: !!req.session,
+          sessionID: req.sessionID,
+          authenticated: req.isAuthenticated()
+        });
+        
         return res.status(200).json(user);
       });
-    })(req, res, next);
+    } catch (error) {
+      console.error("DEBUG - Error en proceso de login:", error);
+      return next(error);
+    }
   });
 
   app.post("/api/logout", (req, res, next) => {
@@ -123,7 +160,60 @@ export function setupAuth(app: Express) {
   });
 
   app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
+    console.log("DEBUG - GET /api/user - Estado de autenticación:", {
+      session: !!req.session,
+      sessionID: req.sessionID,
+      isAuthenticated: req.isAuthenticated(),
+      hasUser: !!req.user,
+      userID: req.user?.id
+    });
+    
+    if (!req.isAuthenticated()) {
+      console.log("DEBUG - Usuario no autenticado, devolviendo 401");
+      return res.sendStatus(401);
+    }
+    
+    console.log("DEBUG - Usuario autenticado:", {
+      id: req.user.id,
+      username: req.user.username
+    });
+    
     res.json(req.user);
+  });
+  
+  // Ruta temporal para crear un nuevo usuario admin para pruebas
+  app.get("/debug/create-user", async (req, res) => {
+    try {
+      // Configurar respuesta para que sea explícitamente JSON
+      res.setHeader('Content-Type', 'application/json');
+      
+      // Generar contraseña hasheada
+      const hashedPassword = await hashPassword("admin123");
+      console.log("DEBUG - Contraseña hasheada:", hashedPassword);
+      
+      // Verificar si ya existe el usuario
+      const existingUser = await storage.getUserByUsername("admin@test.com");
+      if (existingUser) {
+        return res.status(200).send(JSON.stringify({
+          message: "El usuario ya existe",
+          user: { id: existingUser.id, username: existingUser.username }
+        }));
+      }
+      
+      // Crear usuario
+      const user = await storage.createUser({
+        nombre: "Administrador de Prueba",
+        username: "admin@test.com",
+        password: hashedPassword
+      });
+      
+      return res.status(200).send(JSON.stringify({
+        message: "Usuario creado con éxito",
+        user: { id: user.id, username: user.username }
+      }));
+    } catch (error) {
+      console.error("ERROR al crear usuario de prueba:", error);
+      return res.status(500).send(JSON.stringify({ error: String(error) }));
+    }
   });
 }
