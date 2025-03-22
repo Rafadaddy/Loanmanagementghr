@@ -522,41 +522,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/caja/movimientos", isAuthenticated, async (req, res, next) => {
     try {
-      // Validar con el esquema
-      const movimientoData = insertMovimientoCajaSchema.parse({
+      console.log("DEBUG - Recibiendo petición POST /api/caja/movimientos");
+      console.log("DEBUG - Datos recibidos:", req.body);
+      
+      // Asegurar que los campos numéricos sean del tipo correcto
+      const datosProcesados = {
         ...req.body,
         creado_por: req.user!.id, // Agregar el id del usuario autenticado
-        fecha: req.body.fecha || new Date()
-      });
+        fecha: req.body.fecha || new Date(),
+        // Convertir cliente_id y prestamo_id a null si son 0, undefined o string vacío
+        cliente_id: req.body.cliente_id === 0 || req.body.cliente_id === "0" || !req.body.cliente_id 
+          ? null 
+          : typeof req.body.cliente_id === 'string' 
+            ? parseInt(req.body.cliente_id) 
+            : req.body.cliente_id,
+        prestamo_id: req.body.prestamo_id === 0 || req.body.prestamo_id === "0" || !req.body.prestamo_id 
+          ? null 
+          : typeof req.body.prestamo_id === 'string' 
+            ? parseInt(req.body.prestamo_id) 
+            : req.body.prestamo_id,
+      };
+      
+      console.log("DEBUG - Datos procesados antes de validación:", datosProcesados);
+      
+      // Validar con el esquema
+      const movimientoData = insertMovimientoCajaSchema.parse(datosProcesados);
+      
+      console.log("DEBUG - Datos validados con Zod:", movimientoData);
       
       // Validar que el tipo sea INGRESO o EGRESO
       if (!["INGRESO", "EGRESO"].includes(movimientoData.tipo)) {
+        console.log("DEBUG - Tipo inválido:", movimientoData.tipo);
         return res.status(400).json({ message: "El tipo debe ser INGRESO o EGRESO" });
       }
       
       // Validar montos positivos
       if (parseFloat(movimientoData.monto) <= 0) {
+        console.log("DEBUG - Monto inválido:", movimientoData.monto);
         return res.status(400).json({ message: "El monto debe ser un valor positivo" });
       }
       
       // Si es un movimiento relacionado con un préstamo, validar que exista
       if (movimientoData.prestamo_id) {
+        console.log("DEBUG - Validando préstamo:", movimientoData.prestamo_id);
         const prestamo = await storage.getPrestamo(movimientoData.prestamo_id);
         if (!prestamo) {
+          console.log("DEBUG - Préstamo no encontrado:", movimientoData.prestamo_id);
           return res.status(404).json({ message: "Préstamo no encontrado" });
         }
+        console.log("DEBUG - Préstamo encontrado:", prestamo.id);
       }
       
       // Si es un movimiento relacionado con un cliente, validar que exista
       if (movimientoData.cliente_id) {
+        console.log("DEBUG - Validando cliente:", movimientoData.cliente_id);
         const cliente = await storage.getCliente(movimientoData.cliente_id);
         if (!cliente) {
+          console.log("DEBUG - Cliente no encontrado:", movimientoData.cliente_id);
           return res.status(404).json({ message: "Cliente no encontrado" });
         }
+        console.log("DEBUG - Cliente encontrado:", cliente.id);
       }
       
       // Crear movimiento
+      console.log("DEBUG - Creando movimiento de caja:", movimientoData);
       const movimiento = await storage.createMovimientoCaja(movimientoData);
+      console.log("DEBUG - Movimiento creado:", movimiento);
       res.status(201).json(movimiento);
     } catch (error) {
       console.error("Error al crear movimiento de caja:", error);
