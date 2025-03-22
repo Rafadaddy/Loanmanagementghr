@@ -155,12 +155,20 @@ export default function MovimientoCajaForm({
       form.reset();
       onOpenChange(false);
       
-      // Invalidar todas las consultas relevantes para actualizar los datos
-      queryClient.invalidateQueries({ queryKey: ['/api/caja/movimientos'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/caja/resumen'] });
+      // Mostrar un mensaje de éxito antes de recargar la página
+      toast({
+        title: "Movimiento registrado",
+        description: "Recargando página...",
+        variant: "default",
+      });
       
-      // Callback de éxito (actualiza datos o muestra mensaje)
-      if (onSuccess) onSuccess();
+      // Esperar un poco para que el usuario vea el mensaje
+      setTimeout(() => {
+        // Recargar la página completamente
+        window.location.reload();
+      }, 1000);
+      
+      // No ejecutamos el callback porque vamos a recargar la página
     },
     onError: (error: Error) => {
       toast({

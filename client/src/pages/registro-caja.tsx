@@ -80,20 +80,18 @@ export default function RegistroCaja() {
     onSuccess: () => {
       toast({
         title: "Movimiento eliminado",
-        description: "El movimiento ha sido eliminado correctamente",
+        description: "Recargando página...",
         variant: "default",
       });
-      
-      // Actualizar inmediatamente los datos
-      queryClient.invalidateQueries({ queryKey: ['/api/caja/movimientos'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/caja/resumen'] });
       
       // Cerrar el diálogo y limpiar el estado
       setDeleteDialogOpen(false);
       setSelectedMovimiento(null);
       
-      // Refrescar explícitamente
-      refetch();
+      // Esperar un poco y luego recargar la página
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     },
     onError: (error: Error) => {
       toast({
@@ -123,18 +121,20 @@ export default function RegistroCaja() {
     : [];
 
   const handleFormSuccess = () => {
-    // Refrescar tanto los movimientos como el resumen de caja
-    queryClient.invalidateQueries({ queryKey: ['/api/caja/movimientos'] });
-    queryClient.invalidateQueries({ queryKey: ['/api/caja/resumen'] });
-    refetch();
+    // Cerrar el formulario
     setFormDialogOpen(false);
     
     // Mostrar mensaje de éxito
     toast({
       title: "Movimiento registrado",
-      description: "El movimiento de caja ha sido registrado correctamente",
+      description: "Recargando página...",
       variant: "default",
     });
+    
+    // Recargar la página después de un pequeño retraso
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
   };
 
   const promptDelete = (movimiento: MovimientoCaja) => {

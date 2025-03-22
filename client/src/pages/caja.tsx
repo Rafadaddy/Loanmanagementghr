@@ -70,17 +70,19 @@ export default function Caja() {
     onSuccess: () => {
       toast({
         title: "Éxito",
-        description: "Movimiento eliminado correctamente",
+        description: "Movimiento eliminado. Recargando página...",
       });
       
-      // Invalidar consultas para refrescar los datos
-      queryClient.invalidateQueries({ queryKey: ["/api/caja/movimientos"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/caja/resumen"] });
       setMovimientoToDelete(null);
       setShowDeleteConfirm(false);
       
       // Detener el indicador de carga
       stopLoading();
+      
+      // Recargar la página después de un breve retraso
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     },
     onError: (error: Error) => {
       toast({
@@ -342,16 +344,17 @@ export default function Caja() {
           open={openMovimientoForm} 
           onOpenChange={setOpenMovimientoForm} 
           onSuccess={() => {
-            // Invalidar consultas para actualizar los datos
-            queryClient.invalidateQueries({ queryKey: ["/api/caja/movimientos"] });
-            queryClient.invalidateQueries({ queryKey: ["/api/caja/resumen"] });
-            
             // Mostrar mensaje de éxito
             toast({
               title: "Éxito",
-              description: "Movimiento registrado correctamente",
+              description: "Movimiento registrado. Recargando página...",
               variant: "default",
             });
+            
+            // Recargar la página después de un breve retraso
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
           }}
         />
       </main>
