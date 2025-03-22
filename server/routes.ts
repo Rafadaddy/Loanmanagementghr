@@ -566,11 +566,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("DEBUG - Recibiendo petición POST /api/caja/movimientos");
       console.log("DEBUG - Datos recibidos:", req.body);
+      console.log("DEBUG - Usuario autenticado:", {
+        id: req.user?.id,
+        username: req.user?.username,
+        hasSession: !!req.session,
+        isAuthenticated: req.isAuthenticated(),
+        sessionID: req.sessionID
+      });
       
       // Asegurar que los campos numéricos sean del tipo correcto
       const datosProcesados = {
         ...req.body,
-        creado_por: req.user!.id, // Agregar el id del usuario autenticado
+        creado_por: req.user?.id || req.body.creado_por, // Usar el ID del usuario proporcionado explícitamente si no hay sesión
         fecha: req.body.fecha || new Date(),
         // Convertir cliente_id y prestamo_id a null si son 0, undefined o string vacío
         cliente_id: req.body.cliente_id === 0 || req.body.cliente_id === "0" || !req.body.cliente_id 

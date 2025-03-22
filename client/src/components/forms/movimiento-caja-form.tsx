@@ -172,11 +172,28 @@ export default function MovimientoCajaForm({ open, onOpenChange, onSuccess }: Mo
     },
     onError: (error: Error) => {
       console.error("Error al crear movimiento:", error);
-      toast({
-        title: "Error",
-        description: `Error al registrar el movimiento: ${error.message}`,
-        variant: "destructive",
-      });
+      
+      // Verificar si es un error de autenticación
+      if (error.message.includes("401") || error.message.includes("No autorizado") || error.message.includes("iniciar sesión")) {
+        toast({
+          title: "Error de autenticación",
+          description: "Su sesión ha expirado. Por favor, inicie sesión nuevamente.",
+          variant: "destructive",
+        });
+        
+        // Intentar refrescar la sesión
+        refetchUser().catch(() => {
+          // Si falla, redirigir a la página de login
+          window.location.href = '/auth';
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: `Error al registrar el movimiento: ${error.message}`,
+          variant: "destructive",
+        });
+      }
+      
       setIsFormSubmitting(false);
       stopLoading();
     },

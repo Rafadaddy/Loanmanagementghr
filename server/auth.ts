@@ -22,7 +22,17 @@ async function hashPassword(password: string) {
 }
 
 async function comparePasswords(supplied: string, stored: string) {
+  if (!stored || !stored.includes(".")) {
+    console.error("Error de formato en la contraseña almacenada:", stored);
+    return false;
+  }
+  
   const [hashed, salt] = stored.split(".");
+  if (!hashed || !salt) {
+    console.error("Error al dividir la contraseña almacenada:", { hashed, salt });
+    return false;
+  }
+  
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
   return timingSafeEqual(hashedBuf, suppliedBuf);
@@ -31,11 +41,11 @@ async function comparePasswords(supplied: string, stored: string) {
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "sistema-de-prestamos-secret",
-    resave: false,
-    saveUninitialized: false,
+    resave: true, // Cambio a true para garantizar que la sesión se guarde
+    saveUninitialized: true, // Cambio a true para crear sesiones aunque no estén inicializadas
     store: storage.sessionStore,
     cookie: {
-      maxAge: 24 * 60 * 60 * 1000, // 24 horas
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días para mayor persistencia
       httpOnly: true,
       secure: false, // Cambiar a true en producción con HTTPS
       sameSite: 'lax' // Importante para que las cookies funcionen en desarrollo

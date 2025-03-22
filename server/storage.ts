@@ -87,7 +87,9 @@ export class MemStorage implements IStorage {
     this.currentPagoId = 1;
     this.currentMovimientoCajaId = 1;
     this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000 // 24 horas
+      checkPeriod: 7 * 86400000, // 7 días
+      stale: false, // Impedir que las sesiones se vuelvan obsoletas
+      ttl: 7 * 86400000 // 7 días de tiempo de vida
     });
     
     // Inicializar datos de ejemplo
@@ -100,7 +102,7 @@ export class MemStorage implements IStorage {
       const adminUser: InsertUser = {
         nombre: "Administrador",
         username: "super_rafaga@gmail.com",
-        password: "$2b$10$X4jG0tjVN17aFFqIuJYI7u6hHBhTIFxZgnm9jzQ9uE3xsRIRW6D0O" // Contraseña: admin123
+        password: "09c2dfbe6ee5a50cd3c103e937e2a2b32693887a8e5f3370109156218f20d63b6c7cb12eb51ff0cc8899d3f0a59581e5de94d3f0fd1575badb1f85ff59bd3ea8.ba5fcde2cb04e5bc" // Contraseña: admin123 (hasheada con scrypt)
       };
       await this.createUser(adminUser);
     }
