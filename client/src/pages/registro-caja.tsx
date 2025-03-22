@@ -27,6 +27,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
+import { Link } from "wouter";
+import { HomeIcon } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -136,6 +138,16 @@ export default function RegistroCaja() {
 
   return (
     <div className="container mx-auto py-6">
+      {/* Botón para volver al menú principal */}
+      <div className="mb-4">
+        <Link href="/">
+          <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <HomeIcon size={16} />
+            <span>Volver al Menú Principal</span>
+          </Button>
+        </Link>
+      </div>
+      
       <div className="flex flex-col md:flex-row justify-between items-start mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Registro de Caja</h1>

@@ -19,6 +19,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 
 // Este componente se usará para crear nuevos formularios de movimientos
 import MovimientoCajaForm from "@/components/forms/movimiento-caja-form";
+import { HomeIcon } from "lucide-react";
 
 // Página principal de la caja (cash register)
 export default function Caja() {
@@ -137,6 +138,16 @@ export default function Caja() {
       <Helmet>
         <title>Caja | Sistema de Préstamos</title>
       </Helmet>
+
+      {/* Botón para volver al menú principal */}
+      <div className="mb-4">
+        <Link href="/">
+          <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <HomeIcon size={16} />
+            <span>Volver al Menú Principal</span>
+          </Button>
+        </Link>
+      </div>
       
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
         <div>
