@@ -105,6 +105,10 @@ export default function LoanForm({ open, onOpenChange, onSuccess }: LoanFormProp
       return res.json();
     },
     onSuccess: () => {
+      // Mostrar indicador de carga global por un momento adicional para
+      // dar tiempo a que los datos se actualicen completamente
+      startLoading("Actualizando página...");
+      
       // Invalidar múltiples consultas para actualizar los datos automáticamente
       queryClient.invalidateQueries({ queryKey: ["/api/prestamos"] });
       queryClient.invalidateQueries({ queryKey: ["/api/estadisticas"] });
@@ -115,14 +119,24 @@ export default function LoanForm({ open, onOpenChange, onSuccess }: LoanFormProp
           query.queryKey.length > 1 
       });
       
-      toast({
-        title: "Préstamo creado",
-        description: "El préstamo ha sido creado con éxito"
-      });
-      
-      form.reset();
-      onOpenChange(false);
-      if (onSuccess) onSuccess();
+      // Esperar un momento para asegurar que los datos se han actualizado
+      // y para que el usuario vea el mensaje de carga
+      setTimeout(() => {
+        toast({
+          title: "Préstamo creado",
+          description: "El préstamo ha sido creado con éxito"
+        });
+        
+        form.reset();
+        onOpenChange(false);
+        stopLoading();
+        
+        // Si hay una función de éxito personalizada, ejecutarla
+        if (onSuccess) onSuccess();
+        
+        // Recargar la página para asegurar que todos los datos están actualizados
+        window.location.reload();
+      }, 1000);
     },
     onError: (error) => {
       toast({
@@ -192,8 +206,8 @@ export default function LoanForm({ open, onOpenChange, onSuccess }: LoanFormProp
     startLoading("Creando préstamo...");
     
     crearPrestamoMutation.mutate(dataToSend, {
-      onSettled: () => {
-        // Detener el indicador independientemente del resultado
+      onError: () => {
+        // Solo detenemos el indicador en caso de error, ya que en onSuccess ya tenemos la lógica
         stopLoading();
       }
     });
