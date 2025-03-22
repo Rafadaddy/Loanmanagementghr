@@ -256,7 +256,7 @@ export default function MovimientoCajaForm({ open, onOpenChange, onSuccess }: Mo
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">-- Ninguno --</SelectItem>
+                      <SelectItem value="0">-- Ninguno --</SelectItem>
                       {clientes.map((cliente) => (
                         <SelectItem key={cliente.id} value={String(cliente.id)}>
                           {cliente.nombre}
@@ -290,7 +290,7 @@ export default function MovimientoCajaForm({ open, onOpenChange, onSuccess }: Mo
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">-- Ninguno --</SelectItem>
+                      <SelectItem value="0">-- Ninguno --</SelectItem>
                       {prestamos.map((prestamo) => {
                         const cliente = clientes.find(c => c.id === prestamo.cliente_id);
                         return (
