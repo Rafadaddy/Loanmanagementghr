@@ -10,16 +10,22 @@ import LoanDetails from "@/pages/loan-details";
 import LoanCalculatorPage from "@/pages/loan-calculator-page";
 import CobrosDia from "@/pages/cobros-dia";
 import RegistroCaja from "@/pages/registro-caja";
+import Caja from "@/pages/caja";
 import { AuthProvider } from "@/hooks/use-auth";
 import { LoadingProvider } from "@/hooks/use-loading";
+import { SidebarProvider } from "@/hooks/use-sidebar";
 import { ProtectedRoute } from "./lib/protected-route";
+import SidebarToggle from "@/components/navigation/sidebar-toggle";
 
 // Componente principal de la aplicación
 function App() {
   return (
     <AuthProvider>
       <LoadingProvider>
-        <AppContent />
+        <SidebarProvider>
+          <AppContent />
+          <SidebarToggle />
+        </SidebarProvider>
       </LoadingProvider>
     </AuthProvider>
   );
@@ -39,7 +45,8 @@ function AppContent() {
       <ProtectedRoute path="/prestamos/:id" component={LoanDetails} />
       <ProtectedRoute path="/pagos" component={Payments} />
       <ProtectedRoute path="/cobros-dia" component={CobrosDia} />
-      <ProtectedRoute path="/caja" component={RegistroCaja} />
+      <ProtectedRoute path="/caja" component={Caja} />
+      <ProtectedRoute path="/registro-caja" component={RegistroCaja} />
       <ProtectedRoute path="/reportes" component={Reports} />
       <ProtectedRoute path="/calculadora" component={LoanCalculatorPage} />
       <Route>

@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { useSidebar } from "@/hooks/use-sidebar";
 import { Button } from "@/components/ui/button";
 
 interface SidebarProps {
@@ -10,6 +11,7 @@ interface SidebarProps {
 export default function Sidebar({ className }: SidebarProps) {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
+  const { isOpen } = useSidebar();
 
   const navItems = [
     { href: "/dashboard", label: "Inicio", icon: "home" },
@@ -18,13 +20,18 @@ export default function Sidebar({ className }: SidebarProps) {
     { href: "/pagos", label: "Pagos", icon: "money-bill-wave" },
     { href: "/cobros-dia", label: "Cobros del Día", icon: "route" },
     { href: "/caja", label: "Caja", icon: "cash-register" },
+    { href: "/registro-caja", label: "Registro de Caja", icon: "money-check-alt" },
     { href: "/calculadora", label: "Calculadora", icon: "calculator" },
     { href: "/reportes", label: "Reportes", icon: "chart-bar" },
   ];
 
+  if (!isOpen) {
+    return null; // No renderizar el sidebar si está cerrado
+  }
+
   return (
     <aside className={cn("w-64 bg-white shadow-lg hidden md:block overflow-y-auto h-full", className)}>
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-200 flex justify-between items-center">
         <h1 className="text-xl font-bold text-primary">Sistema de Préstamos</h1>
       </div>
       
