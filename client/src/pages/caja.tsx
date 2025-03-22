@@ -135,228 +135,223 @@ export default function Caja() {
   };
   
   return (
-    <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-      <Sidebar />
-      <MobileHeader />
+    <MainLayout>
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Caja</h1>
+        <p className="text-sm text-gray-600">Administra los movimientos de caja, ingresos y egresos</p>
+      </header>
       
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 md:pt-4 mt-16 md:mt-0">
-        <header className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Caja</h1>
-          <p className="text-sm text-gray-600">Administra los movimientos de caja, ingresos y egresos</p>
-        </header>
-        
-        <div className="mb-6">
-          <Button 
-            className="float-right"
-            onClick={() => setOpenMovimientoForm(true)}
-          >
-            <i className="fas fa-plus mr-2"></i>
-            Nuevo Movimiento
-          </Button>
-        </div>
-        
-        {/* Resumen de Caja */}
-        <div className="grid gap-4 md:grid-cols-3 mb-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Saldo Actual</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoadingResumen ? (
-                <div className="animate-pulse h-8 bg-gray-200 rounded"></div>
-              ) : (
-                <div className="text-2xl font-bold text-primary">
-                  {resumenCaja ? formatCurrency(resumenCaja.saldo_actual) : "$0.00"}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Total Ingresos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoadingResumen ? (
-                <div className="animate-pulse h-8 bg-gray-200 rounded"></div>
-              ) : (
-                <div className="text-2xl font-bold text-green-500">
-                  {resumenCaja ? formatCurrency(resumenCaja.total_ingresos) : "$0.00"}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Total Egresos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoadingResumen ? (
-                <div className="animate-pulse h-8 bg-gray-200 rounded"></div>
-              ) : (
-                <div className="text-2xl font-bold text-red-500">
-                  {resumenCaja ? formatCurrency(resumenCaja.total_egresos) : "$0.00"}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-        
-        {/* Filtros y búsqueda */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-          <Tabs defaultValue="todos" className="w-full" value={selectedTab} onValueChange={setSelectedTab}>
-            <TabsList>
-              <TabsTrigger value="todos">Todos</TabsTrigger>
-              <TabsTrigger value="ingresos">Ingresos</TabsTrigger>
-              <TabsTrigger value="egresos">Egresos</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          
-          <div className="mt-4 sm:mt-0 w-full sm:w-auto">
-            <div className="relative">
-              <input
-                type="search"
-                placeholder="Buscar movimientos..."
-                className="w-full sm:w-64 pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <i className="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-            </div>
-          </div>
-        </div>
-        
-        {/* Lista de Movimientos */}
-        <Card className="overflow-hidden">
-          <CardHeader className="pb-0">
-            <CardTitle>Movimientos de Caja</CardTitle>
-            <CardDescription>
-              Registro de todos los ingresos y egresos de la caja
-            </CardDescription>
+      <div className="mb-6">
+        <Button 
+          className="float-right"
+          onClick={() => setOpenMovimientoForm(true)}
+        >
+          <i className="fas fa-plus mr-2"></i>
+          Nuevo Movimiento
+        </Button>
+      </div>
+      
+      {/* Resumen de Caja */}
+      <div className="grid gap-4 md:grid-cols-3 mb-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Saldo Actual</CardTitle>
           </CardHeader>
-          
           <CardContent>
-            {isLoadingMovimientos ? (
-              <LoadingData />
-            ) : isErrorMovimientos ? (
-              <div className="text-center p-4 text-red-500">
-                <i className="fas fa-exclamation-triangle mr-2"></i>
-                Error al cargar los movimientos: {errorMovimientos?.message}
-              </div>
-            ) : filteredMovimientos.length === 0 ? (
-              <div className="text-center p-4 text-gray-500">
-                <i className="fas fa-info-circle mr-2"></i>
-                No hay movimientos registrados
-              </div>
+            {isLoadingResumen ? (
+              <div className="animate-pulse h-8 bg-gray-200 rounded"></div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="py-3 px-2 text-left">Fecha</th>
-                      <th className="py-3 px-2 text-left">Tipo</th>
-                      <th className="py-3 px-2 text-left">Categoría</th>
-                      <th className="py-3 px-2 text-left">Descripción</th>
-                      <th className="py-3 px-2 text-right">Monto</th>
-                      <th className="py-3 px-2 text-center">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredMovimientos.map((movimiento) => (
-                      <tr key={movimiento.id} className="border-b hover:bg-muted/50">
-                        <td className="py-3 px-2 whitespace-nowrap">
-                          {formatDate(movimiento.fecha)}
-                        </td>
-                        <td className="py-3 px-2">
-                          <Badge variant={movimiento.tipo === "INGRESO" ? "success" : "destructive" as any}>
-                            {movimiento.tipo}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-2">{movimiento.categoria}</td>
-                        <td className="py-3 px-2">{movimiento.descripcion || "-"}</td>
-                        <td className="py-3 px-2 text-right font-medium">
-                          <span className={movimiento.tipo === "INGRESO" ? "text-green-500" : "text-red-500"}>
-                            {formatCurrency(movimiento.monto)}
-                          </span>
-                        </td>
-                        <td className="py-3 px-2 text-center">
-                          <button
-                            onClick={() => promptDelete(movimiento)}
-                            className="text-red-500 hover:text-red-700 focus:outline-none"
-                            title="Eliminar movimiento"
-                          >
-                            <i className="fas fa-trash-alt"></i>
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="text-2xl font-bold text-primary">
+                {resumenCaja ? formatCurrency(resumenCaja.saldo_actual) : "$0.00"}
               </div>
             )}
           </CardContent>
         </Card>
         
-        {/* Modal de confirmación para eliminar movimiento */}
-        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirmar eliminación</AlertDialogTitle>
-              <AlertDialogDescription>
-                ¿Estás seguro de que deseas eliminar este movimiento?
-                <div className="mt-2 p-3 bg-gray-100 rounded-md">
-                  <p>
-                    <span className="font-semibold">Fecha:</span>{" "}
-                    {movimientoToDelete && formatDate(movimientoToDelete.fecha)}
-                  </p>
-                  <p>
-                    <span className="font-semibold">Tipo:</span>{" "}
-                    {movimientoToDelete?.tipo}
-                  </p>
-                  <p>
-                    <span className="font-semibold">Categoría:</span>{" "}
-                    {movimientoToDelete?.categoria}
-                  </p>
-                  <p>
-                    <span className="font-semibold">Monto:</span>{" "}
-                    {movimientoToDelete && formatCurrency(movimientoToDelete.monto)}
-                  </p>
-                </div>
-                <p className="mt-2 text-red-500">Esta acción no se puede deshacer.</p>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction 
-                onClick={handleDeleteConfirm} 
-                className="bg-red-500 hover:bg-red-600"
-              >
-                Eliminar
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Ingresos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingResumen ? (
+              <div className="animate-pulse h-8 bg-gray-200 rounded"></div>
+            ) : (
+              <div className="text-2xl font-bold text-green-500">
+                {resumenCaja ? formatCurrency(resumenCaja.total_ingresos) : "$0.00"}
+              </div>
+            )}
+          </CardContent>
+        </Card>
         
-        {/* Formulario para crear nuevo movimiento de caja */}
-        <MovimientoCajaForm 
-          open={openMovimientoForm} 
-          onOpenChange={setOpenMovimientoForm} 
-          onSuccess={() => {
-            // Mostrar mensaje de éxito
-            toast({
-              title: "Éxito",
-              description: "Movimiento registrado. Recargando página...",
-              variant: "default",
-            });
-            
-            // Recargar la página después de un breve retraso
-            setTimeout(() => {
-              window.location.reload();
-            }, 1000);
-          }}
-        />
-      </main>
-    </div>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Egresos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingResumen ? (
+              <div className="animate-pulse h-8 bg-gray-200 rounded"></div>
+            ) : (
+              <div className="text-2xl font-bold text-red-500">
+                {resumenCaja ? formatCurrency(resumenCaja.total_egresos) : "$0.00"}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Filtros y búsqueda */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+        <Tabs defaultValue="todos" className="w-full" value={selectedTab} onValueChange={setSelectedTab}>
+          <TabsList>
+            <TabsTrigger value="todos">Todos</TabsTrigger>
+            <TabsTrigger value="ingresos">Ingresos</TabsTrigger>
+            <TabsTrigger value="egresos">Egresos</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        
+        <div className="mt-4 sm:mt-0 w-full sm:w-auto">
+          <div className="relative">
+            <input
+              type="search"
+              placeholder="Buscar movimientos..."
+              className="w-full sm:w-64 pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <i className="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+          </div>
+        </div>
+      </div>
+      
+      {/* Lista de Movimientos */}
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-0">
+          <CardTitle>Movimientos de Caja</CardTitle>
+          <CardDescription>
+            Registro de todos los ingresos y egresos de la caja
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent>
+          {isLoadingMovimientos ? (
+            <LoadingData />
+          ) : isErrorMovimientos ? (
+            <div className="text-center p-4 text-red-500">
+              <i className="fas fa-exclamation-triangle mr-2"></i>
+              Error al cargar los movimientos: {errorMovimientos?.message}
+            </div>
+          ) : filteredMovimientos.length === 0 ? (
+            <div className="text-center p-4 text-gray-500">
+              <i className="fas fa-info-circle mr-2"></i>
+              No hay movimientos registrados
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="py-3 px-2 text-left">Fecha</th>
+                    <th className="py-3 px-2 text-left">Tipo</th>
+                    <th className="py-3 px-2 text-left">Categoría</th>
+                    <th className="py-3 px-2 text-left">Descripción</th>
+                    <th className="py-3 px-2 text-right">Monto</th>
+                    <th className="py-3 px-2 text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMovimientos.map((movimiento) => (
+                    <tr key={movimiento.id} className="border-b hover:bg-muted/50">
+                      <td className="py-3 px-2 whitespace-nowrap">
+                        {formatDate(movimiento.fecha)}
+                      </td>
+                      <td className="py-3 px-2">
+                        <Badge variant={movimiento.tipo === "INGRESO" ? "success" : "destructive" as any}>
+                          {movimiento.tipo}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-2">{movimiento.categoria}</td>
+                      <td className="py-3 px-2">{movimiento.descripcion || "-"}</td>
+                      <td className="py-3 px-2 text-right font-medium">
+                        <span className={movimiento.tipo === "INGRESO" ? "text-green-500" : "text-red-500"}>
+                          {formatCurrency(movimiento.monto)}
+                        </span>
+                      </td>
+                      <td className="py-3 px-2 text-center">
+                        <button
+                          onClick={() => promptDelete(movimiento)}
+                          className="text-red-500 hover:text-red-700 focus:outline-none"
+                          title="Eliminar movimiento"
+                        >
+                          <i className="fas fa-trash-alt"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      
+      {/* Modal de confirmación para eliminar movimiento */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar eliminación</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Estás seguro de que deseas eliminar este movimiento?
+              <div className="mt-2 p-3 bg-gray-100 rounded-md">
+                <p>
+                  <span className="font-semibold">Fecha:</span>{" "}
+                  {movimientoToDelete && formatDate(movimientoToDelete.fecha)}
+                </p>
+                <p>
+                  <span className="font-semibold">Tipo:</span>{" "}
+                  {movimientoToDelete?.tipo}
+                </p>
+                <p>
+                  <span className="font-semibold">Categoría:</span>{" "}
+                  {movimientoToDelete?.categoria}
+                </p>
+                <p>
+                  <span className="font-semibold">Monto:</span>{" "}
+                  {movimientoToDelete && formatCurrency(movimientoToDelete.monto)}
+                </p>
+              </div>
+              <p className="mt-2 text-red-500">Esta acción no se puede deshacer.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm} 
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Formulario para crear nuevo movimiento de caja */}
+      <MovimientoCajaForm 
+        open={openMovimientoForm} 
+        onOpenChange={setOpenMovimientoForm} 
+        onSuccess={() => {
+          // Mostrar mensaje de éxito
+          toast({
+            title: "Éxito",
+            description: "Movimiento registrado. Recargando página...",
+            variant: "default",
+          });
+          
+          // Recargar la página después de un breve retraso
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }}
+      />
+    </MainLayout>
   );
 }
