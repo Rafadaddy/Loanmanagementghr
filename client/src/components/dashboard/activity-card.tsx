@@ -69,7 +69,7 @@ export default function ActivityCard({ title, items, viewAllLink, viewAllText }:
         </ul>
         <div className="mt-3 text-center">
           <Link href={viewAllLink}>
-            <a className="text-sm text-primary hover:text-blue-600">{viewAllText}</a>
+            <div className="text-sm text-primary hover:text-blue-600 cursor-pointer">{viewAllText}</div>
           </Link>
         </div>
       </CardContent>

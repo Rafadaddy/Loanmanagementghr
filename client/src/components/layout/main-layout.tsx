@@ -13,19 +13,31 @@ export default function MainLayout({ children, className }: MainLayoutProps) {
   const { isOpen } = useSidebar();
   
   return (
-    <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-      <Sidebar />
-      <MobileHeader />
+    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50">
+      {/* Sidebar siempre visible en tamaños md y mayores */}
+      <div className="hidden md:block">
+        <Sidebar />
+      </div>
       
-      <main 
-        className={cn(
-          "flex-1 overflow-y-auto p-4 md:p-6 md:pt-4 mt-16 md:mt-0 transition-all duration-300",
-          isOpen ? "md:ml-64" : "md:ml-16", // Cambiado ml-0 a ml-16 para dejar espacio cuando el sidebar está colapsado
-          className
-        )}
-      >
-        {children}
-      </main>
+      {/* Header para móviles */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-10">
+        <MobileHeader />
+      </div>
+      
+      {/* Contenido principal */}
+      <div className={cn(
+        "flex-1 overflow-hidden transition-all duration-300",
+        isOpen ? "md:ml-64" : "md:ml-16" // Espacio para el sidebar colapsado o expandido
+      )}>
+        <main 
+          className={cn(
+            "h-full overflow-y-auto p-4 md:p-6 mt-16 md:mt-0",
+            className
+          )}
+        >
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
