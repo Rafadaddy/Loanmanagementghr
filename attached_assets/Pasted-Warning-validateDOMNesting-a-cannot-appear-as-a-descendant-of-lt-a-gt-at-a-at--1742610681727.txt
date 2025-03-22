@@ -1,0 +1,24 @@
+Warning: validateDOMNesting(...): <a> cannot appear as a descendant of &lt;a&gt;.
+    at a
+    at a
+    at https://d85abeb7-4367-4e90-b64b-f46334ee8e0d-00-1uz4dtznybegh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=b5cc8565:205:18
+    at div
+    at div
+    at _c9 (https://d85abeb7-4367-4e90-b64b-f46334ee8e0d-00-1uz4dtznybegh.worf.replit.dev/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://d85abeb7-4367-4e90-b64b-f46334ee8e0d-00-1uz4dtznybegh.worf.replit.dev/src/components/ui/card.tsx:20:11)
+    at ActivityCard (https://d85abeb7-4367-4e90-b64b-f46334ee8e0d-00-1uz4dtznybegh.worf.replit.dev/src/components/dashboard/activity-card.tsx:19:40)
+    at div
+    at section
+    at main
+    at div
+    at Dashboard (https://d85abeb7-4367-4e90-b64b-f46334ee8e0d-00-1uz4dtznybegh.worf.replit.dev/src/pages/dashboard.tsx:31:47)
+    at ProtectedContent (https://d85abeb7-4367-4e90-b64b-f46334ee8e0d-00-1uz4dtznybegh.worf.replit.dev/src/lib/protected-route.tsx:22:14)
+    at Route (https://d85abeb7-4367-4e90-b64b-f46334ee8e0d-00-1uz4dtznybegh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=b5cc8565:191:16)
+    at ProtectedRoute (https://d85abeb7-4367-4e90-b64b-f46334ee8e0d-00-1uz4dtznybegh.worf.replit.dev/src/lib/protected-route.tsx:55:3)
+    at Switch (https://d85abeb7-4367-4e90-b64b-f46334ee8e0d-00-1uz4dtznybegh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=b5cc8565:247:17)
+    at AppContent
+    at LoadingProvider (https://d85abeb7-4367-4e90-b64b-f46334ee8e0d-00-1uz4dtznybegh.worf.replit.dev/src/hooks/use-loading.tsx:21:35)
+    at AuthProvider (https://d85abeb7-4367-4e90-b64b-f46334ee8e0d-00-1uz4dtznybegh.worf.replit.dev/src/hooks/use-auth.tsx:27:32)
+    at App
+    at QueryClientProvider (https://d85abeb7-4367-4e90-b64b-f46334ee8e0d-00-1uz4dtznybegh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=b5cc8565:2805:3)
