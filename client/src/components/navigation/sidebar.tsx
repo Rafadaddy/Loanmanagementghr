@@ -17,7 +17,6 @@ export default function Sidebar({ className }: SidebarProps) {
     { href: "/prestamos", label: "Préstamos", icon: "hand-holding-usd" },
     { href: "/pagos", label: "Pagos", icon: "money-bill-wave" },
     { href: "/cobros-dia", label: "Cobros del Día", icon: "route" },
-    { href: "/caja", label: "Caja", icon: "cash-register" },
     { href: "/calculadora", label: "Calculadora", icon: "calculator" },
     { href: "/reportes", label: "Reportes", icon: "chart-bar" },
   ];

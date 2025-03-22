@@ -9,7 +9,6 @@ import Reports from "@/pages/reports";
 import LoanDetails from "@/pages/loan-details";
 import LoanCalculatorPage from "@/pages/loan-calculator-page";
 import CobrosDia from "@/pages/cobros-dia";
-import Caja from "@/pages/caja";
 import { AuthProvider } from "@/hooks/use-auth";
 import { LoadingProvider } from "@/hooks/use-loading";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -39,7 +38,6 @@ function AppContent() {
       <ProtectedRoute path="/prestamos/:id" component={LoanDetails} />
       <ProtectedRoute path="/pagos" component={Payments} />
       <ProtectedRoute path="/cobros-dia" component={CobrosDia} />
-      <ProtectedRoute path="/caja" component={Caja} />
       <ProtectedRoute path="/reportes" component={Reports} />
       <ProtectedRoute path="/calculadora" component={LoanCalculatorPage} />
       <Route>
