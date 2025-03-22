@@ -19,9 +19,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Auth middleware
   const isAuthenticated = (req: Request, res: Response, next: Function) => {
+    console.log("DEBUG - Verificando autenticación:", {
+      path: req.path,
+      method: req.method,
+      isAuthenticated: req.isAuthenticated(),
+      hasSession: !!req.session,
+      hasUser: !!req.user,
+      sessionID: req.sessionID
+    });
+    
     if (req.isAuthenticated()) {
       return next();
     }
+    
+    console.log("DEBUG - Autenticación fallida en", req.path);
     return res.status(401).json({ message: "No autorizado" });
   };
 
