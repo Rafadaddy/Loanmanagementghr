@@ -123,23 +123,19 @@ export default function MovimientoCajaForm({ open, onOpenChange, onSuccess }: Mo
       
       console.log("Enviando datos procesados:", dataToSend);
       
-      const res = await apiRequest("POST", "/api/caja/movimientos", dataToSend);
+      console.log("Enviando petición a /api/caja/movimientos con datos:", dataToSend);
       
-      if (!res.ok) {
-        let errorMessage = "Error al crear el movimiento";
-        try {
-          const errorData = await res.json();
-          errorMessage = errorData.message || errorMessage;
-          console.error("Error respuesta:", errorData);
-        } catch (e) {
-          const errorText = await res.text();
-          errorMessage = errorText || errorMessage;
-          console.error("Error texto:", errorText);
-        }
-        throw new Error(errorMessage);
+      try {
+        const res = await apiRequest("POST", "/api/caja/movimientos", dataToSend);
+        
+        // apiRequest ya lanza un error si res.ok es false, así que si llegamos aquí es porque la respuesta fue exitosa
+        console.log("Respuesta exitosa del servidor:", res.status);
+        return await res.json();
+      } catch (error) {
+        console.error("Error capturado en la petición:", error);
+        // Re-lanzar el error para que lo maneje onError
+        throw error;
       }
-      
-      return await res.json();
     },
     onMutate: () => {
       setIsFormSubmitting(true);
