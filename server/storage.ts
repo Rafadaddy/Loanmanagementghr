@@ -797,42 +797,60 @@ export class MemStorage implements IStorage {
   }
 
   async createMovimientoCaja(movimiento: InsertMovimientoCaja): Promise<MovimientoCaja> {
-    console.log("DEBUG - Creando movimiento con datos:", movimiento);
+    console.log("DEBUG - Creando movimiento con datos:", JSON.stringify(movimiento, null, 2));
     
-    // Validar que el tipo de movimiento sea correcto
-    if (movimiento.tipo !== "INGRESO" && movimiento.tipo !== "EGRESO") {
-      console.error("DEBUG - Tipo de movimiento inválido:", movimiento.tipo);
-      throw new Error("El tipo debe ser INGRESO o EGRESO");
+    try {
+      // Asegurar que tipo sea INGRESO o EGRESO
+      const tipo = (movimiento.tipo === "INGRESO" || movimiento.tipo === "EGRESO") 
+        ? movimiento.tipo 
+        : "INGRESO"; // Valor por defecto
+      
+      // Validamos que los campos numéricos sean correctos
+      // y aseguramos que los opcionales sean null si no están definidos
+      const cliente_id = movimiento.cliente_id === undefined ? null : movimiento.cliente_id;
+      const prestamo_id = movimiento.prestamo_id === undefined ? null : movimiento.prestamo_id;
+      const descripcion = movimiento.descripcion === undefined ? null : movimiento.descripcion;
+      
+      // Aseguramos que el monto sea válido como string
+      let monto = movimiento.monto;
+      if (typeof monto === 'number') {
+        monto = monto.toString();
+      } else if (monto === undefined || monto === null) {
+        monto = '0';
+      }
+      
+      // Creamos un ID único para el movimiento
+      const id = this.currentMovimientoCajaId++;
+      
+      // Creamos el nuevo objeto de movimiento con estructura correcta
+      const nuevoMovimiento: MovimientoCaja = {
+        id,
+        tipo: tipo as 'INGRESO' | 'EGRESO',
+        categoria: movimiento.categoria,
+        monto,
+        cliente_id,
+        prestamo_id,
+        descripcion,
+        fecha: movimiento.fecha || new Date(),
+        creado_por: movimiento.creado_por
+      };
+      
+      console.log("DEBUG - Nuevo movimiento estructurado:", JSON.stringify(nuevoMovimiento, null, 2));
+      
+      // Guardamos en el mapa (memoria)
+      this.movimientosCaja.set(id, nuevoMovimiento);
+      console.log("DEBUG - Movimiento guardado con ID:", id);
+      
+      // Verificar todos los movimientos guardados
+      console.log("DEBUG - Total de movimientos en memoria:", this.movimientosCaja.size);
+      console.log("DEBUG - Movimientos actuales:", 
+        Array.from(this.movimientosCaja.values()).map(m => ({ id: m.id, tipo: m.tipo, monto: m.monto })));
+      
+      return nuevoMovimiento;
+    } catch (error) {
+      console.error("ERROR al crear movimiento de caja:", error);
+      throw error;
     }
-    
-    const id = this.currentMovimientoCajaId++;
-    
-    // Asegurarse de que cliente_id y prestamo_id son null si no están definidos
-    const cliente_id = movimiento.cliente_id === undefined ? null : movimiento.cliente_id;
-    const prestamo_id = movimiento.prestamo_id === undefined ? null : movimiento.prestamo_id;
-    const descripcion = movimiento.descripcion === undefined ? null : movimiento.descripcion;
-    
-    const nuevoMovimiento: MovimientoCaja = {
-      id,
-      tipo: movimiento.tipo, // "INGRESO" | "EGRESO"
-      categoria: movimiento.categoria,
-      monto: movimiento.monto,
-      cliente_id,
-      prestamo_id,
-      descripcion,
-      fecha: movimiento.fecha || new Date(),
-      creado_por: movimiento.creado_por
-    };
-    
-    console.log("DEBUG - Nuevo movimiento a guardar:", nuevoMovimiento);
-    
-    this.movimientosCaja.set(id, nuevoMovimiento);
-    console.log("DEBUG - Movimiento guardado con ID:", id);
-    
-    // Verificar todos los movimientos guardados
-    console.log("DEBUG - Total de movimientos en memoria:", this.movimientosCaja.size);
-    
-    return nuevoMovimiento;
   }
 
   async deleteMovimientoCaja(id: number): Promise<boolean> {

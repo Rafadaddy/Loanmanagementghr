@@ -276,6 +276,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Crear pago
         const pago = await storage.createPago(pagoData);
+        
+        // Registrar automáticamente el pago en la caja
+        try {
+          console.log("DEBUG - Registrando pago en caja automáticamente");
+          // Obtener información del préstamo y cliente para el registro
+          const prestamo = await storage.getPrestamo(pagoData.prestamo_id);
+          const cliente = prestamo ? await storage.getCliente(prestamo.cliente_id) : null;
+          
+          // Crear el movimiento de caja correspondiente al pago
+          const movimientoCaja = {
+            tipo: "INGRESO" as const,
+            categoria: "Pago de Préstamo",
+            monto: pagoData.monto_pagado,
+            prestamo_id: pagoData.prestamo_id,
+            cliente_id: prestamo?.cliente_id || null,
+            descripcion: `Pago ${pagoData.es_pago_parcial ? 'parcial' : 'completo'} de préstamo. Cliente: ${cliente?.nombre || 'Desconocido'}. Semana ${pagoData.numero_semana}`,
+            fecha: new Date(),
+            creado_por: req.user!.id
+          };
+          
+          console.log("DEBUG - Datos de movimiento de caja:", JSON.stringify(movimientoCaja, null, 2));
+          const movimiento = await storage.createMovimientoCaja(movimientoCaja);
+          console.log("DEBUG - Movimiento de caja registrado automáticamente con ID:", movimiento.id);
+        } catch (error) {
+          console.error("ERROR al registrar pago en caja:", error);
+          // Continuar aunque falle el registro en caja, ya que el pago ya fue creado
+        }
+        
         res.status(201).json(pago);
       } catch (zodError) {
         if (zodError instanceof ZodError) {
