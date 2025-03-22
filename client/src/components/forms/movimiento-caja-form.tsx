@@ -97,7 +97,18 @@ export default function MovimientoCajaForm({ open, onOpenChange, onSuccess }: Mo
   // Mutación para crear movimiento
   const crearMovimientoMutation = useMutation({
     mutationFn: async (values: MovimientoCajaFormValues) => {
-      const res = await apiRequest("POST", "/api/caja/movimientos", values);
+      console.log("Enviando datos:", values);
+      // Convertir el valor del monto a número antes de enviarlo
+      const dataToSend = {
+        ...values,
+        monto: parseFloat(values.monto).toString(), // Asegurar que sea string pero venga de un número válido
+      };
+      
+      const res = await apiRequest("POST", "/api/caja/movimientos", dataToSend);
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || "Error al crear el movimiento");
+      }
       return await res.json();
     },
     onMutate: () => {
@@ -105,11 +116,6 @@ export default function MovimientoCajaForm({ open, onOpenChange, onSuccess }: Mo
       startLoading("Registrando movimiento...");
     },
     onSuccess: () => {
-      toast({
-        title: "Éxito",
-        description: "Movimiento registrado correctamente",
-      });
-      
       // Limpiar formulario y cerrar modal
       form.reset();
       onOpenChange(false);
@@ -119,15 +125,12 @@ export default function MovimientoCajaForm({ open, onOpenChange, onSuccess }: Mo
         onSuccess();
       }
       
-      // Invalidar caché para refrescar datos
-      queryClient.invalidateQueries({ queryKey: ["/api/caja/movimientos"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/caja/resumen"] });
-      
       // Detener indicador de carga
       setIsFormSubmitting(false);
       stopLoading();
     },
     onError: (error: Error) => {
+      console.error("Error al crear movimiento:", error);
       toast({
         title: "Error",
         description: `Error al registrar el movimiento: ${error.message}`,
@@ -158,7 +161,17 @@ export default function MovimientoCajaForm({ open, onOpenChange, onSuccess }: Mo
       return;
     }
     
-    crearMovimientoMutation.mutate(values);
+    // Asegurarnos de que todos los campos tienen valores correctos
+    const formattedValues = {
+      ...values,
+      monto: monto.toString(), // Convertir a string después de validar
+      cliente_id: values.cliente_id === 0 ? null : values.cliente_id,
+      prestamo_id: values.prestamo_id === 0 ? null : values.prestamo_id,
+      descripcion: values.descripcion || null,
+    };
+    
+    console.log("Enviando datos formateados:", formattedValues);
+    crearMovimientoMutation.mutate(formattedValues);
   }
   
   return (

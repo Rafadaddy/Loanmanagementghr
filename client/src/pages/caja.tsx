@@ -78,11 +78,8 @@ export default function Caja() {
       setMovimientoToDelete(null);
       setShowDeleteConfirm(false);
       
-      // Recargar la página después de un breve retraso
-      setTimeout(() => {
-        stopLoading();
-        window.location.reload();
-      }, 1000);
+      // Detener el indicador de carga
+      stopLoading();
     },
     onError: (error: Error) => {
       toast({
@@ -346,8 +343,15 @@ export default function Caja() {
         open={openMovimientoForm} 
         onOpenChange={setOpenMovimientoForm} 
         onSuccess={() => {
+          // Invalidar consultas para actualizar los datos
           queryClient.invalidateQueries({ queryKey: ["/api/caja/movimientos"] });
           queryClient.invalidateQueries({ queryKey: ["/api/caja/resumen"] });
+          
+          // Mostrar mensaje de éxito
+          toast({
+            title: "Éxito",
+            description: "Movimiento registrado correctamente",
+          });
         }}
       />
     </div>
