@@ -350,6 +350,7 @@ export default function Caja() {
             toast({
               title: "Éxito",
               description: "Movimiento registrado correctamente",
+              variant: "default",
             });
           }}
         />

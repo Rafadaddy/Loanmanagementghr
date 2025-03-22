@@ -110,16 +110,54 @@ export default function MovimientoCajaForm({
   // Mutación para crear un movimiento de caja
   const crearMovimientoMutation = useMutation({
     mutationFn: async (values: MovimientoCajaFormValues) => {
-      const res = await apiRequest("POST", "/api/caja/movimientos", values);
+      console.log("Enviando datos formateados:", values);
+      
+      // Añadir datos de registro
+      const dataToSubmit = {
+        ...values,
+        cliente_id: null,
+        prestamo_id: null
+      };
+      
+      console.log("Enviando datos originales:", dataToSubmit);
+      
+      // Obtener ID del usuario actual si es necesario
+      const userRes = await apiRequest("GET", "/api/user");
+      let userId = null;
+      
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        userId = userData.id;
+        console.log("Usuario actual:", userData.username, "ID:", userId);
+      }
+      
+      // Añadir creado_por si tenemos ID de usuario
+      const finalData = {
+        ...dataToSubmit,
+        creado_por: userId || 2 // Valor por defecto para desarrollo
+      };
+      
+      console.log("Enviando datos procesados:", finalData);
+      console.log("Enviando petición a /api/caja/movimientos con datos:", finalData);
+      
+      const res = await apiRequest("POST", "/api/caja/movimientos", finalData);
+      
+      console.log("Respuesta exitosa del servidor:", res.status);
+      
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Error al crear el movimiento");
       }
+      
       return await res.json();
     },
     onSuccess: () => {
       form.reset();
       onOpenChange(false);
+      
+      // Invalidar todas las consultas relevantes para actualizar los datos
+      queryClient.invalidateQueries({ queryKey: ['/api/caja/movimientos'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/caja/resumen'] });
       
       // Callback de éxito (actualiza datos o muestra mensaje)
       if (onSuccess) onSuccess();
