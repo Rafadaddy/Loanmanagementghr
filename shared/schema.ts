@@ -110,3 +110,30 @@ export interface ResultadoCalculoPrestamo {
   monto_total_pagar: number;
   pago_semanal: number;
 }
+
+// Movimientos de caja
+export const movimientosCaja = pgTable("movimientos_caja", {
+  id: serial("id").primaryKey(),
+  
+  // Datos del movimiento
+  tipo: text("tipo").notNull().$type<'INGRESO' | 'EGRESO'>(),  // INGRESO, EGRESO
+  categoria: text("categoria").notNull(), // PRESTAMO, PAGO, NOMINA, GASOLINA, OTRO
+  
+  // Montos
+  monto: text("monto").notNull(),
+  
+  // Referencias
+  prestamo_id: integer("prestamo_id"), // Opcional, solo si es un INGRESO por PRESTAMO o EGRESO por PAGO
+  cliente_id: integer("cliente_id"),   // Opcional, solo si es un INGRESO por PRESTAMO
+  
+  // Metadatos
+  descripcion: text("descripcion"),
+  fecha: timestamp("fecha").notNull().defaultNow(),
+  creado_por: integer("creado_por").notNull(), // ID del usuario que registró
+});
+
+export const insertMovimientoCajaSchema = createInsertSchema(movimientosCaja)
+  .omit({ id: true });
+
+export type InsertMovimientoCaja = z.infer<typeof insertMovimientoCajaSchema>;
+export type MovimientoCaja = typeof movimientosCaja.$inferSelect;

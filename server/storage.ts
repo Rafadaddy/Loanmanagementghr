@@ -37,6 +37,19 @@ export interface IStorage {
   // Cálculos
   calcularPrestamo(datos: CalculoPrestamo): ResultadoCalculoPrestamo;
   
+  // Caja
+  getAllMovimientosCaja(): Promise<MovimientoCaja[]>;
+  getMovimientoCaja(id: number): Promise<MovimientoCaja | undefined>;
+  createMovimientoCaja(movimiento: InsertMovimientoCaja): Promise<MovimientoCaja>;
+  deleteMovimientoCaja(id: number): Promise<boolean>;
+  getResumenCaja(): Promise<{ 
+    saldo_actual: number; 
+    total_ingresos: number; 
+    total_egresos: number;
+    movimientos_por_dia: { fecha: string; ingreso: number; egreso: number }[] 
+  }>;
+  getMovimientosCajaPorFecha(fechaInicio: string, fechaFin: string): Promise<MovimientoCaja[]>;
+  
   // Sesión
   sessionStore: any; // Tipo simplificado para la store de sesión
 }
@@ -759,6 +772,106 @@ export class MemStorage implements IStorage {
       monto_total_pagar,
       pago_semanal
     };
+  }
+
+  // Movimientos de Caja
+  private movimientosCaja: Map<number, MovimientoCaja> = new Map();
+  private currentMovimientoCajaId: number = 1;
+
+  async getAllMovimientosCaja(): Promise<MovimientoCaja[]> {
+    return Array.from(this.movimientosCaja.values());
+  }
+
+  async getMovimientoCaja(id: number): Promise<MovimientoCaja | undefined> {
+    return this.movimientosCaja.get(id);
+  }
+
+  async createMovimientoCaja(movimiento: InsertMovimientoCaja): Promise<MovimientoCaja> {
+    const id = this.currentMovimientoCajaId++;
+    
+    const nuevoMovimiento: MovimientoCaja = {
+      ...movimiento,
+      id,
+      fecha: movimiento.fecha || new Date()
+    };
+    
+    this.movimientosCaja.set(id, nuevoMovimiento);
+    return nuevoMovimiento;
+  }
+
+  async deleteMovimientoCaja(id: number): Promise<boolean> {
+    return this.movimientosCaja.delete(id);
+  }
+
+  async getResumenCaja(): Promise<{ 
+    saldo_actual: number; 
+    total_ingresos: number; 
+    total_egresos: number;
+    movimientos_por_dia: { fecha: string; ingreso: number; egreso: number }[] 
+  }> {
+    const movimientos = await this.getAllMovimientosCaja();
+    
+    // Calcular totales
+    let totalIngresos = 0;
+    let totalEgresos = 0;
+    
+    // Agrupar movimientos por día para el gráfico
+    const movimientosPorDia = new Map<string, { ingreso: number; egreso: number }>();
+    
+    for (const movimiento of movimientos) {
+      const monto = parseFloat(movimiento.monto);
+      
+      if (movimiento.tipo === 'INGRESO') {
+        totalIngresos += monto;
+      } else {
+        totalEgresos += monto;
+      }
+      
+      // Agrupar por día para el gráfico
+      const fechaStr = format(new Date(movimiento.fecha), 'yyyy-MM-dd');
+      const datosDelDia = movimientosPorDia.get(fechaStr) || { ingreso: 0, egreso: 0 };
+      
+      if (movimiento.tipo === 'INGRESO') {
+        datosDelDia.ingreso += monto;
+      } else {
+        datosDelDia.egreso += monto;
+      }
+      
+      movimientosPorDia.set(fechaStr, datosDelDia);
+    }
+    
+    // Convertir el mapa a un array para facilitar el uso en gráficos
+    const arrayMovimientosPorDia = Array.from(movimientosPorDia.entries())
+      .map(([fecha, datos]) => ({
+        fecha,
+        ingreso: datos.ingreso,
+        egreso: datos.egreso
+      }))
+      .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime()); // Ordenar por fecha
+    
+    const saldoActual = totalIngresos - totalEgresos;
+    
+    return {
+      saldo_actual: saldoActual,
+      total_ingresos: totalIngresos,
+      total_egresos: totalEgresos,
+      movimientos_por_dia: arrayMovimientosPorDia
+    };
+  }
+
+  async getMovimientosCajaPorFecha(fechaInicio: string, fechaFin: string): Promise<MovimientoCaja[]> {
+    const movimientos = await this.getAllMovimientosCaja();
+    
+    const fechaInicioDate = new Date(fechaInicio);
+    const fechaFinDate = new Date(fechaFin);
+    
+    // Ajustar fecha fin para incluir todo el día
+    fechaFinDate.setHours(23, 59, 59, 999);
+    
+    return movimientos.filter(movimiento => {
+      const fechaMovimiento = new Date(movimiento.fecha);
+      return fechaMovimiento >= fechaInicioDate && fechaMovimiento <= fechaFinDate;
+    });
   }
 }
 
