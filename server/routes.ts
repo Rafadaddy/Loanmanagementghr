@@ -555,10 +555,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("DEBUG - Usuario ID determinado:", userId);
       
-      // Asegurar que los campos numéricos sean del tipo correcto
+      // Asegurar que los campos tengan el tipo correcto
       const datosProcesados = {
         ...req.body,
         creado_por: userId,
+        // La fecha se mantiene como string ISO para que pueda ser validada por Zod
         fecha: req.body.fecha || new Date().toISOString(),
         // Tipo siempre en mayúsculas
         tipo: req.body.tipo ? req.body.tipo.toUpperCase() : req.body.tipo,

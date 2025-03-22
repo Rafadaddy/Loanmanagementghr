@@ -833,7 +833,11 @@ export class MemStorage implements IStorage {
         cliente_id,
         prestamo_id,
         descripcion,
-        fecha: movimiento.fecha || new Date(),
+        fecha: movimiento.fecha instanceof Date 
+          ? movimiento.fecha 
+          : typeof movimiento.fecha === 'string' 
+            ? new Date(movimiento.fecha) 
+            : new Date(),
         creado_por: movimiento.creado_por
       };
       

@@ -132,8 +132,19 @@ export const movimientosCaja = pgTable("movimientos_caja", {
   creado_por: integer("creado_por").notNull(), // ID del usuario que registró
 });
 
-export const insertMovimientoCajaSchema = createInsertSchema(movimientosCaja)
+// Primero creamos el esquema base para los movimientos de caja
+const baseMovimientoCajaSchema = createInsertSchema(movimientosCaja)
   .omit({ id: true });
+
+// Luego creamos un esquema extendido que permite strings de fecha ISO
+export const insertMovimientoCajaSchema = baseMovimientoCajaSchema.extend({
+  fecha: z.union([
+    z.date(), // Mantiene compatibilidad con Date
+    z.string().refine((val) => !isNaN(Date.parse(val)), {
+      message: "La fecha debe ser un string ISO válido",
+    })  // Permite strings ISO
+  ]),
+});
 
 export type InsertMovimientoCaja = z.infer<typeof insertMovimientoCajaSchema>;
 export type MovimientoCaja = typeof movimientosCaja.$inferSelect;
