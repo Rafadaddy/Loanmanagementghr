@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { formatCurrency, formatDate, getInitials, getLoanStatus } from "@/lib/utils";
-import Sidebar from "@/components/navigation/sidebar";
-import MobileHeader from "@/components/navigation/mobile-header";
 import StatCard from "@/components/dashboard/stat-card";
 import ActionCard from "@/components/dashboard/action-card";
 import ActivityCard from "@/components/dashboard/activity-card";
 import ClientForm from "@/components/forms/client-form";
 import LoanForm from "@/components/forms/loan-form";
 import PaymentForm from "@/components/forms/payment-form";
+import MainLayout from "@/components/layout/main-layout";
 import { Cliente, Prestamo, Pago } from "@shared/schema";
 
 interface Estadisticas {
@@ -100,129 +99,124 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-      <Sidebar />
-      <MobileHeader />
+    <MainLayout>
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Panel de Control</h1>
+        <p className="text-sm text-gray-600">{fechaFormateada}</p>
+      </header>
       
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 md:pt-4 mt-16 md:mt-0">
-        <header className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Panel de Control</h1>
-          <p className="text-sm text-gray-600">{fechaFormateada}</p>
-        </header>
+      {/* Stats Section */}
+      <section className="mb-8">
+        <h2 className="text-lg font-semibold text-gray-700 mb-4">Estadísticas</h2>
         
-        {/* Stats Section */}
-        <section className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-700 mb-4">Estadísticas</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard 
+            title="Préstamos Activos" 
+            value={isLoading ? "..." : estadisticas?.prestamosActivos.toString() || "0"} 
+            icon="file-invoice-dollar" 
+            color="bg-blue-100" 
+          />
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard 
-              title="Préstamos Activos" 
-              value={isLoading ? "..." : estadisticas?.prestamosActivos.toString() || "0"} 
-              icon="file-invoice-dollar" 
-              color="bg-blue-100" 
-            />
-            
-            <StatCard 
-              title="Total Prestado" 
-              value={isLoading ? "..." : formatCurrency(estadisticas?.totalPrestado || 0)} 
-              icon="dollar-sign" 
-              color="bg-green-100" 
-            />
-            
-            <StatCard 
-              title="Pagos del Día" 
-              value={isLoading ? "..." : formatCurrency(estadisticas?.montosPagosHoy || 0)} 
-              icon="calendar-day" 
-              color="bg-indigo-100" 
-            />
-            
-            <StatCard 
-              title="Pagos Atrasados" 
-              value={isLoading ? "..." : estadisticas?.prestamosAtrasados.toString() || "0"} 
-              icon="exclamation-triangle" 
-              color="bg-red-100" 
-            />
-          </div>
-        </section>
-        
-        {/* Quick Actions */}
-        <section className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-700 mb-4">Acciones Rápidas</h2>
+          <StatCard 
+            title="Total Prestado" 
+            value={isLoading ? "..." : formatCurrency(estadisticas?.totalPrestado || 0)} 
+            icon="dollar-sign" 
+            color="bg-green-100" 
+          />
           
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <ActionCard 
-              title="Registrar Cliente" 
-              description="Añadir un nuevo cliente al sistema" 
-              icon="user-plus" 
-              color="bg-blue-100" 
-              buttonText="Nuevo Cliente"
-              onClick={() => setClientFormOpen(true)}
-            />
-            
-            <ActionCard 
-              title="Crear Préstamo" 
-              description="Generar un nuevo préstamo" 
-              icon="hand-holding-usd" 
-              color="bg-green-100" 
-              buttonText="Nuevo Préstamo"
-              onClick={() => setLoanFormOpen(true)}
-            />
-            
-            <ActionCard 
-              title="Registrar Pago" 
-              description="Añadir un nuevo pago de préstamo" 
-              icon="money-bill-wave" 
-              color="bg-indigo-100" 
-              buttonText="Registrar Pago"
-              onClick={() => setPaymentFormOpen(true)}
-            />
-          </div>
-        </section>
-        
-        {/* Recent Activity */}
-        <section>
-          <h2 className="text-lg font-semibold text-gray-700 mb-4">Actividad Reciente</h2>
+          <StatCard 
+            title="Pagos del Día" 
+            value={isLoading ? "..." : formatCurrency(estadisticas?.montosPagosHoy || 0)} 
+            icon="calendar-day" 
+            color="bg-indigo-100" 
+          />
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <ActivityCard 
-              title="Pagos Recientes" 
-              items={prepararItemsPagos()} 
-              viewAllLink="/pagos" 
-              viewAllText="Ver todos los pagos"
-            />
-            
-            <ActivityCard 
-              title="Préstamos Recientes" 
-              items={prepararItemsPrestamos()} 
-              viewAllLink="/prestamos" 
-              viewAllText="Ver todos los préstamos"
-            />
-            
-            <ActivityCard 
-              title="Clientes Recientes" 
-              items={prepararItemsClientes()} 
-              viewAllLink="/clientes" 
-              viewAllText="Ver todos los clientes"
-            />
-          </div>
-        </section>
+          <StatCard 
+            title="Pagos Atrasados" 
+            value={isLoading ? "..." : estadisticas?.prestamosAtrasados.toString() || "0"} 
+            icon="exclamation-triangle" 
+            color="bg-red-100" 
+          />
+        </div>
+      </section>
+      
+      {/* Quick Actions */}
+      <section className="mb-8">
+        <h2 className="text-lg font-semibold text-gray-700 mb-4">Acciones Rápidas</h2>
         
-        {/* Modals */}
-        <ClientForm 
-          open={clientFormOpen} 
-          onOpenChange={setClientFormOpen} 
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <ActionCard 
+            title="Registrar Cliente" 
+            description="Añadir un nuevo cliente al sistema" 
+            icon="user-plus" 
+            color="bg-blue-100" 
+            buttonText="Nuevo Cliente"
+            onClick={() => setClientFormOpen(true)}
+          />
+          
+          <ActionCard 
+            title="Crear Préstamo" 
+            description="Generar un nuevo préstamo" 
+            icon="hand-holding-usd" 
+            color="bg-green-100" 
+            buttonText="Nuevo Préstamo"
+            onClick={() => setLoanFormOpen(true)}
+          />
+          
+          <ActionCard 
+            title="Registrar Pago" 
+            description="Añadir un nuevo pago de préstamo" 
+            icon="money-bill-wave" 
+            color="bg-indigo-100" 
+            buttonText="Registrar Pago"
+            onClick={() => setPaymentFormOpen(true)}
+          />
+        </div>
+      </section>
+      
+      {/* Recent Activity */}
+      <section>
+        <h2 className="text-lg font-semibold text-gray-700 mb-4">Actividad Reciente</h2>
         
-        <LoanForm 
-          open={loanFormOpen} 
-          onOpenChange={setLoanFormOpen} 
-        />
-        
-        <PaymentForm 
-          open={paymentFormOpen} 
-          onOpenChange={setPaymentFormOpen} 
-        />
-      </main>
-    </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <ActivityCard 
+            title="Pagos Recientes" 
+            items={prepararItemsPagos()} 
+            viewAllLink="/pagos" 
+            viewAllText="Ver todos los pagos"
+          />
+          
+          <ActivityCard 
+            title="Préstamos Recientes" 
+            items={prepararItemsPrestamos()} 
+            viewAllLink="/prestamos" 
+            viewAllText="Ver todos los préstamos"
+          />
+          
+          <ActivityCard 
+            title="Clientes Recientes" 
+            items={prepararItemsClientes()} 
+            viewAllLink="/clientes" 
+            viewAllText="Ver todos los clientes"
+          />
+        </div>
+      </section>
+      
+      {/* Modals */}
+      <ClientForm 
+        open={clientFormOpen} 
+        onOpenChange={setClientFormOpen} 
+      />
+      
+      <LoanForm 
+        open={loanFormOpen} 
+        onOpenChange={setLoanFormOpen} 
+      />
+      
+      <PaymentForm 
+        open={paymentFormOpen} 
+        onOpenChange={setPaymentFormOpen} 
+      />
+    </MainLayout>
   );
 }

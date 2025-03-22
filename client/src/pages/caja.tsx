@@ -15,8 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { MovimientoCaja } from "@shared/schema";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import Sidebar from "@/components/navigation/sidebar";
-import MobileHeader from "@/components/navigation/mobile-header";
+import MainLayout from "@/components/layout/main-layout";
 
 // Este componente se usará para crear nuevos formularios de movimientos
 import MovimientoCajaForm from "../components/forms/movimiento-caja-form";
