@@ -122,7 +122,7 @@ export const movimientosCaja = pgTable("movimientos_caja", {
   // Montos
   monto: text("monto").notNull(),
   
-  // Referencias
+  // Referencias opcionales
   prestamo_id: integer("prestamo_id"), // Opcional, solo si es un INGRESO por PRESTAMO o EGRESO por PAGO
   cliente_id: integer("cliente_id"),   // Opcional, solo si es un INGRESO por PRESTAMO
   

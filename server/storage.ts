@@ -797,15 +797,41 @@ export class MemStorage implements IStorage {
   }
 
   async createMovimientoCaja(movimiento: InsertMovimientoCaja): Promise<MovimientoCaja> {
+    console.log("DEBUG - Creando movimiento con datos:", movimiento);
+    
+    // Validar que el tipo de movimiento sea correcto
+    if (movimiento.tipo !== "INGRESO" && movimiento.tipo !== "EGRESO") {
+      console.error("DEBUG - Tipo de movimiento inválido:", movimiento.tipo);
+      throw new Error("El tipo debe ser INGRESO o EGRESO");
+    }
+    
     const id = this.currentMovimientoCajaId++;
     
+    // Asegurarse de que cliente_id y prestamo_id son null si no están definidos
+    const cliente_id = movimiento.cliente_id === undefined ? null : movimiento.cliente_id;
+    const prestamo_id = movimiento.prestamo_id === undefined ? null : movimiento.prestamo_id;
+    const descripcion = movimiento.descripcion === undefined ? null : movimiento.descripcion;
+    
     const nuevoMovimiento: MovimientoCaja = {
-      ...movimiento,
       id,
-      fecha: movimiento.fecha || new Date()
+      tipo: movimiento.tipo, // "INGRESO" | "EGRESO"
+      categoria: movimiento.categoria,
+      monto: movimiento.monto,
+      cliente_id,
+      prestamo_id,
+      descripcion,
+      fecha: movimiento.fecha || new Date(),
+      creado_por: movimiento.creado_por
     };
     
+    console.log("DEBUG - Nuevo movimiento a guardar:", nuevoMovimiento);
+    
     this.movimientosCaja.set(id, nuevoMovimiento);
+    console.log("DEBUG - Movimiento guardado con ID:", id);
+    
+    // Verificar todos los movimientos guardados
+    console.log("DEBUG - Total de movimientos en memoria:", this.movimientosCaja.size);
+    
     return nuevoMovimiento;
   }
 

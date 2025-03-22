@@ -63,17 +63,27 @@ export default function MovimientoCajaForm({ open, onOpenChange, onSuccess }: Mo
   // Opciones de categorías
   const categoriasIngreso = [
     "Préstamo Nuevo", 
-    "Pago de Préstamo", 
+    "Pago de Préstamo",
+    "Intereses", 
+    "Mora por Atraso",
     "Inversión", 
+    "Depósito",
+    "Venta de Activo",
     "Otro Ingreso"
   ];
   
   const categoriasEgreso = [
-    "Sueldo", 
+    "Nómina", 
+    "Comisiones",
     "Gasolina", 
+    "Viáticos",
     "Papelería", 
-    "Comisiones", 
+    "Alquiler",
+    "Servicios Públicos",
+    "Impuestos",
+    "Mantenimiento",
     "Gastos Operativos", 
+    "Publicidad",
     "Otro Gasto"
   ];
   
@@ -97,18 +107,38 @@ export default function MovimientoCajaForm({ open, onOpenChange, onSuccess }: Mo
   // Mutación para crear movimiento
   const crearMovimientoMutation = useMutation({
     mutationFn: async (values: MovimientoCajaFormValues) => {
-      console.log("Enviando datos:", values);
-      // Convertir el valor del monto a número antes de enviarlo
+      console.log("Enviando datos originales:", values);
+      
+      // Procesar datos para asegurar que tienen el formato correcto
       const dataToSend = {
         ...values,
-        monto: parseFloat(values.monto).toString(), // Asegurar que sea string pero venga de un número válido
+        // Asegurar que el monto sea un string y sea un número válido
+        monto: parseFloat(values.monto).toString(),
+        // Asegurar que los IDs son null si son 0
+        cliente_id: values.cliente_id === 0 ? null : values.cliente_id,
+        prestamo_id: values.prestamo_id === 0 ? null : values.prestamo_id,
+        // Descripción puede ser null
+        descripcion: values.descripcion || null,
       };
       
+      console.log("Enviando datos procesados:", dataToSend);
+      
       const res = await apiRequest("POST", "/api/caja/movimientos", dataToSend);
+      
       if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(errorText || "Error al crear el movimiento");
+        let errorMessage = "Error al crear el movimiento";
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.message || errorMessage;
+          console.error("Error respuesta:", errorData);
+        } catch (e) {
+          const errorText = await res.text();
+          errorMessage = errorText || errorMessage;
+          console.error("Error texto:", errorText);
+        }
+        throw new Error(errorMessage);
       }
+      
       return await res.json();
     },
     onMutate: () => {
