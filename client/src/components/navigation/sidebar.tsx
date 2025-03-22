@@ -25,8 +25,35 @@ export default function Sidebar({ className }: SidebarProps) {
     { href: "/reportes", label: "Reportes", icon: "chart-bar" },
   ];
 
+  // Versión colapsada del sidebar
   if (!isOpen) {
-    return null; // No renderizar el sidebar si está cerrado
+    return (
+      <aside className="w-16 bg-white shadow-lg hidden md:block overflow-y-auto h-full">
+        <div className="p-4 border-b border-gray-200 flex justify-center items-center">
+          <h1 className="text-xl font-bold text-primary">SP</h1>
+        </div>
+        
+        <nav className="mt-4">
+          <ul>
+            {navItems.map((item) => (
+              <li key={item.href} className="mb-1">
+                <Link href={item.href}>
+                  <div 
+                    className={cn(
+                      "flex justify-center items-center p-3 text-gray-600 hover:bg-blue-50 hover:border-l-4 hover:border-primary cursor-pointer",
+                      location === item.href && "text-gray-700 bg-blue-50 border-l-4 border-primary"
+                    )}
+                    title={item.label}
+                  >
+                    <i className={`fas fa-${item.icon}`}></i>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </aside>
+    );
   }
 
   return (

@@ -20,7 +20,7 @@ export default function MainLayout({ children, className }: MainLayoutProps) {
       <main 
         className={cn(
           "flex-1 overflow-y-auto p-4 md:p-6 md:pt-4 mt-16 md:mt-0 transition-all duration-300",
-          isOpen ? "md:ml-64" : "md:ml-0",
+          isOpen ? "md:ml-64" : "md:ml-16", // Cambiado ml-0 a ml-16 para dejar espacio cuando el sidebar está colapsado
           className
         )}
       >
