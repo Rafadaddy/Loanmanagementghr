@@ -48,8 +48,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { formatDate, getInitials, formatCurrency, getLoanStatus } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Pencil, Plus, Search, Trash, Users, CreditCard, Calendar, DollarSign, Info } from "lucide-react";
+import { Pencil, Plus, Search, Trash, Users, CreditCard, Calendar, DollarSign, Info, PieChart, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 
 // Schema para validación de formulario
@@ -81,11 +82,48 @@ export default function Cobradores() {
   const [clientesCobrador, setClientesCobrador] = useState<Cliente[]>([]);
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
   const [activeClienteTab, setActiveClienteTab] = useState("info");
+  const [clienteSearchQuery, setClienteSearchQuery] = useState("");
   
   // Estados para mostrar préstamos y pagos del cliente
   const [prestamosCliente, setPrestamosCliente] = useState<Prestamo[]>([]);
   const [pagosCliente, setPagosCliente] = useState<Pago[]>([]);
   const [isLoadingPrestamos, setIsLoadingPrestamos] = useState(false);
+  
+  // Filtrado de clientes por búsqueda
+  const filteredClientes = clientesCobrador.filter(cliente => 
+    cliente.nombre.toLowerCase().includes(clienteSearchQuery.toLowerCase()) ||
+    cliente.telefono.toLowerCase().includes(clienteSearchQuery.toLowerCase()) ||
+    (cliente.documento_identidad && cliente.documento_identidad.toLowerCase().includes(clienteSearchQuery.toLowerCase()))
+  );
+  
+  // Funciones para cálculo de ratio deuda-ingresos
+  const getEstimatedIncome = () => {
+    if (!selectedCliente || prestamosCliente.length === 0) return 0;
+    
+    // Asumimos que una persona no debería gastar más del 40% de sus ingresos en pagos de préstamos
+    // Esto es una estimación inversa basada en los pagos actuales
+    const totalMonthlyPayments = getTotalMonthlyPayments();
+    return totalMonthlyPayments / 0.4;
+  };
+  
+  const getTotalMonthlyPayments = () => {
+    if (!prestamosCliente.length) return 0;
+    
+    // Calculamos el total de pagos mensuales sumando los pagos semanales
+    return prestamosCliente.reduce((sum, prestamo) => {
+      // Convertimos pagos semanales a mensuales (multiplicamos por 4.33 semanas por mes en promedio)
+      return sum + (parseFloat(prestamo.pago_semanal) * 4.33);
+    }, 0);
+  };
+  
+  const getDebtToIncomeRatio = () => {
+    const income = getEstimatedIncome();
+    if (income === 0) return 0;
+    
+    const payments = getTotalMonthlyPayments();
+    // Calculamos la proporción y la convertimos a porcentaje, redondeando a 2 decimales
+    return Math.round((payments / income) * 100 * 100) / 100;
+  };
 
   // Fetch cobradores
   const {
@@ -659,14 +697,32 @@ export default function Cobradores() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Lista de clientes en la columna izquierda */}
             <div className="lg:col-span-1 overflow-auto max-h-[calc(100vh-300px)]">
-              <h3 className="text-lg font-semibold mb-2">Clientes</h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-semibold">Clientes</h3>
+                <span className="text-sm text-muted-foreground">{clientesCobrador.length} total</span>
+              </div>
+              
+              <div className="relative mb-3">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Buscar cliente..." 
+                  className="pl-8"
+                  onChange={(e) => setClienteSearchQuery(e.target.value)}
+                  value={clienteSearchQuery}
+                />
+              </div>
+              
               <div className="space-y-2">
                 {clientesCobrador.length === 0 ? (
                   <div className="p-4 text-center bg-muted rounded-md">
                     Este cobrador no tiene clientes asignados
                   </div>
+                ) : filteredClientes.length === 0 ? (
+                  <div className="p-4 text-center bg-muted rounded-md">
+                    No se encontraron clientes con "{clienteSearchQuery}"
+                  </div>
                 ) : (
-                  clientesCobrador.map((cliente) => (
+                  filteredClientes.map((cliente) => (
                     <div 
                       key={cliente.id} 
                       className={`p-3 rounded-md cursor-pointer transition-colors flex items-center space-x-2 ${selectedCliente?.id === cliente.id ? 'bg-primary text-primary-foreground' : 'bg-card hover:bg-muted'}`}
@@ -719,6 +775,74 @@ export default function Cobradores() {
                     </TabsList>
                     
                     <TabsContent value="info" className="space-y-4 mt-4">
+                      {/* Debt to Income Ratio Visualizer */}
+                      {!isLoadingPrestamos && prestamosCliente.length > 0 && (
+                        <div className="border rounded-md p-4 mb-4 space-y-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-semibold flex items-center gap-1.5">
+                              <PieChart className="h-4 w-4 text-muted-foreground" />
+                              Análisis Financiero
+                            </h3>
+                            {getDebtToIncomeRatio() < 35 ? (
+                              <Badge className="bg-green-100 text-green-800 hover:bg-green-200 hover:text-green-800">Saludable</Badge>
+                            ) : getDebtToIncomeRatio() < 50 ? (
+                              <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 hover:text-yellow-800">Moderado</Badge>
+                            ) : (
+                              <Badge className="bg-red-100 text-red-800 hover:bg-red-200 hover:text-red-800">Elevado</Badge>
+                            )}
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <div>
+                              <div className="flex justify-between mb-1 text-sm">
+                                <span>Ratio Deuda-Ingresos</span>
+                                <span className={
+                                  getDebtToIncomeRatio() < 35 ? "text-green-600" : 
+                                  getDebtToIncomeRatio() < 50 ? "text-yellow-600" : 
+                                  "text-red-600"
+                                }>
+                                  {getDebtToIncomeRatio()}%
+                                </span>
+                              </div>
+                              <Progress 
+                                value={getDebtToIncomeRatio()} 
+                                max={100}
+                                className={`h-2 ${
+                                  getDebtToIncomeRatio() < 35 ? "bg-green-100" : 
+                                  getDebtToIncomeRatio() < 50 ? "bg-yellow-100" : 
+                                  "bg-red-100"
+                                }`}
+                              />
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                              <div className="flex items-center p-2 rounded-md bg-muted/50">
+                                <ArrowUpCircle className="h-5 w-5 text-green-500 mr-2" />
+                                <div>
+                                  <div className="text-xs text-muted-foreground">Ingresos Est.</div>
+                                  <div className="font-medium">{formatCurrency(getEstimatedIncome())}</div>
+                                </div>
+                              </div>
+                              <div className="flex items-center p-2 rounded-md bg-muted/50">
+                                <ArrowDownCircle className="h-5 w-5 text-red-500 mr-2" />
+                                <div>
+                                  <div className="text-xs text-muted-foreground">Pagos Mensuales</div>
+                                  <div className="font-medium">{formatCurrency(getTotalMonthlyPayments())}</div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="text-xs text-muted-foreground mt-1 italic">
+                              {getDebtToIncomeRatio() < 35 ? 
+                                "El cliente mantiene un buen equilibrio financiero." : 
+                                getDebtToIncomeRatio() < 50 ? 
+                                "Considere monitorear los pagos del cliente más de cerca." : 
+                                "El cliente tiene una carga de deuda potencialmente arriesgada."}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1">
                           <p className="text-sm text-muted-foreground">Teléfono</p>
@@ -780,7 +904,7 @@ export default function Cobradores() {
                                       </div>
                                       <div className="text-sm text-muted-foreground">
                                         <Calendar className="h-3 w-3 inline mr-1" /> 
-                                        {formatDate(prestamo.fecha_inicio)}
+                                        {formatDate(prestamo.fecha_prestamo)}
                                       </div>
                                     </div>
                                     <Badge className={getLoanStatus(prestamo.estado).className}>
@@ -791,15 +915,15 @@ export default function Cobradores() {
                                   <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-3">
                                     <div>
                                       <p className="text-xs text-muted-foreground">Monto</p>
-                                      <p className="font-medium">{formatCurrency(prestamo.monto)}</p>
+                                      <p className="font-medium">{formatCurrency(prestamo.monto_prestado)}</p>
                                     </div>
                                     <div>
                                       <p className="text-xs text-muted-foreground">Total a pagar</p>
-                                      <p className="font-medium">{formatCurrency(prestamo.monto_total)}</p>
+                                      <p className="font-medium">{formatCurrency(prestamo.monto_total_pagar)}</p>
                                     </div>
                                     <div>
                                       <p className="text-xs text-muted-foreground">Plazo</p>
-                                      <p className="font-medium">{prestamo.plazo} semanas</p>
+                                      <p className="font-medium">{prestamo.numero_semanas} semanas</p>
                                     </div>
                                     <div>
                                       <p className="text-xs text-muted-foreground">Pago semanal</p>
@@ -832,12 +956,12 @@ export default function Cobradores() {
                             <h3 className="text-lg font-semibold">Pagos ({pagosCliente.length})</h3>
                             <div className="text-sm text-right">
                               <div className="font-medium">Total pagado</div>
-                              <div className="text-primary">{formatCurrency(pagosCliente.reduce((sum, pago) => sum + pago.monto, 0))}</div>
+                              <div className="text-primary">{formatCurrency(pagosCliente.reduce((sum, pago) => sum + parseFloat(pago.monto_pagado), 0))}</div>
                             </div>
                           </div>
                           
                           <div className="space-y-2 max-h-[300px] overflow-auto">
-                            {pagosCliente.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()).map((pago) => (
+                            {pagosCliente.sort((a, b) => new Date(b.fecha_pago).getTime() - new Date(a.fecha_pago).getTime()).map((pago) => (
                               <div key={pago.id} className="flex items-center justify-between p-3 rounded-md border">
                                 <div className="flex items-center space-x-2">
                                   <Badge variant="outline" className="h-8 w-8 rounded-full flex items-center justify-center">
@@ -845,11 +969,11 @@ export default function Cobradores() {
                                   </Badge>
                                   <div>
                                     <div className="font-medium">Pago #{pago.id}</div>
-                                    <div className="text-xs text-muted-foreground">{formatDate(pago.fecha)}</div>
+                                    <div className="text-xs text-muted-foreground">{formatDate(pago.fecha_pago)}</div>
                                   </div>
                                 </div>
                                 <div className="text-right">
-                                  <div className="font-medium">{formatCurrency(pago.monto)}</div>
+                                  <div className="font-medium">{formatCurrency(pago.monto_pagado)}</div>
                                   <div className="text-xs">
                                     <Badge variant="secondary">Préstamo #{pago.prestamo_id}</Badge>
                                   </div>
