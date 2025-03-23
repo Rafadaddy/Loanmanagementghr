@@ -13,20 +13,23 @@ import RegistroCaja from "@/pages/registro-caja";
 import { AuthProvider } from "@/hooks/use-auth";
 import { LoadingProvider } from "@/hooks/use-loading";
 import { SidebarProvider } from "@/hooks/use-sidebar";
+import { ThemeProvider } from "@/hooks/use-theme";
 import { ProtectedRoute } from "./lib/protected-route";
 import SidebarToggle from "@/components/navigation/sidebar-toggle";
 
 // Componente principal de la aplicación
 function App() {
   return (
-    <AuthProvider>
-      <LoadingProvider>
-        <SidebarProvider>
-          <AppContent />
-          <SidebarToggle />
-        </SidebarProvider>
-      </LoadingProvider>
-    </AuthProvider>
+    <ThemeProvider defaultTheme="light">
+      <AuthProvider>
+        <LoadingProvider>
+          <SidebarProvider>
+            <AppContent />
+            <SidebarToggle />
+          </SidebarProvider>
+        </LoadingProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
