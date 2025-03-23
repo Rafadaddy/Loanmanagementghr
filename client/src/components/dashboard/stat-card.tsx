@@ -47,13 +47,13 @@ export default function StatCard({ title, value, icon, color }: StatCardProps) {
   return (
     <Card className="hover:shadow-md transition-shadow border-2">
       <CardContent className="p-4">
-        <div className="flex items-center">
-          <div className={`rounded-full ${getBgColor()} p-3 mr-4`}>
+        <div className="flex flex-col xs:flex-row items-center">
+          <div className={`rounded-full ${getBgColor()} p-3 mb-2 xs:mb-0 xs:mr-4`}>
             {getIcon()}
           </div>
-          <div>
+          <div className="text-center xs:text-left">
             <p className="text-sm text-muted-foreground">{title}</p>
-            <p className="text-2xl font-bold">{value}</p>
+            <p className="text-xl xs:text-2xl font-bold">{value}</p>
           </div>
         </div>
       </CardContent>

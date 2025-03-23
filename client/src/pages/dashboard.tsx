@@ -109,7 +109,7 @@ export default function Dashboard() {
       <section className="mb-8">
         <h2 className="text-lg font-semibold text-foreground mb-4">Estadísticas</h2>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <StatCard 
             title="Préstamos Activos" 
             value={isLoading ? "..." : estadisticas?.prestamosActivos.toString() || "0"} 
@@ -144,7 +144,7 @@ export default function Dashboard() {
       <section className="mb-8">
         <h2 className="text-lg font-semibold text-foreground mb-4">Acciones Rápidas</h2>
         
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 xs:grid-cols-3 gap-4">
           <ActionCard 
             title="Registrar Cliente" 
             description="Añadir un nuevo cliente al sistema" 
@@ -178,7 +178,7 @@ export default function Dashboard() {
       <section>
         <h2 className="text-lg font-semibold text-foreground mb-4">Actividad Reciente</h2>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 xs:gap-6">
           <ActivityCard 
             title="Pagos Recientes" 
             items={prepararItemsPagos()} 
