@@ -137,8 +137,8 @@ export default function Caja() {
   return (
     <MainLayout>
       <header className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Caja</h1>
-        <p className="text-sm text-gray-600">Administra los movimientos de caja, ingresos y egresos</p>
+        <h1 className="text-2xl font-bold text-foreground">Caja</h1>
+        <p className="text-sm text-muted-foreground">Administra los movimientos de caja, ingresos y egresos</p>
       </header>
       
       <div className="mb-6">
@@ -159,7 +159,7 @@ export default function Caja() {
           </CardHeader>
           <CardContent>
             {isLoadingResumen ? (
-              <div className="animate-pulse h-8 bg-gray-200 rounded"></div>
+              <div className="animate-pulse h-8 bg-muted rounded"></div>
             ) : (
               <div className="text-2xl font-bold text-primary">
                 {resumenCaja ? formatCurrency(resumenCaja.saldo_actual) : "$0.00"}
@@ -174,7 +174,7 @@ export default function Caja() {
           </CardHeader>
           <CardContent>
             {isLoadingResumen ? (
-              <div className="animate-pulse h-8 bg-gray-200 rounded"></div>
+              <div className="animate-pulse h-8 bg-muted rounded"></div>
             ) : (
               <div className="text-2xl font-bold text-green-500">
                 {resumenCaja ? formatCurrency(resumenCaja.total_ingresos) : "$0.00"}
@@ -189,7 +189,7 @@ export default function Caja() {
           </CardHeader>
           <CardContent>
             {isLoadingResumen ? (
-              <div className="animate-pulse h-8 bg-gray-200 rounded"></div>
+              <div className="animate-pulse h-8 bg-muted rounded"></div>
             ) : (
               <div className="text-2xl font-bold text-red-500">
                 {resumenCaja ? formatCurrency(resumenCaja.total_egresos) : "$0.00"}
@@ -214,11 +214,11 @@ export default function Caja() {
             <input
               type="search"
               placeholder="Buscar movimientos..."
-              className="w-full sm:w-64 pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full sm:w-64 pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-background"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <i className="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+            <i className="fas fa-search absolute left-3 top-3 text-muted-foreground"></i>
           </div>
         </div>
       </div>
@@ -241,7 +241,7 @@ export default function Caja() {
               Error al cargar los movimientos: {errorMovimientos?.message}
             </div>
           ) : filteredMovimientos.length === 0 ? (
-            <div className="text-center p-4 text-gray-500">
+            <div className="text-center p-4 text-muted-foreground">
               <i className="fas fa-info-circle mr-2"></i>
               No hay movimientos registrados
             </div>
@@ -301,7 +301,7 @@ export default function Caja() {
             <AlertDialogTitle>Confirmar eliminación</AlertDialogTitle>
             <AlertDialogDescription>
               ¿Estás seguro de que deseas eliminar este movimiento?
-              <div className="mt-2 p-3 bg-gray-100 rounded-md">
+              <div className="mt-2 p-3 bg-muted/50 rounded-md">
                 <p>
                   <span className="font-semibold">Fecha:</span>{" "}
                   {movimientoToDelete && formatDate(movimientoToDelete.fecha)}
