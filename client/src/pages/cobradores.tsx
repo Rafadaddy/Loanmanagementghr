@@ -752,7 +752,7 @@ export default function Cobradores() {
 
       {/* Diálogo para ver clientes del cobrador */}
       <Dialog open={isClientesDialogOpen} onOpenChange={setIsClientesDialogOpen}>
-        <DialogContent className="max-w-5xl">
+        <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>Clientes asignados a {selectedCobrador?.nombre}</DialogTitle>
             <DialogDescription>
