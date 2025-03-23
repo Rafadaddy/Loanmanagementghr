@@ -142,12 +142,16 @@ export class MemStorage implements IStorage {
       // Crear cobradores asociados a usuarios
       if (this.cobradores.size === 0) {
         await this.createCobrador({
+          nombre: cobrador1User.nombre,
+          telefono: "555-111-2222",
           user_id: cobrador1.id,
           zona: "Norte",
           activo: true
         });
         
         await this.createCobrador({
+          nombre: cobrador2User.nombre,
+          telefono: "555-333-4444",
           user_id: cobrador2.id,
           zona: "Sur",
           activo: true
@@ -375,6 +379,25 @@ export class MemStorage implements IStorage {
     return Array.from(this.users.values()).find(
       (user) => user.username === username
     );
+  }
+
+  async getAllUsers(): Promise<Map<number, User>> {
+    return this.users;
+  }
+
+  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
+    const userExistente = this.users.get(id);
+    if (!userExistente) {
+      return undefined;
+    }
+    
+    const userActualizado: User = { 
+      ...userExistente, 
+      ...userData 
+    };
+    
+    this.users.set(id, userActualizado);
+    return userActualizado;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -1022,9 +1045,26 @@ export class MemStorage implements IStorage {
 
   async createCobrador(cobrador: InsertCobrador): Promise<Cobrador> {
     const id = this.currentCobradorId++;
+    
+    // Si no se proporciona nombre o teléfono, pero se proporciona user_id,
+    // intentamos obtener esta información del usuario asociado
+    let nombre = cobrador.nombre;
+    let telefono = cobrador.telefono;
+    
+    if ((!nombre || !telefono) && cobrador.user_id) {
+      const usuario = await this.getUser(cobrador.user_id);
+      if (usuario) {
+        nombre = nombre || usuario.nombre;
+        // Si no hay teléfono, usamos un valor predeterminado
+        telefono = telefono || "Sin teléfono";
+      }
+    }
+    
     const nuevoCobrador: Cobrador = { 
       ...cobrador, 
       id,
+      nombre: nombre || "Sin nombre", // Asegurarnos de tener un valor predeterminado
+      telefono: telefono || "Sin teléfono", // Asegurarnos de tener un valor predeterminado
       activo: cobrador.activo ?? true // Si no se especifica, por defecto es activo
     };
     

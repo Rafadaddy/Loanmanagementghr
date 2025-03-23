@@ -807,10 +807,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Eliminar cobrador
       const result = await storage.deleteCobrador(id);
       if (result) {
+        // Cambiar rol de usuario a USUARIO si era COBRADOR
+        const usuario = await storage.getUser(cobrador.user_id);
+        if (usuario && usuario.rol === "COBRADOR") {
+          await storage.updateUser(cobrador.user_id, { rol: "USUARIO" });
+        }
+        
         res.status(200).json({ message: "Cobrador eliminado correctamente" });
       } else {
         res.status(500).json({ message: "Error al eliminar el cobrador" });
       }
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Ruta para obtener todos los usuarios que pueden ser cobradores (que no ya tengan un cobrador asignado)
+  app.get("/api/usuarios-disponibles-para-cobrador", isAuthenticated, async (req, res, next) => {
+    try {
+      // Obtener todos los usuarios
+      const usuarios = Array.from((await storage.getAllUsers()).values());
+      
+      // Obtener todos los cobradores
+      const cobradores = await storage.getAllCobradores();
+      
+      // Filtrar los usuarios que ya son cobradores
+      const userIdsConCobradores = cobradores.map(c => c.user_id);
+      
+      // Excluir usuarios que ya tienen un cobrador asignado, excepto admins
+      const usuariosDisponibles = usuarios.filter(usuario => 
+        !userIdsConCobradores.includes(usuario.id) || 
+        usuario.rol === "ADMIN"
+      );
+      
+      res.json(usuariosDisponibles);
     } catch (error) {
       next(error);
     }
