@@ -419,7 +419,7 @@ export default function RegistroCaja() {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDelete}
-              variant="destructive"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {eliminarMovimientoMutation.isPending ? (
                 <>

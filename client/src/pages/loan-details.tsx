@@ -421,7 +421,7 @@ export default function LoanDetails() {
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Mora Acumulada</p>
                   <p className="text-xl font-semibold flex items-center">
-                    <Percent className="h-4 w-4 mr-2 text-red-600" />
+                    <Percent className="h-4 w-4 mr-2 text-red-500 dark:text-red-400" />
                     {formatCurrency(prestamo.monto_mora_acumulada || 0)}
                   </p>
                 </div>
@@ -429,7 +429,7 @@ export default function LoanDetails() {
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Balance Pendiente</p>
                   <p className="text-xl font-semibold flex items-center">
-                    <Banknote className="h-4 w-4 mr-2 text-orange-600" />
+                    <Banknote className="h-4 w-4 mr-2 text-orange-500 dark:text-orange-400" />
                     {formatCurrency((parseFloat(prestamo.monto_total_pagar) + parseFloat(prestamo.monto_mora_acumulada || "0")) - (totalPagadoData?.totalPagado || 0))}
                   </p>
                 </div>
