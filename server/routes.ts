@@ -903,6 +903,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Ruta para cambiar el día de pago de un préstamo
+  app.post("/api/prestamos/:id/cambiar-dia-pago", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de préstamo inválido" });
+      }
+      
+      const { nuevaFechaPago } = req.body;
+      if (!nuevaFechaPago) {
+        return res.status(400).json({ message: "La nueva fecha de pago es requerida" });
+      }
+      
+      // Verificar si el préstamo existe
+      const prestamo = await storage.getPrestamo(id);
+      if (!prestamo) {
+        return res.status(404).json({ message: "Préstamo no encontrado" });
+      }
+      
+      // Parsear la fecha de pago actual y la nueva
+      const fechaProximoPagoActual = new Date(prestamo.proxima_fecha_pago);
+      const nuevaFecha = new Date(nuevaFechaPago);
+      
+      // Verificar que la nueva fecha sea válida
+      if (isNaN(nuevaFecha.getTime())) {
+        return res.status(400).json({ message: "Formato de fecha inválido. Utilice YYYY-MM-DD" });
+      }
+      
+      // Obtener el día de la semana de la nueva fecha (0: domingo, 1: lunes, ..., 6: sábado)
+      const nuevoDiaSemana = nuevaFecha.getDay();
+      
+      // Actualizar las fechas para todas las semanas futuras
+      const prestamoActualizado = {
+        ...prestamo,
+        proxima_fecha_pago: formatISO(nuevaFecha, { representation: 'date' })
+      };
+      
+      // Actualizar el préstamo
+      const resultado = await storage.updatePrestamo(id, prestamoActualizado);
+      
+      if (!resultado) {
+        return res.status(500).json({ message: "Error al actualizar el día de pago" });
+      }
+      
+      res.json({
+        message: "Día de pago actualizado correctamente",
+        prestamo: resultado,
+        nuevoDiaSemana: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"][nuevoDiaSemana]
+      });
+    } catch (error) {
+      console.error("Error al cambiar día de pago:", error);
+      next(error);
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

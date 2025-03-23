@@ -60,6 +60,10 @@ export default function LoanDetails() {
   const [editPaymentDialogOpen, setEditPaymentDialogOpen] = useState(false);
   const [selectedPago, setSelectedPago] = useState<Pago | null>(null);
   const [nuevoMontoPagado, setNuevoMontoPagado] = useState<string>("");
+  
+  // Estado para cambiar el día de pago
+  const [changeDayDialogOpen, setChangeDayDialogOpen] = useState(false);
+  const [nuevaFechaPago, setNuevaFechaPago] = useState<string>("");
   const params = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -149,6 +153,42 @@ export default function LoanDetails() {
     }
   });
 
+  // Mutation para cambiar el día de pago
+  const cambiarDiaPagoMutation = useMutation({
+    mutationFn: async (nuevaFecha: string) => {
+      const res = await apiRequest("POST", `/api/prestamos/${prestamoId}/cambiar-dia-pago`, { 
+        nuevaFechaPago: nuevaFecha 
+      });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      // Invalidar todas las consultas relevantes
+      queryClient.invalidateQueries({ queryKey: [`/api/prestamos/${prestamoId}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/prestamos'] });
+      
+      // Cerrar el diálogo de cambio de día
+      setChangeDayDialogOpen(false);
+      setNuevaFechaPago("");
+      
+      toast({
+        title: "Día de pago actualizado",
+        description: `El día de pago ha sido cambiado a ${data.nuevoDiaSemana}.`,
+      });
+      
+      // Recargar la página después de un breve retraso
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: [`/api/prestamos/${prestamoId}`] });
+      }, 500);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `No se pudo cambiar el día de pago: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  });
+  
   // Mutation para actualizar un pago
   const actualizarPagoMutation = useMutation({
     mutationFn: async ({ id, monto_pagado }: { id: number; monto_pagado: string }) => {
