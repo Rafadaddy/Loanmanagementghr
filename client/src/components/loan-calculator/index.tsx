@@ -196,7 +196,7 @@ export default function LoanCalculator({ onSave, className = "" }: LoanCalculato
             <div className="flex justify-between items-center">
               <Label htmlFor="monto">Monto del Préstamo</Label>
               <div className="relative w-32">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                 <Input
                   id="monto"
                   type="number"
@@ -238,7 +238,7 @@ export default function LoanCalculator({ onSave, className = "" }: LoanCalculato
                   max={100}
                   step={0.5}
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
               </div>
             </div>
             <Slider
@@ -279,7 +279,7 @@ export default function LoanCalculator({ onSave, className = "" }: LoanCalculato
               onValueChange={(value) => setSemanas(value[0])}
               className="py-2"
             />
-            <div className="flex justify-between text-xs text-gray-500">
+            <div className="flex justify-between text-xs text-muted-foreground">
               <span>4 semanas</span>
               <span>26 semanas</span>
               <span>52 semanas</span>
@@ -288,10 +288,10 @@ export default function LoanCalculator({ onSave, className = "" }: LoanCalculato
         </div>
         
         {/* Resumen del préstamo */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-md">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-muted/30 p-4 rounded-md">
           <div>
-            <p className="text-sm text-gray-500 mb-1">Monto Total a Pagar</p>
-            <p className="text-lg font-semibold text-gray-800">
+            <p className="text-sm text-muted-foreground mb-1">Monto Total a Pagar</p>
+            <p className="text-lg font-semibold text-foreground">
               {resultado 
                 ? formatCurrency(resultado.monto_total_pagar)
                 : formatCurrency(0)}
@@ -299,8 +299,8 @@ export default function LoanCalculator({ onSave, className = "" }: LoanCalculato
           </div>
           
           <div>
-            <p className="text-sm text-gray-500 mb-1">Pago Semanal</p>
-            <p className="text-lg font-semibold text-gray-800">
+            <p className="text-sm text-muted-foreground mb-1">Pago Semanal</p>
+            <p className="text-lg font-semibold text-foreground">
               {resultado 
                 ? formatCurrency(resultado.pago_semanal)
                 : formatCurrency(0)}
@@ -308,8 +308,8 @@ export default function LoanCalculator({ onSave, className = "" }: LoanCalculato
           </div>
           
           <div>
-            <p className="text-sm text-gray-500 mb-1">Interés Total</p>
-            <p className="text-lg font-semibold text-gray-800">
+            <p className="text-sm text-muted-foreground mb-1">Interés Total</p>
+            <p className="text-lg font-semibold text-foreground">
               {resultado 
                 ? formatCurrency(resultado.monto_total_pagar - monto)
                 : formatCurrency(0)}
@@ -317,8 +317,8 @@ export default function LoanCalculator({ onSave, className = "" }: LoanCalculato
           </div>
           
           <div>
-            <p className="text-sm text-gray-500 mb-1">Tasa Efectiva</p>
-            <p className="text-lg font-semibold text-gray-800">
+            <p className="text-sm text-muted-foreground mb-1">Tasa Efectiva</p>
+            <p className="text-lg font-semibold text-foreground">
               {resultado 
                 ? `${((resultado.monto_total_pagar / monto - 1) * 100).toFixed(2)}%`
                 : "0.00%"}
@@ -341,19 +341,32 @@ export default function LoanCalculator({ onSave, className = "" }: LoanCalculato
                     data={chartData}
                     margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                     <XAxis 
                       dataKey="semana" 
                       label={{ value: 'Semana', position: 'insideBottomRight', offset: -5 }}
+                      stroke="var(--muted-foreground)"
+                      tick={{ fill: 'var(--muted-foreground)' }}
                     />
                     <YAxis 
-                      tickFormatter={(value) => `$${value.toLocaleString()}`} 
+                      tickFormatter={(value) => `$${value.toLocaleString()}`}
+                      stroke="var(--muted-foreground)"
+                      tick={{ fill: 'var(--muted-foreground)' }}
                     />
                     <Tooltip 
                       formatter={(value: number) => [`${formatCurrency(value)}`, '']}
                       labelFormatter={(label) => `Semana ${label}`}
+                      contentStyle={{
+                        backgroundColor: 'var(--background)',
+                        borderColor: 'var(--border)',
+                        color: 'var(--foreground)'
+                      }}
                     />
-                    <Legend />
+                    <Legend 
+                      wrapperStyle={{
+                        color: 'var(--foreground)'
+                      }}
+                    />
                     <Line 
                       type="monotone" 
                       dataKey="principal" 
@@ -377,7 +390,7 @@ export default function LoanCalculator({ onSave, className = "" }: LoanCalculato
                 </ResponsiveContainer>
               ) : (
                 <div className="flex items-center justify-center h-full">
-                  <p className="text-gray-500">Calculando proyección...</p>
+                  <p className="text-muted-foreground">Calculando proyección...</p>
                 </div>
               )}
             </div>
