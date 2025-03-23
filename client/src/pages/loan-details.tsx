@@ -318,7 +318,7 @@ export default function LoanDetails() {
           <div className="mt-4 md:mt-0 flex items-center gap-2">
             {prestamo.estado !== "PAGADO" && (
               <Button 
-                className="bg-primary hover:bg-blue-600"
+                className="bg-primary hover:bg-primary/90"
                 onClick={() => setPaymentFormOpen(true)}
               >
                 <Banknote className="h-4 w-4 mr-2" />
@@ -405,7 +405,7 @@ export default function LoanDetails() {
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Monto Total a Pagar</p>
                   <p className="text-xl font-semibold flex items-center">
-                    <Banknote className="h-4 w-4 mr-2 text-green-600" />
+                    <Banknote className="h-4 w-4 mr-2 text-green-500 dark:text-green-400" />
                     {formatCurrency(prestamo.monto_total_pagar)}
                   </p>
                 </div>
@@ -413,7 +413,7 @@ export default function LoanDetails() {
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Total Pagado</p>
                   <p className="text-xl font-semibold flex items-center">
-                    <Banknote className="h-4 w-4 mr-2 text-blue-600" />
+                    <Banknote className="h-4 w-4 mr-2 text-blue-500 dark:text-blue-400" />
                     {formatCurrency(totalPagadoData?.totalPagado || 0)}
                   </p>
                 </div>
@@ -535,7 +535,7 @@ export default function LoanDetails() {
             {pagos.length > 0 && prestamo.estado !== "PAGADO" && (
               <Button 
                 size="sm" 
-                className="bg-primary hover:bg-blue-600"
+                className="bg-primary hover:bg-primary/90"
                 onClick={() => setPaymentFormOpen(true)}
               >
                 Registrar Pago
@@ -548,7 +548,7 @@ export default function LoanDetails() {
                 <p className="text-muted-foreground">No hay pagos registrados para este préstamo</p>
                 {prestamo.estado !== "PAGADO" && (
                   <Button 
-                    className="mt-4 bg-primary hover:bg-blue-600"
+                    className="mt-4 bg-primary hover:bg-primary/90"
                     onClick={() => setPaymentFormOpen(true)}
                   >
                     Registrar Primer Pago
@@ -576,11 +576,11 @@ export default function LoanDetails() {
                       return (
                         <TableRow key={pago.id}>
                           <TableCell>Semana {pago.numero_semana}</TableCell>
-                          <TableCell className="font-medium text-green-600">{formatCurrency(pago.monto_pagado)}</TableCell>
-                          <TableCell className="font-medium text-red-600">
+                          <TableCell className="font-medium text-green-500 dark:text-green-400">{formatCurrency(pago.monto_pagado)}</TableCell>
+                          <TableCell className="font-medium text-red-500 dark:text-red-400">
                             {parseFloat(pago.monto_mora || "0") > 0 ? formatCurrency(pago.monto_mora) : "-"}
                           </TableCell>
-                          <TableCell className="font-medium text-orange-600">
+                          <TableCell className="font-medium text-orange-500 dark:text-orange-400">
                             {parseFloat(pago.monto_restante || "0") > 0 ? formatCurrency(pago.monto_restante) : "-"}
                           </TableCell>
                           <TableCell>{formatDate(pago.fecha_pago)}</TableCell>
