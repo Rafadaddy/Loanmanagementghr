@@ -9,6 +9,7 @@ import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useEffect } from "react";
 
 // Esquemas para validación
 const loginSchema = z.object({
@@ -35,19 +36,20 @@ export default function AuthPage() {
   const isRegister = location.includes("signup");
   const activeTab = isRegister ? "registro" : "login";
   
-  // Redirigir si el usuario ya está autenticado
-  if (user) {
-    navigate("/dashboard");
-    return <div>Redirigiendo al dashboard...</div>;
-  }
+  // Usamos useEffect para redirigir y evitar el error de actualización durante el render
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-slate-900 min-h-screen flex items-center justify-center p-4">
+      <Card className="w-full max-w-md border-2">
         <CardContent className="pt-6">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">Sistema de Préstamos</h1>
-            <p className="text-gray-600">Gestión eficiente de préstamos</p>
+            <h1 className="text-2xl font-bold mb-2">Sistema de Préstamos</h1>
+            <p className="text-muted-foreground">Gestión eficiente de préstamos</p>
           </div>
 
           <Tabs defaultValue={activeTab} className="w-full">
@@ -135,7 +137,7 @@ function LoginForm() {
         
         <Button 
           type="submit" 
-          className="w-full bg-primary hover:bg-blue-600"
+          className="w-full"
           disabled={loginMutation.isPending}
         >
           {loginMutation.isPending ? "Iniciando sesión..." : "Iniciar Sesión"}
@@ -239,7 +241,7 @@ function RegisterForm() {
         
         <Button 
           type="submit" 
-          className="w-full bg-primary hover:bg-blue-600"
+          className="w-full"
           disabled={registerMutation.isPending}
         >
           {registerMutation.isPending ? "Registrando..." : "Registrarse"}
