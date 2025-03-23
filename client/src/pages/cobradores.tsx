@@ -83,6 +83,9 @@ export default function Cobradores() {
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
   const [activeClienteTab, setActiveClienteTab] = useState("info");
   const [clienteSearchQuery, setClienteSearchQuery] = useState("");
+  const [isEditingCliente, setIsEditingCliente] = useState(false);
+  const [clienteRuta, setClienteRuta] = useState("");
+  const [clienteNotas, setClienteNotas] = useState("");
   
   // Estados para mostrar préstamos y pagos del cliente
   const [prestamosCliente, setPrestamosCliente] = useState<Prestamo[]>([]);
@@ -860,7 +863,7 @@ export default function Cobradores() {
                         <div className="space-y-1">
                           <p className="text-sm text-muted-foreground">Ruta</p>
                           <div className="font-medium">
-                            <Badge variant="outline">{selectedCliente.ruta || "Sin asignar"}</Badge>
+                            <Badge variant="outline" className="bg-yellow-100 text-yellow-800">{selectedCliente.ruta || "Sin asignar"}</Badge>
                           </div>
                         </div>
                         <div className="space-y-1">
@@ -873,12 +876,14 @@ export default function Cobradores() {
                             <p className="font-medium">{selectedCliente.email}</p>
                           </div>
                         )}
-                        {selectedCliente.notas && (
-                          <div className="space-y-1 md:col-span-2">
-                            <p className="text-sm text-muted-foreground">Notas</p>
-                            <p className="font-medium">{selectedCliente.notas}</p>
+                        
+                        {/* Notas con estilo mejorado */}
+                        <div className="space-y-1 md:col-span-2">
+                          <p className="text-sm text-muted-foreground">Notas</p>
+                          <div className="font-medium p-2 bg-muted/50 rounded-md">
+                            {selectedCliente.notas || "Sin notas adicionales"}
                           </div>
-                        )}
+                        </div>
                       </div>
                     </TabsContent>
                     
@@ -979,9 +984,9 @@ export default function Cobradores() {
                                 </div>
                                 <div className="text-right">
                                   <div className="font-medium">{formatCurrency(pago.monto_pagado)}</div>
-                                  <div className="text-xs">
+                                  <span className="inline-flex items-center text-xs">
                                     <Badge variant="secondary">Préstamo #{pago.prestamo_id}</Badge>
-                                  </div>
+                                  </span>
                                 </div>
                               </div>
                             ))}
