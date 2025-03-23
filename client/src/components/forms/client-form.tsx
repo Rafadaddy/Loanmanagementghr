@@ -21,7 +21,7 @@ const clientFormSchema = z.object({
   direccion: z.string(),
   documento_identidad: z.string().min(6, "El documento debe tener al menos 6 caracteres"),
   cobrador_id: z.string().optional()
-    .transform(val => val === "" || val === undefined ? null : Number(val))
+    .transform(val => val === "null" || val === "" || val === undefined ? null : Number(val))
 });
 
 // Interfaz para los valores del formulario
@@ -58,7 +58,7 @@ export default function ClientForm({ open, onOpenChange, cliente, onSuccess }: C
       telefono: cliente?.telefono || "",
       direccion: cliente?.direccion || "",
       documento_identidad: cliente?.documento_identidad || "",
-      cobrador_id: cliente?.cobrador_id ? String(cliente.cobrador_id) : ""
+      cobrador_id: cliente?.cobrador_id ? String(cliente.cobrador_id) : "null"
     }
   });
   
@@ -70,7 +70,7 @@ export default function ClientForm({ open, onOpenChange, cliente, onSuccess }: C
         telefono: cliente.telefono,
         direccion: cliente.direccion,
         documento_identidad: cliente.documento_identidad,
-        cobrador_id: cliente.cobrador_id ? String(cliente.cobrador_id) : ""
+        cobrador_id: cliente.cobrador_id ? String(cliente.cobrador_id) : "null"
       });
     }
   }, [cliente, form]);
@@ -201,7 +201,7 @@ export default function ClientForm({ open, onOpenChange, cliente, onSuccess }: C
                 <FormItem>
                   <FormLabel>Cobrador Asignado</FormLabel>
                   <Select
-                    value={field.value !== undefined ? String(field.value) : ""}
+                    value={field.value !== undefined ? String(field.value) : "null"}
                     onValueChange={field.onChange}
                     disabled={isLoadingCobradores}
                   >
@@ -211,7 +211,7 @@ export default function ClientForm({ open, onOpenChange, cliente, onSuccess }: C
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Sin cobrador asignado</SelectItem>
+                      <SelectItem value="null">Sin cobrador asignado</SelectItem>
                       {cobradores.map((cobrador) => (
                         <SelectItem key={cobrador.id} value={String(cobrador.id)}>
                           {cobrador.nombre} ({cobrador.zona})
