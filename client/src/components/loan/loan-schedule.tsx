@@ -281,17 +281,17 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
 
         {/* Vista desktop - Tabla horizontal */}
         <div className="hidden md:block rounded-md border overflow-x-auto">
-          <Table className="w-full">
+          <Table className="w-full table-fixed min-w-[800px]">
             <TableHeader>
               <TableRow>
-                <TableHead className="whitespace-nowrap">Nº Cuota</TableHead>
-                <TableHead className="whitespace-nowrap">Fecha Programada</TableHead>
-                <TableHead className="whitespace-nowrap">Monto</TableHead>
-                <TableHead className="whitespace-nowrap">Estado</TableHead>
-                <TableHead className="whitespace-nowrap">Fecha de Pago</TableHead>
-                <TableHead className="whitespace-nowrap">Monto Pagado</TableHead>
-                <TableHead className="whitespace-nowrap">Mora</TableHead>
-                <TableHead className="whitespace-nowrap">Restante</TableHead>
+                <TableHead className="whitespace-nowrap w-[12%]">Nº Cuota</TableHead>
+                <TableHead className="whitespace-nowrap w-[12%]">Fecha Programada</TableHead>
+                <TableHead className="whitespace-nowrap w-[12%]">Monto</TableHead>
+                <TableHead className="whitespace-nowrap w-[12%]">Estado</TableHead>
+                <TableHead className="whitespace-nowrap w-[12%]">Fecha de Pago</TableHead>
+                <TableHead className="whitespace-nowrap w-[12%]">Monto Pagado</TableHead>
+                <TableHead className="whitespace-nowrap w-[12%]">Mora</TableHead>
+                <TableHead className="whitespace-nowrap w-[12%]">Restante</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

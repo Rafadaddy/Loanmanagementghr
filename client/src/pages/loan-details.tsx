@@ -350,7 +350,7 @@ export default function LoanDetails() {
       <Sidebar />
       <MobileHeader />
       
-      <main className="flex-1 overflow-y-auto p-2 md:p-6 mt-14 md:mt-0 pb-20">
+      <main className="flex-1 overflow-y-auto p-2 md:p-6 mt-14 md:mt-0 pb-20 md:ml-[240px]">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <div className="flex items-center">
             <Button
@@ -676,16 +676,16 @@ export default function LoanDetails() {
                 
                 {/* Vista desktop - Tabla horizontal */}
                 <div className="hidden md:block overflow-x-auto rounded-md border">
-                  <Table>
+                  <Table className="table-fixed min-w-[800px]">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="whitespace-nowrap">Semana</TableHead>
-                        <TableHead className="whitespace-nowrap">Monto Pagado</TableHead>
-                        <TableHead className="whitespace-nowrap">Mora</TableHead>
-                        <TableHead className="whitespace-nowrap">Restante</TableHead>
-                        <TableHead className="whitespace-nowrap">Fecha de Pago</TableHead>
-                        <TableHead className="whitespace-nowrap">Estado</TableHead>
-                        <TableHead className="whitespace-nowrap text-right">Acciones</TableHead>
+                        <TableHead className="whitespace-nowrap w-[10%]">Semana</TableHead>
+                        <TableHead className="whitespace-nowrap w-[15%]">Monto Pagado</TableHead>
+                        <TableHead className="whitespace-nowrap w-[15%]">Mora</TableHead>
+                        <TableHead className="whitespace-nowrap w-[15%]">Restante</TableHead>
+                        <TableHead className="whitespace-nowrap w-[15%]">Fecha de Pago</TableHead>
+                        <TableHead className="whitespace-nowrap w-[15%]">Estado</TableHead>
+                        <TableHead className="whitespace-nowrap w-[15%] text-right">Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
