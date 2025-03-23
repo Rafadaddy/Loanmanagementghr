@@ -752,7 +752,7 @@ export default function Cobradores() {
 
       {/* Diálogo para ver clientes del cobrador */}
       <Dialog open={isClientesDialogOpen} onOpenChange={setIsClientesDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh]">
+        <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Clientes asignados a {selectedCobrador?.nombre}</DialogTitle>
             <DialogDescription>
@@ -762,7 +762,7 @@ export default function Cobradores() {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Lista de clientes en la columna izquierda */}
-            <div className="md:col-span-1 overflow-auto max-h-[calc(70vh-120px)]">
+            <div className="md:col-span-1 overflow-auto max-h-[250px] md:max-h-[calc(70vh-120px)]">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-lg font-semibold">Clientes</h3>
                 <span className="text-sm text-muted-foreground">{clientesCobrador.length} total</span>
@@ -811,7 +811,7 @@ export default function Cobradores() {
             </div>
             
             {/* Detalles del cliente en la columna derecha */}
-            <div className="md:col-span-2 border rounded-md p-4 overflow-y-auto max-h-[calc(70vh-120px)]">
+            <div className="md:col-span-2 border rounded-md p-4 overflow-y-auto max-h-[350px] md:max-h-[calc(70vh-120px)]">
               {selectedCliente ? (
                 <div>
                   <div className="flex items-center space-x-4 mb-4">
