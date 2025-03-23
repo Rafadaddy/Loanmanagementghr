@@ -264,6 +264,18 @@ export default function LoanDetails() {
       }
     );
   };
+  
+  const handleChangeDaySubmit = () => {
+    startLoading("Cambiando día de pago...");
+    cambiarDiaPagoMutation.mutate(
+      nuevaFechaPago,
+      {
+        onSettled: () => {
+          stopLoading();
+        }
+      }
+    );
+  };
 
   const isLoading = loadingPrestamo || loadingCliente || loadingPagos || loadingTotalPagado;
 
@@ -363,6 +375,16 @@ export default function LoanDetails() {
               >
                 <Banknote className="h-4 w-4 mr-2" />
                 Registrar Pago
+              </Button>
+            )}
+            
+            {prestamo.estado !== "PAGADO" && (
+              <Button 
+                variant="outline"
+                onClick={() => setChangeDayDialogOpen(true)}
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Cambiar Día de Pago
               </Button>
             )}
             
@@ -721,6 +743,57 @@ export default function LoanDetails() {
                   </span>
                 ) : (
                   "Actualizar Pago"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Diálogo para cambiar día de pago */}
+        <Dialog open={changeDayDialogOpen} onOpenChange={setChangeDayDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Cambiar Día de Pago</DialogTitle>
+              <DialogDescription>
+                Seleccione la nueva fecha para los pagos. Esta acción actualizará todas las fechas de pago futuras.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="nuevaFecha" className="text-right">
+                  Nueva Fecha
+                </Label>
+                <div className="col-span-3">
+                  <Input
+                    id="nuevaFecha"
+                    type="date"
+                    value={nuevaFechaPago}
+                    onChange={(e) => setNuevaFechaPago(e.target.value)}
+                    placeholder="Seleccione la nueva fecha"
+                    className="col-span-3"
+                  />
+                </div>
+              </div>
+              
+              <div className="text-sm text-muted-foreground">
+                <p>Los pagos se programarán semanalmente a partir de esta fecha.</p>
+                <p className="mt-1">Esta acción reprogramará todos los pagos futuros.</p>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setChangeDayDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleChangeDaySubmit} disabled={cambiarDiaPagoMutation.isPending || !nuevaFechaPago}>
+                {cambiarDiaPagoMutation.isPending ? (
+                  <span className="flex items-center gap-1">
+                    <LoadingButton className="h-4 w-4" />
+                    Actualizando...
+                  </span>
+                ) : (
+                  "Cambiar Día de Pago"
                 )}
               </Button>
             </DialogFooter>
