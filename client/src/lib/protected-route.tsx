@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { Route, Redirect } from "wouter";
+import SidebarToggle from "@/components/navigation/sidebar-toggle";
 
 // Creamos un componente separado para el contenido protegido
 function ProtectedContent({ 
@@ -22,7 +23,12 @@ function ProtectedContent({
     return <Redirect to="/auth" />;
   }
 
-  return <Component />;
+  return (
+    <>
+      <Component />
+      <SidebarToggle />
+    </>
+  );
 }
 
 // Componente de ruta protegida

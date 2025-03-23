@@ -25,7 +25,6 @@ function App() {
         <LoadingProvider>
           <SidebarProvider>
             <AppContent />
-            <SidebarToggle />
           </SidebarProvider>
         </LoadingProvider>
       </AuthProvider>
