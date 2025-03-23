@@ -64,15 +64,12 @@ export default function MobileHeader() {
                               : "hover:bg-[hsl(var(--sidebar-accent))] hover:bg-opacity-20"
                           )}
                           onClick={() => {
-                            window.location.href = item.href;
                             setOpen(false);
+                            window.location.href = item.href;
                           }}
                         >
                           <Icon className="h-5 w-5 mr-3 flex-shrink-0" />
                           <span>{item.label}</span>
-                          {isActive && (
-                            <div className="absolute right-2 w-2 h-2 rounded-full bg-[hsl(var(--sidebar-primary))]"></div>
-                          )}
                         </div>
                       </li>
                     );
