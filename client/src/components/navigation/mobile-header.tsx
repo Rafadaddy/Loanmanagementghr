@@ -35,15 +35,13 @@ export default function MobileHeader() {
   ];
 
   return (
-    <div className="md:hidden fixed top-0 left-0 right-0 bg-[hsl(var(--sidebar-background))] border-b border-[hsl(var(--sidebar-border))] z-10">
-      <div className="flex items-center justify-between p-4">
-        <h1 className="text-lg font-bold text-[hsl(var(--sidebar-primary))]">Sistema de Préstamos</h1>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
+    <div className="md:hidden fixed top-0 left-0 right-0 bg-[hsl(var(--sidebar-background))] border-b border-[hsl(var(--sidebar-border))] z-20 shadow-sm">
+      <div className="flex items-center justify-between p-2.5">
+        <div className="flex items-center">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-6 w-6" />
+              <Button variant="ghost" size="icon" className="mr-1">
+                <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="p-0 bg-[hsl(var(--sidebar-background))] text-[hsl(var(--sidebar-foreground))] border-r border-[hsl(var(--sidebar-border))]">
@@ -51,21 +49,24 @@ export default function MobileHeader() {
                 <h1 className="text-lg font-bold text-[hsl(var(--sidebar-primary))]">Sistema de Préstamos</h1>
               </div>
               
-              <nav className="p-4">
-                <ul className="space-y-2">
+              <nav className="p-4 pt-2 overflow-y-auto max-h-[calc(100vh-160px)]">
+                <ul className="space-y-1">
                   {navItems.map((item) => {
                     const Icon = item.icon;
+                    const isActive = location === item.href;
                     return (
                       <li key={item.href}>
                         <Link href={item.href}>
                           <a 
                             className={cn(
-                              "flex items-center py-2 text-[hsl(var(--sidebar-foreground))] transition-colors",
-                              location === item.href && "text-[hsl(var(--sidebar-primary))] font-medium"
+                              "flex items-center py-2 px-3 rounded-md text-[hsl(var(--sidebar-foreground))] transition-colors",
+                              isActive 
+                                ? "bg-[hsl(var(--sidebar-primary))] bg-opacity-20 text-[hsl(var(--sidebar-primary))] font-medium" 
+                                : "hover:bg-[hsl(var(--sidebar-accent))] hover:bg-opacity-20"
                             )}
                             onClick={() => setOpen(false)}
                           >
-                            <Icon className="h-5 w-5 mr-3" />
+                            <Icon className="h-5 w-5 mr-3 flex-shrink-0" />
                             <span>{item.label}</span>
                           </a>
                         </Link>
@@ -75,14 +76,14 @@ export default function MobileHeader() {
                 </ul>
               </nav>
               
-              <div className="p-4 border-t border-[hsl(var(--sidebar-border))] mt-auto">
+              <div className="p-4 border-t border-[hsl(var(--sidebar-border))] absolute bottom-0 left-0 right-0 bg-[hsl(var(--sidebar-background))]">
                 <div className="flex items-center mb-4">
                   <div className="w-10 h-10 rounded-full bg-[hsl(var(--sidebar-accent))] mr-3 flex items-center justify-center">
                     {user?.nombre ? user.nombre.substring(0, 2).toUpperCase() : 'US'}
                   </div>
                   <div>
-                    <p className="text-sm font-medium">{user?.nombre}</p>
-                    <p className="text-xs text-[hsl(var(--muted-foreground))]">{user?.username}</p>
+                    <p className="text-sm font-medium truncate max-w-[150px]">{user?.nombre}</p>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] truncate max-w-[150px]">{user?.username}</p>
                   </div>
                 </div>
                 <Button
@@ -100,6 +101,14 @@ export default function MobileHeader() {
               </div>
             </SheetContent>
           </Sheet>
+          <h1 className="text-base font-bold text-[hsl(var(--sidebar-primary))] truncate max-w-[180px]">Sistema de Préstamos</h1>
+        </div>
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          {/* Para mostrar el título de la página actual, esto mejora UX */}
+          <div className="ml-1.5 px-2 py-1 rounded-full bg-[hsl(var(--sidebar-primary))] bg-opacity-15 text-[hsl(var(--sidebar-primary))] text-xs font-semibold">
+            {navItems.find(item => item.href === location)?.label || 'Inicio'}
+          </div>
         </div>
       </div>
     </div>

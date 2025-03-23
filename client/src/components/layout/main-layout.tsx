@@ -20,7 +20,7 @@ export default function MainLayout({ children, className }: MainLayoutProps) {
       </div>
       
       {/* Header para móviles */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-10">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-20">
         <MobileHeader />
       </div>
       
@@ -31,12 +31,18 @@ export default function MainLayout({ children, className }: MainLayoutProps) {
       )}>
         <main 
           className={cn(
-            "h-full overflow-y-auto p-4 md:p-6 mt-16 md:mt-0",
+            "h-full overflow-y-auto p-3 md:p-6 mt-16 md:mt-0", // Reducido el padding en móviles
+            "pb-20", // Espacio extra en la parte inferior para evitar que el contenido quede oculto por los elementos flotantes
             className
           )}
         >
           {children}
         </main>
+      </div>
+      
+      {/* Botón flotante de acción rápida para móviles (el contenedor lo definirá) */}
+      <div className="md:hidden">
+        {/* Posibles acciones flotantes irán aquí */}
       </div>
     </div>
   );
