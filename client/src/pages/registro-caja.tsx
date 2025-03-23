@@ -150,8 +150,8 @@ export default function RegistroCaja() {
   return (
     <MainLayout>
       <header className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Registro de Caja</h1>
-        <p className="text-sm text-gray-600">Administra los ingresos y egresos de la caja</p>
+        <h1 className="text-2xl font-bold text-foreground">Registro de Caja</h1>
+        <p className="text-sm text-muted-foreground">Administra los ingresos y egresos de la caja</p>
       </header>
       
       <div className="mb-6">
@@ -187,10 +187,10 @@ export default function RegistroCaja() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
-            <i className="fas fa-arrow-up text-green-500"></i>
+            <i className="fas fa-arrow-up text-emerald-500 dark:text-emerald-400"></i>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-500">
+            <div className="text-2xl font-bold text-emerald-500 dark:text-emerald-400">
               {isLoadingResumen ? (
                 <LoadingData text="Calculando..." />
               ) : (
@@ -205,10 +205,10 @@ export default function RegistroCaja() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Egresos Totales</CardTitle>
-            <i className="fas fa-arrow-down text-red-500"></i>
+            <i className="fas fa-arrow-down text-rose-500 dark:text-rose-400"></i>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-500">
+            <div className="text-2xl font-bold text-rose-500 dark:text-rose-400">
               {isLoadingResumen ? (
                 <LoadingData text="Calculando..." />
               ) : (
@@ -276,7 +276,7 @@ export default function RegistroCaja() {
             <TabsContent value="rango" className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <span className="block text-sm mb-2">Fecha Inicial:</span>
+                  <span className="block text-sm mb-2 text-foreground">Fecha Inicial:</span>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="w-full">
@@ -299,7 +299,7 @@ export default function RegistroCaja() {
                   </Popover>
                 </div>
                 <div>
-                  <span className="block text-sm mb-2">Fecha Final:</span>
+                  <span className="block text-sm mb-2 text-foreground">Fecha Final:</span>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="w-full">
@@ -382,7 +382,9 @@ export default function RegistroCaja() {
                         {movimiento.descripcion || "-"}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        <span className={movimiento.tipo === "INGRESO" ? "text-green-600" : "text-red-600"}>
+                        <span className={movimiento.tipo === "INGRESO" 
+                          ? "text-emerald-600 dark:text-emerald-400" 
+                          : "text-rose-600 dark:text-rose-400"}>
                           {formatCurrency(Number(movimiento.monto))}
                         </span>
                       </TableCell>
@@ -417,7 +419,7 @@ export default function RegistroCaja() {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
+              variant="destructive"
             >
               {eliminarMovimientoMutation.isPending ? (
                 <>
