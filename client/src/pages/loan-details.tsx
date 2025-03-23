@@ -445,7 +445,7 @@ export default function LoanDetails() {
               <CardTitle>Información del Préstamo</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-10">
+              <div className="grid grid-cols-2 md:grid-cols-2 gap-y-6 gap-x-4 md:gap-x-10">
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Cliente</p>
                   <div className="flex items-center">
@@ -623,53 +623,110 @@ export default function LoanDetails() {
                 )}
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="whitespace-nowrap">Semana</TableHead>
-                      <TableHead className="whitespace-nowrap">Monto Pagado</TableHead>
-                      <TableHead className="whitespace-nowrap">Mora</TableHead>
-                      <TableHead className="whitespace-nowrap">Restante</TableHead>
-                      <TableHead className="whitespace-nowrap">Fecha de Pago</TableHead>
-                      <TableHead className="whitespace-nowrap">Estado</TableHead>
-                      <TableHead className="whitespace-nowrap text-right">Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {pagos.map(pago => {
-                      const { label, className } = getPaymentStatus(pago.estado);
-                      
-                      return (
-                        <TableRow key={pago.id}>
-                          <TableCell className="whitespace-nowrap">Semana {pago.numero_semana}</TableCell>
-                          <TableCell className="whitespace-nowrap font-medium text-green-500 dark:text-green-400">{formatCurrency(pago.monto_pagado)}</TableCell>
-                          <TableCell className="whitespace-nowrap font-medium text-red-500 dark:text-red-400">
-                            {parseFloat(pago.monto_mora || "0") > 0 ? formatCurrency(pago.monto_mora) : "-"}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap font-medium text-orange-500 dark:text-orange-400">
-                            {parseFloat(pago.monto_restante || "0") > 0 ? formatCurrency(pago.monto_restante) : "-"}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">{formatDate(pago.fecha_pago)}</TableCell>
-                          <TableCell className="whitespace-nowrap">
+              <>
+                {/* Vista móvil - Tarjetas individuales */}
+                <div className="block md:hidden space-y-4">
+                  {pagos.map(pago => {
+                    const { label, className } = getPaymentStatus(pago.estado);
+                    
+                    return (
+                      <Card key={pago.id} className="border shadow-sm">
+                        <CardHeader className="p-3">
+                          <div className="flex justify-between items-center">
+                            <CardTitle className="text-base font-medium">Semana {pago.numero_semana}</CardTitle>
                             <Badge className={className}>{label}</Badge>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap text-right">
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              className="h-8 px-2 text-xs"
-                              onClick={() => handleEditPayment(pago)}
-                            >
-                              Editar
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="p-3 pt-0">
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <p className="text-muted-foreground">Fecha de Pago:</p>
+                              <p className="font-medium">{formatDate(pago.fecha_pago)}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Monto Pagado:</p>
+                              <p className="font-medium text-green-500">{formatCurrency(pago.monto_pagado)}</p>
+                            </div>
+                            
+                            {parseFloat(pago.monto_mora || "0") > 0 && (
+                              <div>
+                                <p className="text-muted-foreground">Mora:</p>
+                                <p className="font-medium text-red-500">{formatCurrency(pago.monto_mora)}</p>
+                              </div>
+                            )}
+                            
+                            {parseFloat(pago.monto_restante || "0") > 0 && (
+                              <div>
+                                <p className="text-muted-foreground">Restante:</p>
+                                <p className="font-medium text-orange-500">{formatCurrency(pago.monto_restante)}</p>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                        <CardFooter className="p-3 pt-0 flex justify-end">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="h-8 px-2 text-xs"
+                            onClick={() => handleEditPayment(pago)}
+                          >
+                            Editar
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    );
+                  })}
+                </div>
+                
+                {/* Vista desktop - Tabla horizontal */}
+                <div className="hidden md:block overflow-x-auto rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="whitespace-nowrap">Semana</TableHead>
+                        <TableHead className="whitespace-nowrap">Monto Pagado</TableHead>
+                        <TableHead className="whitespace-nowrap">Mora</TableHead>
+                        <TableHead className="whitespace-nowrap">Restante</TableHead>
+                        <TableHead className="whitespace-nowrap">Fecha de Pago</TableHead>
+                        <TableHead className="whitespace-nowrap">Estado</TableHead>
+                        <TableHead className="whitespace-nowrap text-right">Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pagos.map(pago => {
+                        const { label, className } = getPaymentStatus(pago.estado);
+                        
+                        return (
+                          <TableRow key={pago.id}>
+                            <TableCell className="whitespace-nowrap">Semana {pago.numero_semana}</TableCell>
+                            <TableCell className="whitespace-nowrap font-medium text-green-500 dark:text-green-400">{formatCurrency(pago.monto_pagado)}</TableCell>
+                            <TableCell className="whitespace-nowrap font-medium text-red-500 dark:text-red-400">
+                              {parseFloat(pago.monto_mora || "0") > 0 ? formatCurrency(pago.monto_mora) : "-"}
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap font-medium text-orange-500 dark:text-orange-400">
+                              {parseFloat(pago.monto_restante || "0") > 0 ? formatCurrency(pago.monto_restante) : "-"}
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap">{formatDate(pago.fecha_pago)}</TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              <Badge className={className}>{label}</Badge>
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap text-right">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="h-8 px-2 text-xs"
+                                onClick={() => handleEditPayment(pago)}
+                              >
+                                Editar
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

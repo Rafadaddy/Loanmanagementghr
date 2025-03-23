@@ -209,7 +209,70 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
         </div>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border overflow-x-auto">
+        {/* Vista móvil - Tarjetas individuales */}
+        <div className="block md:hidden space-y-4">
+          {cronograma.length > 0 ? (
+            cronograma.map((cuota) => (
+              <Card key={cuota.numero} className="border shadow-sm">
+                <CardHeader className="p-3">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-base font-medium">Semana {cuota.numero}</CardTitle>
+                    <Badge
+                      className={
+                        cuota.estado === "PAGADO"
+                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                          : cuota.estado === "PARCIAL"
+                          ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+                          : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                      }
+                    >
+                      {cuota.estado}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-3 pt-0">
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Fecha Programada:</p>
+                      <p className="font-medium">{formatDate(cuota.fechaProgramada)}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Monto:</p>
+                      <p className="font-medium">{formatCurrency(cuota.montoProgramado)}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Fecha de Pago:</p>
+                      <p className="font-medium">{cuota.fechaPago ? formatDate(cuota.fechaPago) : "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Monto Pagado:</p>
+                      <p className="font-medium">{cuota.montoPagado ? formatCurrency(cuota.montoPagado) : "-"}</p>
+                    </div>
+                    {(cuota.mora && parseFloat(cuota.mora) > 0) && (
+                      <div>
+                        <p className="text-muted-foreground">Mora:</p>
+                        <p className="font-medium text-red-500">{formatCurrency(cuota.mora)}</p>
+                      </div>
+                    )}
+                    {(cuota.resto && parseFloat(cuota.resto) > 0) && (
+                      <div>
+                        <p className="text-muted-foreground">Restante:</p>
+                        <p className="font-medium text-orange-500">{formatCurrency(cuota.resto)}</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <div className="p-4 text-center text-muted-foreground">
+              No hay información de cronograma disponible
+            </div>
+          )}
+        </div>
+
+        {/* Vista desktop - Tabla horizontal */}
+        <div className="hidden md:block rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
