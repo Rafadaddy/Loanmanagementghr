@@ -9,17 +9,29 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLoading } from "@/hooks/use-loading";
 import { LoadingButton } from "@/components/ui/loading";
-import { insertClienteSchema, Cliente } from "@shared/schema";
-import { useMutation } from "@tanstack/react-query";
+import { insertClienteSchema, Cliente, Cobrador } from "@shared/schema";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// Extender el esquema para validación del formulario
-const clientFormSchema = insertClienteSchema.extend({
+// Esquema para el formulario
+const clientFormSchema = z.object({
+  nombre: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
+  telefono: z.string().min(7, "El teléfono debe tener al menos 7 dígitos"),
+  direccion: z.string(),
   documento_identidad: z.string().min(6, "El documento debe tener al menos 6 caracteres"),
-  telefono: z.string().min(7, "El teléfono debe tener al menos 7 dígitos")
+  cobrador_id: z.string().optional()
+    .transform(val => val === "" || val === undefined ? null : Number(val))
 });
 
-type ClientFormValues = z.infer<typeof clientFormSchema>;
+// Interfaz para los valores del formulario
+interface ClientFormValues {
+  nombre: string;
+  telefono: string;
+  direccion: string;
+  documento_identidad: string;
+  cobrador_id: string;
+}
 
 interface ClientFormProps {
   open: boolean;
@@ -33,13 +45,20 @@ export default function ClientForm({ open, onOpenChange, cliente, onSuccess }: C
   const { startLoading, stopLoading } = useLoading();
   const isEditing = !!cliente;
 
+  // Obtener la lista de cobradores
+  const { data: cobradores = [], isLoading: isLoadingCobradores } = useQuery<Cobrador[]>({
+    queryKey: ["/api/cobradores"],
+    enabled: open // Solo hacer la consulta cuando el modal está abierto
+  });
+
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientFormSchema),
     defaultValues: {
       nombre: cliente?.nombre || "",
       telefono: cliente?.telefono || "",
       direccion: cliente?.direccion || "",
-      documento_identidad: cliente?.documento_identidad || ""
+      documento_identidad: cliente?.documento_identidad || "",
+      cobrador_id: cliente?.cobrador_id ? String(cliente.cobrador_id) : ""
     }
   });
   
@@ -50,7 +69,8 @@ export default function ClientForm({ open, onOpenChange, cliente, onSuccess }: C
         nombre: cliente.nombre,
         telefono: cliente.telefono,
         direccion: cliente.direccion,
-        documento_identidad: cliente.documento_identidad
+        documento_identidad: cliente.documento_identidad,
+        cobrador_id: cliente.cobrador_id ? String(cliente.cobrador_id) : ""
       });
     }
   }, [cliente, form]);
@@ -169,6 +189,36 @@ export default function ClientForm({ open, onOpenChange, cliente, onSuccess }: C
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="cobrador_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cobrador Asignado</FormLabel>
+                  <Select
+                    value={field.value !== undefined ? String(field.value) : ""}
+                    onValueChange={field.onChange}
+                    disabled={isLoadingCobradores}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar cobrador" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="">Sin cobrador asignado</SelectItem>
+                      {cobradores.map((cobrador) => (
+                        <SelectItem key={cobrador.id} value={String(cobrador.id)}>
+                          {cobrador.nombre} ({cobrador.zona})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
