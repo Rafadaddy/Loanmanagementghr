@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Cobrador, Cliente } from "@shared/schema";
+import { Cobrador, Cliente, Prestamo, Pago } from "@shared/schema";
 
 import MainLayout from "@/components/layout/main-layout";
 import { Button } from "@/components/ui/button";
@@ -46,9 +46,10 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { formatDate, getInitials } from "@/lib/utils";
+import { formatDate, getInitials, formatCurrency, getLoanStatus } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Pencil, Plus, Search, Trash, Users } from "lucide-react";
+import { Pencil, Plus, Search, Trash, Users, CreditCard, Calendar, DollarSign, Info } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
 // Schema para validación de formulario
@@ -78,6 +79,13 @@ export default function Cobradores() {
   const [selectedCobrador, setSelectedCobrador] = useState<Cobrador | null>(null);
   const [isClientesDialogOpen, setIsClientesDialogOpen] = useState(false);
   const [clientesCobrador, setClientesCobrador] = useState<Cliente[]>([]);
+  const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
+  const [activeClienteTab, setActiveClienteTab] = useState("info");
+  
+  // Estados para mostrar préstamos y pagos del cliente
+  const [prestamosCliente, setPrestamosCliente] = useState<Prestamo[]>([]);
+  const [pagosCliente, setPagosCliente] = useState<Pago[]>([]);
+  const [isLoadingPrestamos, setIsLoadingPrestamos] = useState(false);
 
   // Fetch cobradores
   const {
@@ -178,6 +186,10 @@ export default function Cobradores() {
       }
       const clientes = await res.json();
       setClientesCobrador(clientes);
+      setSelectedCliente(null); // Resetear cliente seleccionado
+      setPrestamosCliente([]); // Limpiar préstamos anteriores
+      setPagosCliente([]); // Limpiar pagos anteriores
+      setActiveClienteTab("info"); // Resetear tab activa
       setIsClientesDialogOpen(true);
     } catch (error) {
       toast({
@@ -186,6 +198,47 @@ export default function Cobradores() {
         variant: "destructive",
       });
     }
+  };
+  
+  // Cargar préstamos de un cliente
+  const fetchPrestamosCliente = async (clienteId: number) => {
+    if (!clienteId) return;
+    
+    setIsLoadingPrestamos(true);
+    try {
+      // Obtener préstamos
+      const resPrestamos = await apiRequest("GET", `/api/clientes/${clienteId}/prestamos`);
+      if (!resPrestamos.ok) {
+        throw new Error("Error al obtener préstamos del cliente");
+      }
+      const prestamos = await resPrestamos.json();
+      setPrestamosCliente(prestamos);
+      
+      // Obtener pagos de todos los préstamos
+      const pagosPromises = prestamos.map((prestamo: Prestamo) => 
+        apiRequest("GET", `/api/prestamos/${prestamo.id}/pagos`)
+          .then(res => res.json())
+      );
+      
+      const pagosResults = await Promise.all(pagosPromises);
+      const todosLosPagos = pagosResults.flat();
+      setPagosCliente(todosLosPagos);
+      
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los datos del cliente",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingPrestamos(false);
+    }
+  };
+  
+  // Manejar selección de cliente
+  const handleClienteClick = async (cliente: Cliente) => {
+    setSelectedCliente(cliente);
+    await fetchPrestamosCliente(cliente.id);
   };
 
   // Formulario para añadir cobrador
@@ -595,57 +648,232 @@ export default function Cobradores() {
 
       {/* Diálogo para ver clientes del cobrador */}
       <Dialog open={isClientesDialogOpen} onOpenChange={setIsClientesDialogOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-5xl">
           <DialogHeader>
             <DialogTitle>Clientes asignados a {selectedCobrador?.nombre}</DialogTitle>
             <DialogDescription>
-              Lista de clientes que están asignados a este cobrador.
+              Selecciona un cliente para ver sus préstamos y pagos.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="overflow-auto max-h-96">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Teléfono</TableHead>
-                  <TableHead>Ruta</TableHead>
-                  <TableHead>Fecha Registro</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Lista de clientes en la columna izquierda */}
+            <div className="lg:col-span-1 overflow-auto max-h-[calc(100vh-300px)]">
+              <h3 className="text-lg font-semibold mb-2">Clientes</h3>
+              <div className="space-y-2">
                 {clientesCobrador.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center h-24">
-                      Este cobrador no tiene clientes asignados
-                    </TableCell>
-                  </TableRow>
+                  <div className="p-4 text-center bg-muted rounded-md">
+                    Este cobrador no tiene clientes asignados
+                  </div>
                 ) : (
                   clientesCobrador.map((cliente) => (
-                    <TableRow key={cliente.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center space-x-2">
-                          <Avatar>
-                            <AvatarImage src="" />
-                            <AvatarFallback>
-                              {getInitials(cliente.nombre)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span>{cliente.nombre}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{cliente.telefono}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {cliente.ruta || "No definida"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{formatDate(cliente.fecha_registro)}</TableCell>
-                    </TableRow>
+                    <div 
+                      key={cliente.id} 
+                      className={`p-3 rounded-md cursor-pointer transition-colors flex items-center space-x-2 ${selectedCliente?.id === cliente.id ? 'bg-primary text-primary-foreground' : 'bg-card hover:bg-muted'}`}
+                      onClick={() => handleClienteClick(cliente)}
+                    >
+                      <Avatar className={selectedCliente?.id === cliente.id ? 'border-2 border-primary-foreground' : ''}>
+                        <AvatarImage src="" />
+                        <AvatarFallback>
+                          {getInitials(cliente.nombre)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 overflow-hidden">
+                        <div className="font-medium truncate">{cliente.nombre}</div>
+                        <div className="text-sm opacity-70 truncate">{cliente.telefono}</div>
+                      </div>
+                    </div>
                   ))
                 )}
-              </TableBody>
-            </Table>
+              </div>
+            </div>
+            
+            {/* Detalles del cliente en la columna derecha */}
+            <div className="lg:col-span-2 border rounded-md p-4">
+              {selectedCliente ? (
+                <div>
+                  <div className="flex items-center space-x-4 mb-4">
+                    <Avatar className="h-14 w-14">
+                      <AvatarImage src="" />
+                      <AvatarFallback className="text-lg">
+                        {getInitials(selectedCliente.nombre)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h2 className="text-xl font-bold">{selectedCliente.nombre}</h2>
+                      <p className="text-muted-foreground">{selectedCliente.documento_identidad || "Sin documento"}</p>
+                    </div>
+                  </div>
+                  
+                  <Tabs value={activeClienteTab} onValueChange={setActiveClienteTab} className="w-full">
+                    <TabsList className="w-full">
+                      <TabsTrigger value="info" className="flex-1">
+                        <Info className="h-4 w-4 mr-2" /> Información
+                      </TabsTrigger>
+                      <TabsTrigger value="loans" className="flex-1">
+                        <CreditCard className="h-4 w-4 mr-2" /> Préstamos
+                      </TabsTrigger>
+                      <TabsTrigger value="payments" className="flex-1">
+                        <DollarSign className="h-4 w-4 mr-2" /> Pagos
+                      </TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="info" className="space-y-4 mt-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <p className="text-sm text-muted-foreground">Teléfono</p>
+                          <p className="font-medium">{selectedCliente.telefono}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm text-muted-foreground">Dirección</p>
+                          <p className="font-medium">{selectedCliente.direccion || "No disponible"}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm text-muted-foreground">Ruta</p>
+                          <p className="font-medium">
+                            <Badge variant="outline">{selectedCliente.ruta || "Sin asignar"}</Badge>
+                          </p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm text-muted-foreground">Fecha de registro</p>
+                          <p className="font-medium">{formatDate(selectedCliente.fecha_registro)}</p>
+                        </div>
+                        {selectedCliente.email && (
+                          <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">Email</p>
+                            <p className="font-medium">{selectedCliente.email}</p>
+                          </div>
+                        )}
+                        {selectedCliente.notas && (
+                          <div className="space-y-1 md:col-span-2">
+                            <p className="text-sm text-muted-foreground">Notas</p>
+                            <p className="font-medium">{selectedCliente.notas}</p>
+                          </div>
+                        )}
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="loans" className="space-y-4 mt-4">
+                      {isLoadingPrestamos ? (
+                        <div className="flex justify-center py-6">
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full"></div>
+                            <span className="text-sm text-muted-foreground">Cargando préstamos...</span>
+                          </div>
+                        </div>
+                      ) : prestamosCliente.length === 0 ? (
+                        <div className="text-center py-6 bg-muted/20 rounded-md">
+                          <p className="text-muted-foreground">Este cliente no tiene préstamos registrados</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold">Préstamos ({prestamosCliente.length})</h3>
+                          <div className="space-y-3">
+                            {prestamosCliente.map((prestamo) => (
+                              <Card key={prestamo.id}>
+                                <CardContent className="pt-6">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <div className="space-y-1">
+                                      <div className="flex items-center gap-2">
+                                        <CreditCard className="h-4 w-4 text-muted-foreground" />
+                                        <span className="font-medium">Préstamo #{prestamo.id}</span>
+                                      </div>
+                                      <div className="text-sm text-muted-foreground">
+                                        <Calendar className="h-3 w-3 inline mr-1" /> 
+                                        {formatDate(prestamo.fecha_inicio)}
+                                      </div>
+                                    </div>
+                                    <Badge className={getLoanStatus(prestamo.estado).className}>
+                                      {getLoanStatus(prestamo.estado).label}
+                                    </Badge>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-3">
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Monto</p>
+                                      <p className="font-medium">{formatCurrency(prestamo.monto)}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Total a pagar</p>
+                                      <p className="font-medium">{formatCurrency(prestamo.monto_total)}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Plazo</p>
+                                      <p className="font-medium">{prestamo.plazo} semanas</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Pago semanal</p>
+                                      <p className="font-medium">{formatCurrency(prestamo.pago_semanal)}</p>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </TabsContent>
+                    
+                    <TabsContent value="payments" className="space-y-4 mt-4">
+                      {isLoadingPrestamos ? (
+                        <div className="flex justify-center py-6">
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full"></div>
+                            <span className="text-sm text-muted-foreground">Cargando pagos...</span>
+                          </div>
+                        </div>
+                      ) : pagosCliente.length === 0 ? (
+                        <div className="text-center py-6 bg-muted/20 rounded-md">
+                          <p className="text-muted-foreground">Este cliente no tiene pagos registrados</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-semibold">Pagos ({pagosCliente.length})</h3>
+                            <div className="text-sm text-right">
+                              <div className="font-medium">Total pagado</div>
+                              <div className="text-primary">{formatCurrency(pagosCliente.reduce((sum, pago) => sum + pago.monto, 0))}</div>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2 max-h-[300px] overflow-auto">
+                            {pagosCliente.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()).map((pago) => (
+                              <div key={pago.id} className="flex items-center justify-between p-3 rounded-md border">
+                                <div className="flex items-center space-x-2">
+                                  <Badge variant="outline" className="h-8 w-8 rounded-full flex items-center justify-center">
+                                    <DollarSign className="h-4 w-4" />
+                                  </Badge>
+                                  <div>
+                                    <div className="font-medium">Pago #{pago.id}</div>
+                                    <div className="text-xs text-muted-foreground">{formatDate(pago.fecha)}</div>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="font-medium">{formatCurrency(pago.monto)}</div>
+                                  <div className="text-xs">
+                                    <Badge variant="secondary">Préstamo #{pago.prestamo_id}</Badge>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </TabsContent>
+                  </Tabs>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                    <Users className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-medium mb-1">Selecciona un cliente</h3>
+                  <p className="text-sm text-muted-foreground max-w-md">
+                    Haz clic en un cliente de la lista para ver su información detallada, préstamos y pagos
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
           
           <DialogFooter>
