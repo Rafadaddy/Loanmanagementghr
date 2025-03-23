@@ -40,17 +40,21 @@ export default function Sidebar({ className }: SidebarProps) {
               const Icon = item.icon;
               return (
                 <li key={item.href} className="mb-1">
-                  <Link href={item.href}>
-                    <div 
-                      className={cn(
-                        "flex justify-center items-center p-3 text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:border-l-4 hover:border-[hsl(var(--sidebar-primary))] cursor-pointer transition-colors",
-                        location.startsWith(item.href) && "bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))] border-l-4 border-[hsl(var(--sidebar-primary))]"
-                      )}
-                      title={item.label}
-                    >
-                      <Icon className="h-5 w-5" />
-                    </div>
-                  </Link>
+                  <div 
+                    className={cn(
+                      "flex justify-center items-center p-3 text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:border-l-4 hover:border-[hsl(var(--sidebar-primary))] cursor-pointer transition-colors relative",
+                      location.startsWith(item.href) && "bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))] border-l-4 border-[hsl(var(--sidebar-primary))]"
+                    )}
+                    title={item.label}
+                    onClick={() => {
+                      window.location.href = item.href;
+                    }}
+                  >
+                    <Icon className="h-5 w-5" />
+                    {location.startsWith(item.href) && (
+                      <div className="absolute right-0.5 top-0.5 w-2 h-2 rounded-full bg-[hsl(var(--sidebar-primary))]"></div>
+                    )}
+                  </div>
                 </li>
               );
             })}
@@ -77,17 +81,18 @@ export default function Sidebar({ className }: SidebarProps) {
             const Icon = item.icon;
             return (
               <li key={item.href} className="mb-1">
-                <Link href={item.href}>
-                  <div 
-                    className={cn(
-                      "flex items-center px-4 py-3 text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:border-l-4 hover:border-[hsl(var(--sidebar-primary))] cursor-pointer transition-colors",
-                      location.startsWith(item.href) && "bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))] border-l-4 border-[hsl(var(--sidebar-primary))]"
-                    )}
-                  >
-                    <Icon className="h-5 w-5 mr-3" />
-                    <span>{item.label}</span>
-                  </div>
-                </Link>
+                <div 
+                  className={cn(
+                    "flex items-center px-4 py-3 text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:border-l-4 hover:border-[hsl(var(--sidebar-primary))] cursor-pointer transition-colors",
+                    location.startsWith(item.href) && "bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))] border-l-4 border-[hsl(var(--sidebar-primary))]"
+                  )}
+                  onClick={() => {
+                    window.location.href = item.href;
+                  }}
+                >
+                  <Icon className="h-5 w-5 mr-3" />
+                  <span>{item.label}</span>
+                </div>
               </li>
             );
           })}
