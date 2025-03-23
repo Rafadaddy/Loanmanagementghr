@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { cn } from "@/lib/utils";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function SidebarToggle() {
   const { isOpen, toggle } = useSidebar();
@@ -10,7 +11,7 @@ export default function SidebarToggle() {
       variant="outline"
       onClick={toggle}
       className={cn(
-        "fixed z-50 bg-white hover:bg-gray-50 border shadow-md",
+        "fixed z-50 bg-[hsl(var(--sidebar-background))] hover:bg-[hsl(var(--sidebar-accent))] border border-[hsl(var(--sidebar-border))] shadow-md",
         // Posición y forma cuando el menú está abierto
         isOpen 
           ? "top-16 left-[252px] h-10 w-6 rounded-l-none rounded-r-md" 
@@ -19,7 +20,11 @@ export default function SidebarToggle() {
       )}
       title={isOpen ? "Ocultar menú" : "Mostrar menú"}
     >
-      <i className={`fas fa-${isOpen ? "chevron-left" : "chevron-right"} text-xs`}></i>
+      {isOpen ? (
+        <ChevronLeft className="h-4 w-4 text-[hsl(var(--sidebar-foreground))]" />
+      ) : (
+        <ChevronRight className="h-4 w-4 text-[hsl(var(--sidebar-foreground))]" />
+      )}
       <span className="sr-only">{isOpen ? "Ocultar menú" : "Mostrar menú"}</span>
     </Button>
   );

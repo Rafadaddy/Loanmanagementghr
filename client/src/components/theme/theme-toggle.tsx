@@ -6,6 +6,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "@/hooks/use-theme";
+import { Sun, Moon, Laptop } from "lucide-react";
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -14,22 +15,22 @@ export function ThemeToggle() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="icon" className="border-none">
-          <i className="fas fa-sun text-lg dark:hidden" aria-hidden="true"></i>
-          <i className="fas fa-moon text-lg hidden dark:block" aria-hidden="true"></i>
+          <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           <span className="sr-only">Cambiar tema</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => setTheme("light")}>
-          <i className="fas fa-sun mr-2 text-yellow-500"></i>
+          <Sun className="mr-2 h-4 w-4 text-yellow-500" />
           <span>Claro</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("dark")}>
-          <i className="fas fa-moon mr-2 text-blue-400"></i>
+          <Moon className="mr-2 h-4 w-4 text-blue-400" />
           <span>Oscuro</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
-          <i className="fas fa-desktop mr-2"></i>
+          <Laptop className="mr-2 h-4 w-4" />
           <span>Sistema</span>
         </DropdownMenuItem>
       </DropdownMenuContent>

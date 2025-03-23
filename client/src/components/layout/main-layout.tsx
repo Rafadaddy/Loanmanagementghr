@@ -13,7 +13,7 @@ export default function MainLayout({ children, className }: MainLayoutProps) {
   const { isOpen } = useSidebar();
   
   return (
-    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50">
+    <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar siempre visible en tamaños md y mayores */}
       <div className="hidden md:block">
         <Sidebar />
