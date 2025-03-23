@@ -181,10 +181,10 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
   };
 
   return (
-    <Card className="mt-6 mb-6">
-      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
-        <CardTitle className="flex items-center gap-2 mb-3 sm:mb-0">
-          <Calendar className="h-5 w-5" />
+    <Card className="mt-4 mb-6">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-3">
+        <CardTitle className="flex items-center gap-1 text-base">
+          <Calendar className="h-4 w-4" />
           Cronograma de Pagos
         </CardTitle>
         <div className="flex gap-2">
@@ -192,80 +192,80 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
             variant="outline" 
             size="sm"
             onClick={exportToPDF}
-            className="flex items-center gap-1"
+            className="flex items-center h-7 px-2 text-xs"
           >
-            <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">Exportar a </span>PDF
+            <FileText className="h-3 w-3 mr-1" />
+            PDF
           </Button>
           <Button 
             variant="outline" 
             size="sm"
             onClick={exportToExcel}
-            className="flex items-center gap-1"
+            className="flex items-center h-7 px-2 text-xs"
           >
-            <FileSpreadsheet className="h-4 w-4" />
-            <span className="hidden sm:inline">Exportar a </span>Excel
+            <FileSpreadsheet className="h-3 w-3 mr-1" />
+            Excel
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-2 py-2 sm:p-6">
         {/* Vista móvil - Tarjetas individuales */}
-        <div className="block md:hidden space-y-4">
+        <div className="block md:hidden space-y-2">
           {cronograma.length > 0 ? (
             cronograma.map((cuota) => (
-              <Card key={cuota.numero} className="border shadow-sm">
-                <CardHeader className="p-3">
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-base font-medium">Semana {cuota.numero}</CardTitle>
-                    <Badge
-                      className={
-                        cuota.estado === "PAGADO"
-                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                          : cuota.estado === "PARCIAL"
-                          ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-                          : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-                      }
-                    >
-                      {cuota.estado}
-                    </Badge>
+              <div key={cuota.numero} className="border rounded-lg p-2 shadow-sm">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="font-medium text-sm">Semana {cuota.numero}</span>
+                  <Badge
+                    className={
+                      cuota.estado === "PAGADO"
+                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 text-xs h-5"
+                        : cuota.estado === "PARCIAL"
+                        ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 text-xs h-5"
+                        : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 text-xs h-5"
+                    }
+                  >
+                    {cuota.estado}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
+                  <div>
+                    <p className="text-muted-foreground">Fecha:</p>
+                    <p className="font-medium">{formatDate(cuota.fechaProgramada)}</p>
                   </div>
-                </CardHeader>
-                <CardContent className="p-3 pt-0">
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Fecha Programada:</p>
-                      <p className="font-medium">{formatDate(cuota.fechaProgramada)}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Monto:</p>
-                      <p className="font-medium">{formatCurrency(cuota.montoProgramado)}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Fecha de Pago:</p>
-                      <p className="font-medium">{cuota.fechaPago ? formatDate(cuota.fechaPago) : "-"}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Monto Pagado:</p>
-                      <p className="font-medium">{cuota.montoPagado ? formatCurrency(cuota.montoPagado) : "-"}</p>
-                    </div>
-                    {(cuota.mora && parseFloat(cuota.mora) > 0) && (
-                      <div>
-                        <p className="text-muted-foreground">Mora:</p>
-                        <p className="font-medium text-red-500">{formatCurrency(cuota.mora)}</p>
-                      </div>
-                    )}
-                    {(cuota.resto && parseFloat(cuota.resto) > 0) && (
-                      <div>
-                        <p className="text-muted-foreground">Restante:</p>
-                        <p className="font-medium text-orange-500">{formatCurrency(cuota.resto)}</p>
-                      </div>
-                    )}
+                  <div>
+                    <p className="text-muted-foreground">Monto:</p>
+                    <p className="font-medium">{formatCurrency(cuota.montoProgramado)}</p>
                   </div>
-                </CardContent>
-              </Card>
+                  {cuota.estado !== "PENDIENTE" && (
+                    <>
+                      <div>
+                        <p className="text-muted-foreground">Pagó el:</p>
+                        <p className="font-medium">{cuota.fechaPago ? formatDate(cuota.fechaPago) : "-"}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Pagó:</p>
+                        <p className="font-medium text-green-500">{cuota.montoPagado ? formatCurrency(cuota.montoPagado) : "-"}</p>
+                      </div>
+                    </>
+                  )}
+                  {(cuota.mora && parseFloat(cuota.mora) > 0) && (
+                    <div>
+                      <p className="text-muted-foreground">Mora:</p>
+                      <p className="font-medium text-red-500">{formatCurrency(cuota.mora)}</p>
+                    </div>
+                  )}
+                  {(cuota.resto && parseFloat(cuota.resto) > 0) && (
+                    <div>
+                      <p className="text-muted-foreground">Restante:</p>
+                      <p className="font-medium text-orange-500">{formatCurrency(cuota.resto)}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             ))
           ) : (
-            <div className="p-4 text-center text-muted-foreground">
+            <div className="p-2 text-center text-muted-foreground text-sm">
               No hay información de cronograma disponible
             </div>
           )}

@@ -350,7 +350,7 @@ export default function LoanDetails() {
       <Sidebar />
       <MobileHeader />
       
-      <main className="flex-1 overflow-y-auto p-3 md:p-6 mt-16 md:mt-0 pb-20">
+      <main className="flex-1 overflow-y-auto p-2 md:p-6 mt-14 md:mt-0 pb-20">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <div className="flex items-center">
             <Button
@@ -597,25 +597,25 @@ export default function LoanDetails() {
         </div>
         
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Historial de Pagos</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between py-3">
+            <CardTitle className="text-base">Historial de Pagos</CardTitle>
             {pagos.length > 0 && prestamo.estado !== "PAGADO" && (
               <Button 
                 size="sm" 
-                className="bg-primary hover:bg-primary/90"
+                className="bg-primary hover:bg-primary/90 h-7 px-2 text-xs"
                 onClick={() => setPaymentFormOpen(true)}
               >
                 Registrar Pago
               </Button>
             )}
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-2 py-2 sm:p-6">
             {pagos.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">No hay pagos registrados para este préstamo</p>
+              <div className="text-center py-4">
+                <p className="text-muted-foreground text-sm">No hay pagos registrados para este préstamo</p>
                 {prestamo.estado !== "PAGADO" && (
                   <Button 
-                    className="mt-4 bg-primary hover:bg-primary/90"
+                    className="mt-3 bg-primary hover:bg-primary/90 h-8 px-3 text-xs"
                     onClick={() => setPaymentFormOpen(true)}
                   >
                     Registrar Primer Pago
@@ -625,55 +625,51 @@ export default function LoanDetails() {
             ) : (
               <>
                 {/* Vista móvil - Tarjetas individuales */}
-                <div className="block md:hidden space-y-4">
+                <div className="block md:hidden space-y-2">
                   {pagos.map(pago => {
                     const { label, className } = getPaymentStatus(pago.estado);
                     
                     return (
-                      <Card key={pago.id} className="border shadow-sm">
-                        <CardHeader className="p-3">
-                          <div className="flex justify-between items-center">
-                            <CardTitle className="text-base font-medium">Semana {pago.numero_semana}</CardTitle>
-                            <Badge className={className}>{label}</Badge>
+                      <div key={pago.id} className="border rounded-lg p-2 shadow-sm">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-medium text-sm">Semana {pago.numero_semana}</span>
+                          <Badge className={`${className} text-xs h-5`}>{label}</Badge>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs mb-2">
+                          <div>
+                            <p className="text-muted-foreground">Fecha:</p>
+                            <p className="font-medium">{formatDate(pago.fecha_pago)}</p>
                           </div>
-                        </CardHeader>
-                        <CardContent className="p-3 pt-0">
-                          <div className="grid grid-cols-2 gap-3 text-sm">
-                            <div>
-                              <p className="text-muted-foreground">Fecha de Pago:</p>
-                              <p className="font-medium">{formatDate(pago.fecha_pago)}</p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground">Monto Pagado:</p>
-                              <p className="font-medium text-green-500">{formatCurrency(pago.monto_pagado)}</p>
-                            </div>
-                            
-                            {parseFloat(pago.monto_mora || "0") > 0 && (
-                              <div>
-                                <p className="text-muted-foreground">Mora:</p>
-                                <p className="font-medium text-red-500">{formatCurrency(pago.monto_mora)}</p>
-                              </div>
-                            )}
-                            
-                            {parseFloat(pago.monto_restante || "0") > 0 && (
-                              <div>
-                                <p className="text-muted-foreground">Restante:</p>
-                                <p className="font-medium text-orange-500">{formatCurrency(pago.monto_restante)}</p>
-                              </div>
-                            )}
+                          <div>
+                            <p className="text-muted-foreground">Monto:</p>
+                            <p className="font-medium text-green-500">{formatCurrency(pago.monto_pagado)}</p>
                           </div>
-                        </CardContent>
-                        <CardFooter className="p-3 pt-0 flex justify-end">
+                          
+                          {parseFloat(pago.monto_mora || "0") > 0 && (
+                            <div>
+                              <p className="text-muted-foreground">Mora:</p>
+                              <p className="font-medium text-red-500">{formatCurrency(pago.monto_mora)}</p>
+                            </div>
+                          )}
+                          
+                          {parseFloat(pago.monto_restante || "0") > 0 && (
+                            <div>
+                              <p className="text-muted-foreground">Restante:</p>
+                              <p className="font-medium text-orange-500">{formatCurrency(pago.monto_restante)}</p>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex justify-end">
                           <Button 
                             size="sm" 
                             variant="outline"
-                            className="h-8 px-2 text-xs"
+                            className="h-7 px-2 text-xs"
                             onClick={() => handleEditPayment(pago)}
                           >
                             Editar
                           </Button>
-                        </CardFooter>
-                      </Card>
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
@@ -745,47 +741,49 @@ export default function LoanDetails() {
 
         {/* Diálogo para editar pagos */}
         <Dialog open={editPaymentDialogOpen} onOpenChange={setEditPaymentDialogOpen}>
-          <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[95vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Editar Pago</DialogTitle>
-              <DialogDescription>
-                Modifique el monto pagado para este registro. Esta acción actualizará el estado del préstamo.
+          <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+            <DialogHeader className="pb-2">
+              <DialogTitle className="text-base sm:text-lg">Editar Pago</DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm mt-1">
+                Modifique el monto pagado para este registro.
               </DialogDescription>
             </DialogHeader>
             
             {selectedPago && (
-              <div className="space-y-4 py-4">
-                <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-                  <Label htmlFor="semana" className="sm:text-right">
+              <div className="space-y-3 py-2">
+                <div className="grid grid-cols-3 items-center gap-2">
+                  <Label htmlFor="semana" className="text-xs">
                     Semana
                   </Label>
-                  <div className="sm:col-span-3">
+                  <div className="col-span-2">
                     <Input
                       id="semana"
                       value={`Semana ${selectedPago.numero_semana}`}
                       disabled
+                      className="h-8 text-xs"
                     />
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-                  <Label htmlFor="fecha" className="sm:text-right">
-                    Fecha de pago
+                <div className="grid grid-cols-3 items-center gap-2">
+                  <Label htmlFor="fecha" className="text-xs">
+                    Fecha
                   </Label>
-                  <div className="sm:col-span-3">
+                  <div className="col-span-2">
                     <Input
                       id="fecha"
                       value={formatDate(selectedPago.fecha_pago)}
                       disabled
+                      className="h-8 text-xs"
                     />
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-                  <Label htmlFor="monto" className="sm:text-right">
-                    Monto pagado
+                <div className="grid grid-cols-3 items-center gap-2">
+                  <Label htmlFor="monto" className="text-xs">
+                    Monto
                   </Label>
-                  <div className="sm:col-span-3">
+                  <div className="col-span-2">
                     <Input
                       id="monto"
                       type="number"
@@ -793,25 +791,30 @@ export default function LoanDetails() {
                       value={nuevoMontoPagado}
                       onChange={(e) => setNuevoMontoPagado(e.target.value)}
                       placeholder="Ingrese el nuevo monto"
+                      className="h-8 text-xs"
                     />
                   </div>
                 </div>
               </div>
             )}
             
-            <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-0">
-              <Button variant="outline" onClick={() => setEditPaymentDialogOpen(false)} className="w-full sm:w-auto">
+            <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-0 pt-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setEditPaymentDialogOpen(false)} 
+                className="w-full sm:w-auto h-8 text-xs"
+              >
                 Cancelar
               </Button>
               <Button 
                 onClick={handleUpdatePayment} 
                 disabled={actualizarPagoMutation.isPending}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto h-8 text-xs"
               >
                 {actualizarPagoMutation.isPending ? (
                   <span className="flex items-center gap-1">
-                    <LoadingButton className="h-4 w-4" />
-                    Actualizando...
+                    <LoadingButton className="h-3 w-3" />
+                    <span>Actualizando</span>
                   </span>
                 ) : (
                   "Actualizar Pago"
@@ -823,53 +826,54 @@ export default function LoanDetails() {
         
         {/* Diálogo para cambiar día de pago */}
         <Dialog open={changeDayDialogOpen} onOpenChange={setChangeDayDialogOpen}>
-          <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[95vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Cambiar Día de Pago</DialogTitle>
-              <DialogDescription>
-                Seleccione la nueva fecha para los pagos. Esta acción actualizará todas las fechas de pago futuras.
+          <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+            <DialogHeader className="pb-2">
+              <DialogTitle className="text-base sm:text-lg">Cambiar Día de Pago</DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm mt-1">
+                Seleccione la nueva fecha para los pagos.
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4 py-4">
-              <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-                <Label htmlFor="nuevaFecha" className="sm:text-right">
+            <div className="space-y-3 py-2">
+              <div className="grid grid-cols-3 items-center gap-2">
+                <Label htmlFor="nuevaFecha" className="text-xs">
                   Nueva Fecha
                 </Label>
-                <div className="sm:col-span-3">
+                <div className="col-span-2">
                   <Input
                     id="nuevaFecha"
                     type="date"
                     value={nuevaFechaPago}
                     onChange={(e) => setNuevaFechaPago(e.target.value)}
                     placeholder="Seleccione la nueva fecha"
+                    className="h-8 text-xs"
                   />
                 </div>
               </div>
               
-              <div className="text-sm text-muted-foreground">
+              <div className="text-xs text-muted-foreground pl-1">
                 <p>Los pagos se programarán semanalmente a partir de esta fecha.</p>
                 <p className="mt-1">Esta acción reprogramará todos los pagos futuros.</p>
               </div>
             </div>
             
-            <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-0">
+            <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-0 pt-2">
               <Button 
                 variant="outline" 
                 onClick={() => setChangeDayDialogOpen(false)}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto h-8 text-xs"
               >
                 Cancelar
               </Button>
               <Button 
                 onClick={handleChangeDaySubmit} 
                 disabled={cambiarDiaPagoMutation.isPending || !nuevaFechaPago}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto h-8 text-xs"
               >
                 {cambiarDiaPagoMutation.isPending ? (
                   <span className="flex items-center gap-1">
-                    <LoadingButton className="h-4 w-4" />
-                    Actualizando...
+                    <LoadingButton className="h-3 w-3" />
+                    <span>Actualizando</span>
                   </span>
                 ) : (
                   "Cambiar Día de Pago"
