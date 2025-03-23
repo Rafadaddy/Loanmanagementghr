@@ -56,21 +56,22 @@ export default function MobileHeader() {
                     const isActive = location.startsWith(item.href);
                     return (
                       <li key={item.href}>
-                        <div 
-                          className={cn(
-                            "flex items-center py-2 px-3 rounded-md text-[hsl(var(--sidebar-foreground))] transition-colors relative cursor-pointer",
-                            isActive 
-                              ? "bg-[hsl(var(--sidebar-primary))] bg-opacity-20 text-[hsl(var(--sidebar-primary))] font-medium" 
-                              : "hover:bg-[hsl(var(--sidebar-accent))] hover:bg-opacity-20"
-                          )}
-                          onClick={() => {
-                            setOpen(false);
-                            window.location.href = item.href;
-                          }}
-                        >
-                          <Icon className="h-5 w-5 mr-3 flex-shrink-0" />
-                          <span>{item.label}</span>
-                        </div>
+                        <Link href={item.href}>
+                          <div 
+                            className={cn(
+                              "flex items-center py-2 px-3 rounded-md text-[hsl(var(--sidebar-foreground))] transition-colors relative cursor-pointer",
+                              isActive 
+                                ? "bg-[hsl(var(--sidebar-primary))] bg-opacity-20 text-[hsl(var(--sidebar-primary))] font-medium" 
+                                : "hover:bg-[hsl(var(--sidebar-accent))] hover:bg-opacity-20"
+                            )}
+                            onClick={() => {
+                              setOpen(false);
+                            }}
+                          >
+                            <Icon className="h-5 w-5 mr-3 flex-shrink-0" />
+                            <span>{item.label}</span>
+                          </div>
+                        </Link>
                       </li>
                     );
                   })}

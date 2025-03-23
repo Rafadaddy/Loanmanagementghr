@@ -40,18 +40,17 @@ export default function Sidebar({ className }: SidebarProps) {
               const Icon = item.icon;
               return (
                 <li key={item.href} className="mb-1">
-                  <div 
-                    className={cn(
-                      "flex justify-center items-center p-3 text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:border-l-4 hover:border-[hsl(var(--sidebar-primary))] cursor-pointer transition-colors",
-                      location.startsWith(item.href) && "bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))] border-l-4 border-[hsl(var(--sidebar-primary))]"
-                    )}
-                    title={item.label}
-                    onClick={() => {
-                      window.location.href = item.href;
-                    }}
-                  >
-                    <Icon className="h-5 w-5" />
-                  </div>
+                  <Link href={item.href}>
+                    <div 
+                      className={cn(
+                        "flex justify-center items-center p-3 text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:border-l-4 hover:border-[hsl(var(--sidebar-primary))] cursor-pointer transition-colors",
+                        location.startsWith(item.href) && "bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))] border-l-4 border-[hsl(var(--sidebar-primary))]"
+                      )}
+                      title={item.label}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </div>
+                  </Link>
                 </li>
               );
             })}
@@ -78,18 +77,17 @@ export default function Sidebar({ className }: SidebarProps) {
             const Icon = item.icon;
             return (
               <li key={item.href} className="mb-1">
-                <div 
-                  className={cn(
-                    "flex items-center px-4 py-3 text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:border-l-4 hover:border-[hsl(var(--sidebar-primary))] cursor-pointer transition-colors",
-                    location.startsWith(item.href) && "bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))] border-l-4 border-[hsl(var(--sidebar-primary))]"
-                  )}
-                  onClick={() => {
-                    window.location.href = item.href;
-                  }}
-                >
-                  <Icon className="h-5 w-5 mr-3" />
-                  <span>{item.label}</span>
-                </div>
+                <Link href={item.href}>
+                  <div 
+                    className={cn(
+                      "flex items-center px-4 py-3 text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:border-l-4 hover:border-[hsl(var(--sidebar-primary))] cursor-pointer transition-colors",
+                      location.startsWith(item.href) && "bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))] border-l-4 border-[hsl(var(--sidebar-primary))]"
+                    )}
+                  >
+                    <Icon className="h-5 w-5 mr-3" />
+                    <span>{item.label}</span>
+                  </div>
+                </Link>
               </li>
             );
           })}
