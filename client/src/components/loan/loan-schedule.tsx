@@ -51,6 +51,8 @@ interface CuotaProgramada {
 }
 
 export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente }: LoanScheduleProps) {
+  // Garantizar que solo mostramos un número limitado de semanas en móvil para mejor rendimiento
+  const MAX_MOBILE_ITEMS = 12;
   const [cronograma, setCronograma] = useState<CuotaProgramada[]>([]);
 
   useEffect(() => {
@@ -212,7 +214,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
         {/* Vista móvil - Tarjetas individuales */}
         <div className="block md:hidden space-y-2">
           {cronograma.length > 0 ? (
-            cronograma.map((cuota) => (
+            cronograma.slice(0, MAX_MOBILE_ITEMS).map((cuota) => (
               <div key={cuota.numero} className="border rounded-lg p-2 shadow-sm">
                 <div className="flex justify-between items-center mb-1">
                   <span className="font-medium text-sm">Semana {cuota.numero}</span>
@@ -267,6 +269,12 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
           ) : (
             <div className="p-2 text-center text-muted-foreground text-sm">
               No hay información de cronograma disponible
+            </div>
+          )}
+          {cronograma.length > MAX_MOBILE_ITEMS && (
+            <div className="text-center text-xs text-muted-foreground mt-2 p-2 border rounded-lg">
+              Mostrando {MAX_MOBILE_ITEMS} de {cronograma.length} semanas.
+              <br />Para ver todas las semanas, descargue el PDF o Excel.
             </div>
           )}
         </div>
