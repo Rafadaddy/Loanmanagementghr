@@ -44,7 +44,7 @@ export default function Sidebar({ className }: SidebarProps) {
                     <div 
                       className={cn(
                         "flex justify-center items-center p-3 text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:border-l-4 hover:border-[hsl(var(--sidebar-primary))] cursor-pointer transition-colors",
-                        location === item.href && "bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))] border-l-4 border-[hsl(var(--sidebar-primary))]"
+                        location.startsWith(item.href) && "bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))] border-l-4 border-[hsl(var(--sidebar-primary))]"
                       )}
                       title={item.label}
                     >
@@ -81,7 +81,7 @@ export default function Sidebar({ className }: SidebarProps) {
                   <div 
                     className={cn(
                       "flex items-center px-4 py-3 text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:border-l-4 hover:border-[hsl(var(--sidebar-primary))] cursor-pointer transition-colors",
-                      location === item.href && "bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))] border-l-4 border-[hsl(var(--sidebar-primary))]"
+                      location.startsWith(item.href) && "bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))] border-l-4 border-[hsl(var(--sidebar-primary))]"
                     )}
                   >
                     <Icon className="h-5 w-5 mr-3" />

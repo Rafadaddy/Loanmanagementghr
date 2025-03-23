@@ -53,13 +53,13 @@ export default function MobileHeader() {
                 <ul className="space-y-1">
                   {navItems.map((item) => {
                     const Icon = item.icon;
-                    const isActive = location === item.href;
+                    const isActive = location.startsWith(item.href);
                     return (
                       <li key={item.href}>
                         <Link href={item.href}>
                           <a 
                             className={cn(
-                              "flex items-center py-2 px-3 rounded-md text-[hsl(var(--sidebar-foreground))] transition-colors",
+                              "flex items-center py-2 px-3 rounded-md text-[hsl(var(--sidebar-foreground))] transition-colors relative",
                               isActive 
                                 ? "bg-[hsl(var(--sidebar-primary))] bg-opacity-20 text-[hsl(var(--sidebar-primary))] font-medium" 
                                 : "hover:bg-[hsl(var(--sidebar-accent))] hover:bg-opacity-20"
@@ -106,8 +106,20 @@ export default function MobileHeader() {
         <div className="flex items-center gap-1">
           <ThemeToggle />
           {/* Para mostrar el título de la página actual, esto mejora UX */}
-          <div className="ml-1.5 px-2 py-1 rounded-full bg-[hsl(var(--sidebar-primary))] bg-opacity-15 text-[hsl(var(--sidebar-primary))] text-xs font-semibold">
-            {navItems.find(item => item.href === location)?.label || 'Inicio'}
+          <div className="ml-1.5 px-2.5 py-1.5 rounded-full bg-[hsl(var(--sidebar-primary))] bg-opacity-15 text-[hsl(var(--sidebar-primary))] text-xs font-semibold flex items-center">
+            {(() => {
+              const activeItem = navItems.find(item => location.startsWith(item.href));
+              if (activeItem) {
+                const Icon = activeItem.icon;
+                return (
+                  <>
+                    <Icon className="h-3.5 w-3.5 mr-1.5" />
+                    <span>{activeItem.label}</span>
+                  </>
+                );
+              }
+              return 'Inicio';
+            })()}
           </div>
         </div>
       </div>
