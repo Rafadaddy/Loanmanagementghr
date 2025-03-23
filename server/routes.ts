@@ -9,6 +9,7 @@ import {
   insertPrestamoSchema, 
   insertPagoSchema, 
   insertMovimientoCajaSchema,
+  insertCobradorSchema,
   calculoPrestamoSchema 
 } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
@@ -664,6 +665,153 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("Error al eliminar movimiento de caja:", error);
+      next(error);
+    }
+  });
+
+  // Rutas para cobradores
+  app.get("/api/cobradores", isAuthenticated, async (req, res, next) => {
+    try {
+      const cobradores = await storage.getAllCobradores();
+      res.json(cobradores);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/cobradores/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de cobrador inválido" });
+      }
+      
+      const cobrador = await storage.getCobrador(id);
+      if (!cobrador) {
+        return res.status(404).json({ message: "Cobrador no encontrado" });
+      }
+      
+      res.json(cobrador);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/cobradores/:id/clientes", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de cobrador inválido" });
+      }
+      
+      const cobrador = await storage.getCobrador(id);
+      if (!cobrador) {
+        return res.status(404).json({ message: "Cobrador no encontrado" });
+      }
+      
+      const clientes = await storage.getClientesByCobrador(id);
+      res.json(clientes);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/cobradores", isAuthenticated, async (req, res, next) => {
+    try {
+      // Validar que el usuario existe
+      const userId = req.body.user_id ? parseInt(req.body.user_id) : null;
+      if (!userId) {
+        return res.status(400).json({ message: "Se requiere ID de usuario" });
+      }
+      
+      const usuario = await storage.getUser(userId);
+      if (!usuario) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      // Validar datos del cobrador
+      const cobradorData = insertCobradorSchema.parse(req.body);
+      
+      // Verificar si ya existe un cobrador con ese user_id
+      const cobradorExistente = await storage.getCobradorByUserId(userId);
+      if (cobradorExistente) {
+        return res.status(400).json({ 
+          message: "Ya existe un cobrador asignado a este usuario" 
+        });
+      }
+      
+      // Crear cobrador
+      const cobrador = await storage.createCobrador(cobradorData);
+      
+      res.status(201).json(cobrador);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: "Datos del cobrador inválidos", 
+          errors: fromZodError(error).message 
+        });
+      }
+      next(error);
+    }
+  });
+
+  app.put("/api/cobradores/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de cobrador inválido" });
+      }
+      
+      // Verificar si el cobrador existe
+      const cobrador = await storage.getCobrador(id);
+      if (!cobrador) {
+        return res.status(404).json({ message: "Cobrador no encontrado" });
+      }
+      
+      // Actualizar cobrador
+      const cobradorActualizado = await storage.updateCobrador(id, req.body);
+      res.json(cobradorActualizado);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: "Datos del cobrador inválidos", 
+          errors: fromZodError(error).message 
+        });
+      }
+      next(error);
+    }
+  });
+
+  app.delete("/api/cobradores/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de cobrador inválido" });
+      }
+      
+      // Verificar si el cobrador existe
+      const cobrador = await storage.getCobrador(id);
+      if (!cobrador) {
+        return res.status(404).json({ message: "Cobrador no encontrado" });
+      }
+      
+      // Verificar si tiene clientes asignados
+      const clientes = await storage.getClientesByCobrador(id);
+      if (clientes.length > 0) {
+        return res.status(400).json({ 
+          message: "No se puede eliminar el cobrador porque tiene clientes asignados",
+          clientes_count: clientes.length
+        });
+      }
+      
+      // Eliminar cobrador
+      const result = await storage.deleteCobrador(id);
+      if (result) {
+        res.status(200).json({ message: "Cobrador eliminado correctamente" });
+      } else {
+        res.status(500).json({ message: "Error al eliminar el cobrador" });
+      }
+    } catch (error) {
       next(error);
     }
   });
