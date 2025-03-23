@@ -366,20 +366,9 @@ export default function LoanDetails() {
       <div className="w-full overflow-x-auto overflow-y-auto p-2 md:p-6 mt-14 pb-48">
         <div className="w-full mx-auto">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-            <div className="flex items-center">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="mr-2"
-                onClick={() => navigate("/prestamos")}
-              >
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Volver
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">Detalles del Préstamo</h1>
-                <p className="text-sm text-muted-foreground">Préstamo #{prestamo.id} - {cliente.nombre}</p>
-              </div>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Detalles del Préstamo</h1>
+              <p className="text-sm text-muted-foreground">Préstamo #{prestamo.id} - {cliente.nombre}</p>
             </div>
             
             <div className="mt-4 md:mt-0 flex flex-wrap items-center gap-2">
