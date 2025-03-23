@@ -117,7 +117,7 @@ export class MemStorage implements IStorage {
       const adminUser: InsertUser = {
         nombre: "Administrador",
         username: "super_rafaga@hotmail.com",
-        password: "09c2dfbe6ee5a50cd3c103e937e2a2b32693887a8e5f3370109156218f20d63b6c7cb12eb51ff0cc8899d3f0a59581e5de94d3f0fd1575badb1f85ff59bd3ea8.ba5fcde2cb04e5bc", // Contraseña: admin123 (hasheada con scrypt)
+        password: "cc2e80a13700cb1ffb71aaaeac476d08e7d6ad2550c83693ae1262755568dd3718870a36fc454bc996af1bb03fa8055714a7331ff88adf8cfa1e5810d258b05c.efe8323317c7831521c66267d8888877", // Contraseña: admin123 (hasheada con scrypt)
         rol: "ADMIN"
       };
       const admin = await this.createUser(adminUser);

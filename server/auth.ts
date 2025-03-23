@@ -23,6 +23,13 @@ async function hashPassword(password: string) {
   return hashedResult;
 }
 
+// Función temporal para generar una contraseña para pruebas
+async function generateTestPassword() {
+  const hash = await hashPassword("admin123");
+  console.log("NUEVA CONTRASEÑA HASHEADA:", hash);
+  return hash;
+}
+
 async function comparePasswords(supplied: string, stored: string) {
   if (!stored || !stored.includes(".")) {
     console.error("Error de formato en la contraseña almacenada:", stored);
@@ -41,6 +48,10 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  // Generar una nueva contraseña hasheada para el usuario administrador
+  generateTestPassword().then(hash => {
+    console.log("HASH PARA ADMIN:", hash);
+  });
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "sistema-de-prestamos-secret",
     resave: true, // Cambio a true para garantizar que la sesión se guarde
