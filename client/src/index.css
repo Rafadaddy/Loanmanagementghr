@@ -82,3 +82,39 @@
     @apply font-sans antialiased bg-background text-foreground transition-colors duration-300;
   }
 }
+
+/* Estilos personalizados para tablas y cronograma */
+@layer components {
+  /* Estilos para celdas de tabla */
+  .table-cell {
+    @apply p-2 text-center whitespace-nowrap;
+  }
+  
+  /* Estilos para encabezados de tabla */
+  .table-header {
+    @apply font-bold text-center;
+  }
+  
+  /* Estilos para filas de tabla */
+  .table-row {
+    @apply border-b border-border;
+  }
+  
+  /* Estilos específicos para la tabla de cronograma */
+  .cronograma-table {
+    @apply w-full table-fixed min-w-[800px];
+  }
+  
+  .cronograma-table th, 
+  .cronograma-table td {
+    @apply py-3 px-4 text-center whitespace-nowrap;
+  }
+  
+  .cronograma-table th {
+    @apply bg-muted/50 font-semibold text-sm;
+  }
+  
+  .cronograma-table tr {
+    @apply border-b border-border hover:bg-muted/20 transition-colors;
+  }
+}

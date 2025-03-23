@@ -676,16 +676,16 @@ export default function LoanDetails() {
                 
                 {/* Vista desktop - Tabla horizontal */}
                 <div className="hidden md:block overflow-x-auto rounded-md border">
-                  <Table className="table-fixed min-w-[800px]">
+                  <Table className="cronograma-table">
                     <TableHeader>
-                      <TableRow>
-                        <TableHead className="whitespace-nowrap w-[10%]">Semana</TableHead>
-                        <TableHead className="whitespace-nowrap w-[15%]">Monto Pagado</TableHead>
-                        <TableHead className="whitespace-nowrap w-[15%]">Mora</TableHead>
-                        <TableHead className="whitespace-nowrap w-[15%]">Restante</TableHead>
-                        <TableHead className="whitespace-nowrap w-[15%]">Fecha de Pago</TableHead>
-                        <TableHead className="whitespace-nowrap w-[15%]">Estado</TableHead>
-                        <TableHead className="whitespace-nowrap w-[15%] text-right">Acciones</TableHead>
+                      <TableRow className="table-row">
+                        <TableHead className="table-header w-[10%]">Semana</TableHead>
+                        <TableHead className="table-header w-[15%]">Monto Pagado</TableHead>
+                        <TableHead className="table-header w-[15%]">Mora</TableHead>
+                        <TableHead className="table-header w-[15%]">Restante</TableHead>
+                        <TableHead className="table-header w-[15%]">Fecha de Pago</TableHead>
+                        <TableHead className="table-header w-[15%]">Estado</TableHead>
+                        <TableHead className="table-header w-[15%] text-right">Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -693,20 +693,20 @@ export default function LoanDetails() {
                         const { label, className } = getPaymentStatus(pago.estado);
                         
                         return (
-                          <TableRow key={pago.id}>
-                            <TableCell className="whitespace-nowrap">Semana {pago.numero_semana}</TableCell>
-                            <TableCell className="whitespace-nowrap font-medium text-green-500 dark:text-green-400">{formatCurrency(pago.monto_pagado)}</TableCell>
-                            <TableCell className="whitespace-nowrap font-medium text-red-500 dark:text-red-400">
+                          <TableRow key={pago.id} className="table-row">
+                            <TableCell className="table-cell">Semana {pago.numero_semana}</TableCell>
+                            <TableCell className="table-cell font-medium text-green-500 dark:text-green-400">{formatCurrency(pago.monto_pagado)}</TableCell>
+                            <TableCell className="table-cell font-medium text-red-500 dark:text-red-400">
                               {parseFloat(pago.monto_mora || "0") > 0 ? formatCurrency(pago.monto_mora) : "-"}
                             </TableCell>
-                            <TableCell className="whitespace-nowrap font-medium text-orange-500 dark:text-orange-400">
+                            <TableCell className="table-cell font-medium text-orange-500 dark:text-orange-400">
                               {parseFloat(pago.monto_restante || "0") > 0 ? formatCurrency(pago.monto_restante) : "-"}
                             </TableCell>
-                            <TableCell className="whitespace-nowrap">{formatDate(pago.fecha_pago)}</TableCell>
-                            <TableCell className="whitespace-nowrap">
+                            <TableCell className="table-cell">{formatDate(pago.fecha_pago)}</TableCell>
+                            <TableCell className="table-cell">
                               <Badge className={className}>{label}</Badge>
                             </TableCell>
-                            <TableCell className="whitespace-nowrap text-right">
+                            <TableCell className="table-cell text-right">
                               <Button 
                                 size="sm" 
                                 variant="outline"

@@ -281,26 +281,26 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
 
         {/* Vista desktop - Tabla horizontal */}
         <div className="hidden md:block rounded-md border overflow-x-auto">
-          <Table className="w-full table-fixed min-w-[800px]">
+          <Table className="cronograma-table">
             <TableHeader>
-              <TableRow>
-                <TableHead className="whitespace-nowrap w-[12%]">Nº Cuota</TableHead>
-                <TableHead className="whitespace-nowrap w-[12%]">Fecha Programada</TableHead>
-                <TableHead className="whitespace-nowrap w-[12%]">Monto</TableHead>
-                <TableHead className="whitespace-nowrap w-[12%]">Estado</TableHead>
-                <TableHead className="whitespace-nowrap w-[12%]">Fecha de Pago</TableHead>
-                <TableHead className="whitespace-nowrap w-[12%]">Monto Pagado</TableHead>
-                <TableHead className="whitespace-nowrap w-[12%]">Mora</TableHead>
-                <TableHead className="whitespace-nowrap w-[12%]">Restante</TableHead>
+              <TableRow className="table-row">
+                <TableHead className="table-header w-[12%]">Nº Cuota</TableHead>
+                <TableHead className="table-header w-[12%]">Fecha Programada</TableHead>
+                <TableHead className="table-header w-[12%]">Monto</TableHead>
+                <TableHead className="table-header w-[12%]">Estado</TableHead>
+                <TableHead className="table-header w-[12%]">Fecha de Pago</TableHead>
+                <TableHead className="table-header w-[12%]">Monto Pagado</TableHead>
+                <TableHead className="table-header w-[12%]">Mora</TableHead>
+                <TableHead className="table-header w-[12%]">Restante</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {cronograma.map((cuota) => (
-                <TableRow key={cuota.numero}>
-                  <TableCell className="whitespace-nowrap">Semana {cuota.numero}</TableCell>
-                  <TableCell className="whitespace-nowrap">{formatDate(cuota.fechaProgramada)}</TableCell>
-                  <TableCell className="whitespace-nowrap">{formatCurrency(cuota.montoProgramado)}</TableCell>
-                  <TableCell className="whitespace-nowrap">
+                <TableRow key={cuota.numero} className="table-row">
+                  <TableCell className="table-cell">Semana {cuota.numero}</TableCell>
+                  <TableCell className="table-cell">{formatDate(cuota.fechaProgramada)}</TableCell>
+                  <TableCell className="table-cell">{formatCurrency(cuota.montoProgramado)}</TableCell>
+                  <TableCell className="table-cell">
                     <Badge
                       className={
                         cuota.estado === "PAGADO"
@@ -313,14 +313,14 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
                       {cuota.estado}
                     </Badge>
                   </TableCell>
-                  <TableCell className="whitespace-nowrap">{cuota.fechaPago ? formatDate(cuota.fechaPago) : "-"}</TableCell>
-                  <TableCell className="whitespace-nowrap">
+                  <TableCell className="table-cell">{cuota.fechaPago ? formatDate(cuota.fechaPago) : "-"}</TableCell>
+                  <TableCell className="table-cell">
                     {cuota.montoPagado ? formatCurrency(cuota.montoPagado) : "-"}
                   </TableCell>
-                  <TableCell className="text-red-500 whitespace-nowrap">
+                  <TableCell className="table-cell text-red-500">
                     {cuota.mora && parseFloat(cuota.mora) > 0 ? formatCurrency(cuota.mora) : "-"}
                   </TableCell>
-                  <TableCell className="text-orange-500 whitespace-nowrap">
+                  <TableCell className="table-cell text-orange-500">
                     {cuota.resto && parseFloat(cuota.resto) > 0 ? formatCurrency(cuota.resto) : "-"}
                   </TableCell>
                 </TableRow>
