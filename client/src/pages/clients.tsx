@@ -149,8 +149,8 @@ export default function Clients() {
     <MainLayout>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Clientes</h1>
-          <p className="text-sm text-gray-600">Gestión de clientes del sistema</p>
+          <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
+          <p className="text-sm text-muted-foreground">Gestión de clientes del sistema</p>
         </div>
         
         <Button 
@@ -167,7 +167,7 @@ export default function Clients() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <CardTitle>Lista de Clientes</CardTitle>
             <div className="relative mt-2 md:mt-0 md:w-64">
-              <span className="absolute left-2.5 top-2.5 text-gray-500">
+              <span className="absolute left-2.5 top-2.5 text-muted-foreground">
                 <i className="fas fa-search text-sm"></i>
               </span>
               <Input
@@ -183,12 +183,12 @@ export default function Clients() {
               />
               {searchTerm.trim() !== "" && (
                 <div className="absolute right-2 top-2.5 flex items-center">
-                  <span className="text-xs text-gray-500 mr-2">
+                  <span className="text-xs text-muted-foreground mr-2">
                     {filteredClientes.length} resultados
                   </span>
                   <button 
                     type="button"
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-muted-foreground hover:text-foreground"
                     onClick={() => {
                       setSearchTerm("");
                       setCurrentPage(1);
@@ -205,7 +205,7 @@ export default function Clients() {
           {isLoading ? (
             <div className="text-center py-4">Cargando clientes...</div>
           ) : paginatedClientes.length === 0 ? (
-            <div className="text-center py-4 text-gray-500">
+            <div className="text-center py-4 text-muted-foreground">
               {searchTerm 
                 ? "No se encontraron clientes con ese criterio de búsqueda" 
                 : "No hay clientes registrados"}
@@ -228,8 +228,8 @@ export default function Clients() {
                   {paginatedClientes.map((cliente) => (
                     <TableRow key={cliente.id}>
                       <TableCell>
-                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-xs font-medium text-gray-600">
+                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                          <span className="text-xs font-medium text-muted-foreground">
                             {getInitials(cliente.nombre)}
                           </span>
                         </div>
