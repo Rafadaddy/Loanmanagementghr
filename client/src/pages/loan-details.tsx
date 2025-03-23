@@ -5,6 +5,7 @@ import { formatCurrency, formatDate, getLoanStatus, getPaymentStatus } from "@/l
 import Sidebar from "@/components/navigation/sidebar";
 import MobileHeader from "@/components/navigation/mobile-header";
 import PaymentForm from "@/components/forms/payment-form";
+import LoanSchedule from "@/components/loan/loan-schedule";
 import { Prestamo, Cliente, Pago } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
