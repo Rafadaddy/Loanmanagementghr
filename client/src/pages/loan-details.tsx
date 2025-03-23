@@ -350,25 +350,26 @@ export default function LoanDetails() {
       <Sidebar />
       <MobileHeader />
       
-      <main className="flex-1 overflow-y-auto p-2 md:p-6 mt-14 md:mt-0 pb-20 md:ml-[240px]">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-          <div className="flex items-center">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mr-2"
-              onClick={() => navigate("/prestamos")}
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Volver
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Detalles del Préstamo</h1>
-              <p className="text-sm text-muted-foreground">Préstamo #{prestamo.id} - {cliente.nombre}</p>
+      <main className="flex-1 overflow-x-auto overflow-y-auto p-2 md:p-6 mt-14 md:mt-0 pb-20">
+        <div className="w-full mx-auto">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+            <div className="flex items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mr-2"
+                onClick={() => navigate("/prestamos")}
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Volver
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Detalles del Préstamo</h1>
+                <p className="text-sm text-muted-foreground">Préstamo #{prestamo.id} - {cliente.nombre}</p>
+              </div>
             </div>
-          </div>
-          
-          <div className="mt-4 md:mt-0 flex flex-wrap items-center gap-2">
+            
+            <div className="mt-4 md:mt-0 flex flex-wrap items-center gap-2">
             {prestamo.estado !== "PAGADO" && (
               <Button 
                 className="bg-primary hover:bg-primary/90 text-sm sm:text-base w-full sm:w-auto"
@@ -884,7 +885,9 @@ export default function LoanDetails() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </main>
     </div>
   );
 }
+

@@ -1,0 +1,55 @@
+export default function LoanDetails() {
+  // ... todo el contenido anterior ...
+
+  return (
+    <div className="flex flex-col min-h-screen bg-background">
+      <Sidebar />
+      <MobileHeader />
+      
+      <main className="flex-1 overflow-x-auto overflow-y-auto p-2 md:p-6 mt-14 md:mt-0 pb-20">
+        <div className="w-full mx-auto">
+          
+          {/* ... todos los demás elementos ... */}
+          
+          {/* Diálogo para cambiar día de pago */}
+          <Dialog open={changeDayDialogOpen} onOpenChange={setChangeDayDialogOpen}>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Cambiar Día de Pago</DialogTitle>
+                <DialogDescription>
+                  Seleccione la nueva fecha para el próximo pago. Esto actualizará el día de la semana para todos los pagos futuros.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="nuevaFechaPago" className="text-right">
+                    Nueva Fecha
+                  </Label>
+                  <Input
+                    id="nuevaFechaPago"
+                    type="date"
+                    value={nuevaFechaPago}
+                    onChange={(e) => setNuevaFechaPago(e.target.value)}
+                    className="col-span-3"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit" onClick={handleChangeDaySubmit} disabled={!nuevaFechaPago}>
+                  {cambiarDiaPagoMutation.isPending ? (
+                    <span className="flex items-center">
+                      <LoadingButton className="mr-2" />
+                      Procesando...
+                    </span>
+                  ) : (
+                    "Cambiar Día de Pago"
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </main>
+    </div>
+  );
+}
