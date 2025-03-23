@@ -118,7 +118,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
       startY: 85,
       head: [['Nº Cuota', 'Fecha Programada', 'Monto', 'Estado', 'Fecha de Pago', 'Monto Pagado', 'Mora', 'Restante']],
       body: cronograma.map(cuota => [
-        cuota.numero,
+        cuota.numero.toString(),
         formatDate(cuota.fechaProgramada),
         formatCurrency(cuota.montoProgramado),
         cuota.estado,
@@ -160,7 +160,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
     
     cronograma.forEach(cuota => {
       excelData.push([
-        cuota.numero,
+        cuota.numero.toString(),
         formatDate(cuota.fechaProgramada),
         cuota.montoProgramado,
         cuota.estado,

@@ -670,6 +670,13 @@ export default function LoanDetails() {
           </CardContent>
         </Card>
         
+        {/* Componente de Cronograma de Pagos */}
+        <LoanSchedule
+          prestamo={prestamo}
+          pagosRealizados={pagos}
+          nombreCliente={cliente.nombre}
+        />
+        
         <PaymentForm 
           open={paymentFormOpen} 
           onOpenChange={setPaymentFormOpen}
