@@ -255,24 +255,48 @@ export default function Cobradores() {
         throw new Error("Error al obtener préstamos del cliente");
       }
       const prestamos = await resPrestamos.json();
-      setPrestamosCliente(prestamos);
+      setPrestamosCliente(prestamos || []);
       
       // Obtener pagos de todos los préstamos
-      const pagosPromises = prestamos.map((prestamo: Prestamo) => 
-        apiRequest("GET", `/api/prestamos/${prestamo.id}/pagos`)
-          .then(res => res.json())
-      );
+      if (prestamos && prestamos.length > 0) {
+        try {
+          const pagosPromises = prestamos.map((prestamo: Prestamo) => 
+            apiRequest("GET", `/api/prestamos/${prestamo.id}/pagos`)
+              .then(res => {
+                if (!res.ok) {
+                  return []; // Si hay error en una solicitud de pagos, devolvemos array vacío
+                }
+                return res.json();
+              })
+              .catch(() => []) // En caso de error de red, devolvemos array vacío
+          );
+          
+          const pagosResults = await Promise.all(pagosPromises);
+          const todosLosPagos = pagosResults.flat();
+          setPagosCliente(todosLosPagos);
+        } catch (pagosError) {
+          console.error("Error al cargar pagos:", pagosError);
+          setPagosCliente([]);
+        }
+      } else {
+        setPagosCliente([]);
+      }
       
-      const pagosResults = await Promise.all(pagosPromises);
-      const todosLosPagos = pagosResults.flat();
-      setPagosCliente(todosLosPagos);
+      // Cargar los datos de ruta y notas del cliente seleccionado
+      if (selectedCliente) {
+        setClienteRuta(selectedCliente.ruta || "");
+        setClienteNotas(selectedCliente.notas || "");
+      }
       
     } catch (error) {
+      console.error("Error en fetchPrestamosCliente:", error);
       toast({
         title: "Error",
         description: "No se pudieron cargar los datos del cliente",
         variant: "destructive",
       });
+      setPrestamosCliente([]);
+      setPagosCliente([]);
     } finally {
       setIsLoadingPrestamos(false);
     }
@@ -281,6 +305,10 @@ export default function Cobradores() {
   // Manejar selección de cliente
   const handleClienteClick = async (cliente: Cliente) => {
     setSelectedCliente(cliente);
+    // Establecer los valores de ruta y notas inmediatamente al seleccionar el cliente
+    setClienteRuta(cliente.ruta || "");
+    setClienteNotas(cliente.notas || "");
+    // Cargar los préstamos y pagos
     await fetchPrestamosCliente(cliente.id);
   };
 
