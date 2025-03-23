@@ -21,6 +21,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
 // Tabla de cobradores (usuarios con rol de cobrador)
 export const cobradores = pgTable("cobradores", {
   id: serial("id").primaryKey(),
+  nombre: text("nombre").notNull(),
+  telefono: text("telefono").notNull(),
   user_id: integer("user_id")
     .notNull()
     .references(() => users.id),
