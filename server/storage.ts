@@ -92,11 +92,13 @@ export class MemStorage implements IStorage {
     this.clientes = new Map();
     this.prestamos = new Map();
     this.pagos = new Map();
+    this.cobradores = new Map();
     this.movimientosCaja = new Map();
     this.currentUserId = 1;
     this.currentClienteId = 1;
     this.currentPrestamoId = 1;
     this.currentPagoId = 1;
+    this.currentCobradorId = 1;
     this.currentMovimientoCajaId = 1;
     this.sessionStore = new MemoryStore({
       checkPeriod: 7 * 86400000, // 7 días
@@ -109,14 +111,48 @@ export class MemStorage implements IStorage {
   }
   
   private async initializeSampleData() {
-    // Crear un usuario administrador si no existe
+    // Crear usuarios si no existen
     if (this.users.size === 0) {
+      // Usuario administrador
       const adminUser: InsertUser = {
         nombre: "Administrador",
         username: "super_rafaga@gmail.com",
-        password: "09c2dfbe6ee5a50cd3c103e937e2a2b32693887a8e5f3370109156218f20d63b6c7cb12eb51ff0cc8899d3f0a59581e5de94d3f0fd1575badb1f85ff59bd3ea8.ba5fcde2cb04e5bc" // Contraseña: admin123 (hasheada con scrypt)
+        password: "09c2dfbe6ee5a50cd3c103e937e2a2b32693887a8e5f3370109156218f20d63b6c7cb12eb51ff0cc8899d3f0a59581e5de94d3f0fd1575badb1f85ff59bd3ea8.ba5fcde2cb04e5bc", // Contraseña: admin123 (hasheada con scrypt)
+        rol: "ADMIN"
       };
-      await this.createUser(adminUser);
+      const admin = await this.createUser(adminUser);
+      
+      // Usuarios cobradores
+      const cobrador1User: InsertUser = {
+        nombre: "Juan Cobrador",
+        username: "juan.cobrador@example.com",
+        password: "09c2dfbe6ee5a50cd3c103e937e2a2b32693887a8e5f3370109156218f20d63b6c7cb12eb51ff0cc8899d3f0a59581e5de94d3f0fd1575badb1f85ff59bd3ea8.ba5fcde2cb04e5bc", // misma clave para pruebas
+        rol: "COBRADOR"
+      };
+      const cobrador1 = await this.createUser(cobrador1User);
+      
+      const cobrador2User: InsertUser = {
+        nombre: "María Cobradora",
+        username: "maria.cobradora@example.com",
+        password: "09c2dfbe6ee5a50cd3c103e937e2a2b32693887a8e5f3370109156218f20d63b6c7cb12eb51ff0cc8899d3f0a59581e5de94d3f0fd1575badb1f85ff59bd3ea8.ba5fcde2cb04e5bc", // misma clave para pruebas
+        rol: "COBRADOR"
+      };
+      const cobrador2 = await this.createUser(cobrador2User);
+      
+      // Crear cobradores asociados a usuarios
+      if (this.cobradores.size === 0) {
+        await this.createCobrador({
+          user_id: cobrador1.id,
+          zona: "Norte",
+          activo: true
+        });
+        
+        await this.createCobrador({
+          user_id: cobrador2.id,
+          zona: "Sur",
+          activo: true
+        });
+      }
     }
     
     // Crear algunos clientes de ejemplo
@@ -165,8 +201,27 @@ export class MemStorage implements IStorage {
     
     // Crear los clientes solo si no hay clientes existentes
     if (this.clientes.size === 0) {
+      // Obtener cobradores creados
+      const cobradores = await this.getAllCobradores();
+      const cobrador1 = cobradores[0];
+      const cobrador2 = cobradores[1];
+      
+      // Crear clientes y asignar algunos a cobradores
+      let index = 0;
       for (const cliente of clientesEjemplo) {
-        await this.createCliente(cliente);
+        const clienteConCobrador = { ...cliente };
+        
+        // Asignar cobrador a clientes alternos
+        if (index % 2 === 0 && cobrador1) {
+          clienteConCobrador.cobrador_id = cobrador1.id;
+          clienteConCobrador.ruta = "Ruta A";
+        } else if (index % 2 === 1 && cobrador2) {
+          clienteConCobrador.cobrador_id = cobrador2.id;
+          clienteConCobrador.ruta = "Ruta B";
+        }
+        
+        await this.createCliente(clienteConCobrador);
+        index++;
       }
       
       // Crear préstamos de ejemplo para los clientes
@@ -324,7 +379,11 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
+    const user: User = { 
+      ...insertUser, 
+      id,
+      rol: insertUser.rol || "USUARIO" // Valor por defecto si no se especifica
+    };
     this.users.set(id, user);
     return user;
   }
@@ -944,6 +1003,65 @@ export class MemStorage implements IStorage {
       const fechaMovimiento = new Date(movimiento.fecha);
       return fechaMovimiento >= fechaInicioDate && fechaMovimiento <= fechaFinDate;
     });
+  }
+
+  // Métodos para cobradores
+  async getAllCobradores(): Promise<Cobrador[]> {
+    return Array.from(this.cobradores.values());
+  }
+
+  async getCobrador(id: number): Promise<Cobrador | undefined> {
+    return this.cobradores.get(id);
+  }
+
+  async getCobradorByUserId(userId: number): Promise<Cobrador | undefined> {
+    return Array.from(this.cobradores.values()).find(
+      (cobrador) => cobrador.user_id === userId
+    );
+  }
+
+  async createCobrador(cobrador: InsertCobrador): Promise<Cobrador> {
+    const id = this.currentCobradorId++;
+    const nuevoCobrador: Cobrador = { 
+      ...cobrador, 
+      id,
+      activo: cobrador.activo ?? true // Si no se especifica, por defecto es activo
+    };
+    
+    this.cobradores.set(id, nuevoCobrador);
+    return nuevoCobrador;
+  }
+
+  async updateCobrador(id: number, cobrador: Partial<Cobrador>): Promise<Cobrador | undefined> {
+    const cobradorExistente = this.cobradores.get(id);
+    if (!cobradorExistente) {
+      return undefined;
+    }
+    
+    const cobradorActualizado: Cobrador = { 
+      ...cobradorExistente, 
+      ...cobrador 
+    };
+    
+    this.cobradores.set(id, cobradorActualizado);
+    return cobradorActualizado;
+  }
+  
+  async deleteCobrador(id: number): Promise<boolean> {
+    // Verificar si existen clientes asociados al cobrador
+    const clientesAsociados = await this.getClientesByCobrador(id);
+    if (clientesAsociados.length > 0) {
+      // No permitir eliminar cobradores con clientes asignados
+      return false;
+    }
+    
+    return this.cobradores.delete(id);
+  }
+
+  async getClientesByCobrador(cobradorId: number): Promise<Cliente[]> {
+    return Array.from(this.clientes.values()).filter(
+      (cliente) => cliente.cobrador_id === cobradorId
+    );
   }
 }
 
