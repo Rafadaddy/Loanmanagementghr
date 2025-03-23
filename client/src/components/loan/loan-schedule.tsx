@@ -183,7 +183,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
   };
 
   return (
-    <Card className="mt-4 mb-6">
+    <Card className="mt-4 mb-6 w-full max-w-full overflow-hidden">
       <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-3">
         <CardTitle className="flex items-center gap-1 text-base">
           <Calendar className="h-4 w-4" />
@@ -210,7 +210,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="px-2 py-2 sm:p-6">
+      <CardContent className="px-2 py-2 sm:p-6 max-w-full overflow-x-auto">
         {/* Vista móvil - Tarjetas individuales */}
         <div className="block md:hidden space-y-2">
           {cronograma.length > 0 ? (
@@ -281,7 +281,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
 
         {/* Vista desktop - Tabla horizontal */}
         <div className="hidden md:block rounded-md border overflow-x-auto">
-          <Table>
+          <Table className="w-full">
             <TableHeader>
               <TableRow>
                 <TableHead className="whitespace-nowrap">Nº Cuota</TableHead>
@@ -300,7 +300,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
                   <TableCell className="whitespace-nowrap">Semana {cuota.numero}</TableCell>
                   <TableCell className="whitespace-nowrap">{formatDate(cuota.fechaProgramada)}</TableCell>
                   <TableCell className="whitespace-nowrap">{formatCurrency(cuota.montoProgramado)}</TableCell>
-                  <TableCell>
+                  <TableCell className="whitespace-nowrap">
                     <Badge
                       className={
                         cuota.estado === "PAGADO"

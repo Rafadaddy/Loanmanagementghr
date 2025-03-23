@@ -728,11 +728,13 @@ export default function LoanDetails() {
         </Card>
         
         {/* Componente de Cronograma de Pagos */}
-        <LoanSchedule
-          prestamo={prestamo}
-          pagosRealizados={pagos}
-          nombreCliente={cliente.nombre}
-        />
+        <div className="w-full overflow-hidden">
+          <LoanSchedule
+            prestamo={prestamo}
+            pagosRealizados={pagos}
+            nombreCliente={cliente.nombre}
+          />
+        </div>
         
         <PaymentForm 
           open={paymentFormOpen} 
