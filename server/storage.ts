@@ -111,48 +111,31 @@ export class MemStorage implements IStorage {
   }
   
   private async initializeSampleData() {
-    // Crear usuarios si no existen
+    // Crear un único usuario administrador si no existe ninguno
     if (this.users.size === 0) {
-      // Usuario administrador
+      // Usuario administrador - el único que puede acceder al sistema
       const adminUser: InsertUser = {
         nombre: "Administrador",
-        username: "super_rafaga@gmail.com",
+        username: "super_rafaga@hotmail.com",
         password: "09c2dfbe6ee5a50cd3c103e937e2a2b32693887a8e5f3370109156218f20d63b6c7cb12eb51ff0cc8899d3f0a59581e5de94d3f0fd1575badb1f85ff59bd3ea8.ba5fcde2cb04e5bc", // Contraseña: admin123 (hasheada con scrypt)
         rol: "ADMIN"
       };
       const admin = await this.createUser(adminUser);
       
-      // Usuarios cobradores
-      const cobrador1User: InsertUser = {
-        nombre: "Juan Cobrador",
-        username: "juan.cobrador@example.com",
-        password: "09c2dfbe6ee5a50cd3c103e937e2a2b32693887a8e5f3370109156218f20d63b6c7cb12eb51ff0cc8899d3f0a59581e5de94d3f0fd1575badb1f85ff59bd3ea8.ba5fcde2cb04e5bc", // misma clave para pruebas
-        rol: "COBRADOR"
-      };
-      const cobrador1 = await this.createUser(cobrador1User);
-      
-      const cobrador2User: InsertUser = {
-        nombre: "María Cobradora",
-        username: "maria.cobradora@example.com",
-        password: "09c2dfbe6ee5a50cd3c103e937e2a2b32693887a8e5f3370109156218f20d63b6c7cb12eb51ff0cc8899d3f0a59581e5de94d3f0fd1575badb1f85ff59bd3ea8.ba5fcde2cb04e5bc", // misma clave para pruebas
-        rol: "COBRADOR"
-      };
-      const cobrador2 = await this.createUser(cobrador2User);
-      
-      // Crear cobradores asociados a usuarios
+      // Crear cobradores asociados al usuario administrador
       if (this.cobradores.size === 0) {
         await this.createCobrador({
-          nombre: cobrador1User.nombre,
+          nombre: "Juan Cobrador",
           telefono: "555-111-2222",
-          user_id: cobrador1.id,
+          user_id: admin.id,
           zona: "Norte",
           activo: true
         });
         
         await this.createCobrador({
-          nombre: cobrador2User.nombre,
+          nombre: "María Cobradora",
           telefono: "555-333-4444",
-          user_id: cobrador2.id,
+          user_id: admin.id,
           zona: "Sur",
           activo: true
         });
@@ -205,10 +188,10 @@ export class MemStorage implements IStorage {
     
     // Crear los clientes solo si no hay clientes existentes
     if (this.clientes.size === 0) {
-      // Obtener cobradores creados
+      // Obtener cobradores creados (debe haber 2 cobradores que creamos arriba)
       const cobradores = await this.getAllCobradores();
-      const cobrador1 = cobradores[0];
-      const cobrador2 = cobradores[1];
+      const cobradorNorte = cobradores.find(c => c.zona === "Norte");
+      const cobradorSur = cobradores.find(c => c.zona === "Sur");
       
       // Crear clientes y asignar algunos a cobradores
       let index = 0;
@@ -216,11 +199,11 @@ export class MemStorage implements IStorage {
         const clienteConCobrador = { ...cliente };
         
         // Asignar cobrador a clientes alternos
-        if (index % 2 === 0 && cobrador1) {
-          clienteConCobrador.cobrador_id = cobrador1.id;
+        if (index % 2 === 0 && cobradorNorte) {
+          clienteConCobrador.cobrador_id = cobradorNorte.id;
           clienteConCobrador.ruta = "Ruta A";
-        } else if (index % 2 === 1 && cobrador2) {
-          clienteConCobrador.cobrador_id = cobrador2.id;
+        } else if (index % 2 === 1 && cobradorSur) {
+          clienteConCobrador.cobrador_id = cobradorSur.id;
           clienteConCobrador.ruta = "Ruta B";
         }
         

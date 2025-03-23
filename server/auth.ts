@@ -181,39 +181,5 @@ export function setupAuth(app: Express) {
     res.json(req.user);
   });
   
-  // Ruta temporal para crear un nuevo usuario admin para pruebas
-  app.get("/debug/create-user", async (req, res) => {
-    try {
-      // Configurar respuesta para que sea explícitamente JSON
-      res.setHeader('Content-Type', 'application/json');
-      
-      // Generar contraseña hasheada
-      const hashedPassword = await hashPassword("admin123");
-      console.log("DEBUG - Contraseña hasheada:", hashedPassword);
-      
-      // Verificar si ya existe el usuario
-      const existingUser = await storage.getUserByUsername("admin@test.com");
-      if (existingUser) {
-        return res.status(200).send(JSON.stringify({
-          message: "El usuario ya existe",
-          user: { id: existingUser.id, username: existingUser.username }
-        }));
-      }
-      
-      // Crear usuario
-      const user = await storage.createUser({
-        nombre: "Administrador de Prueba",
-        username: "admin@test.com",
-        password: hashedPassword
-      });
-      
-      return res.status(200).send(JSON.stringify({
-        message: "Usuario creado con éxito",
-        user: { id: user.id, username: user.username }
-      }));
-    } catch (error) {
-      console.error("ERROR al crear usuario de prueba:", error);
-      return res.status(500).send(JSON.stringify({ error: String(error) }));
-    }
-  });
+  // Eliminada la ruta debug de creación de usuarios
 }
