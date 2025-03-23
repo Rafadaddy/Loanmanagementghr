@@ -215,6 +215,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
+  
+  // Ruta para obtener los pagos de un préstamo
+  app.get("/api/prestamos/:id/pagos", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verificar que el préstamo existe
+      const prestamo = await storage.getPrestamo(id);
+      if (!prestamo) {
+        return res.status(404).json({ message: "Préstamo no encontrado" });
+      }
+      
+      // Obtener pagos del préstamo
+      const pagos = await storage.getPagosByPrestamoId(id);
+      res.json(pagos);
+    } catch (error) {
+      console.error("Error al obtener pagos por préstamo:", error);
+      next(error);
+    }
+  });
 
   app.post("/api/prestamos", isAuthenticated, async (req, res, next) => {
     try {
@@ -448,6 +468,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalPagado = await storage.getTotalPagadoByClienteId(id);
       res.json({ totalPagado });
     } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Ruta para obtener los préstamos de un cliente
+  app.get("/api/clientes/:id/prestamos", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verificar que el cliente existe
+      const cliente = await storage.getCliente(id);
+      if (!cliente) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+      
+      // Obtener préstamos del cliente
+      const prestamos = await storage.getPrestamosByClienteId(id);
+      res.json(prestamos);
+    } catch (error) {
+      console.error("Error al obtener préstamos por cliente:", error);
       next(error);
     }
   });
