@@ -859,9 +859,9 @@ export default function Cobradores() {
                         </div>
                         <div className="space-y-1">
                           <p className="text-sm text-muted-foreground">Ruta</p>
-                          <p className="font-medium">
+                          <div className="font-medium">
                             <Badge variant="outline">{selectedCliente.ruta || "Sin asignar"}</Badge>
-                          </p>
+                          </div>
                         </div>
                         <div className="space-y-1">
                           <p className="text-sm text-muted-foreground">Fecha de registro</p>
