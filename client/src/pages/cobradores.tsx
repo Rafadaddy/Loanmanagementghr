@@ -48,7 +48,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { formatDate, getInitials, formatCurrency, getLoanStatus } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Pencil, Plus, Search, Trash, Users, CreditCard, Calendar, DollarSign, Info, PieChart, ArrowDownCircle, ArrowUpCircle, X } from "lucide-react";
+import { Pencil, Plus, Search, Trash, Users, CreditCard, Calendar, DollarSign, Info, PieChart, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -879,7 +879,10 @@ export default function Cobradores() {
                               size="sm" 
                               onClick={() => setIsEditingCliente(false)}
                             >
-                              <X className="h-4 w-4" />
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                              </svg>
                             </Button>
                           </div>
                           
