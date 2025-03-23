@@ -842,11 +842,11 @@ export default function Cobradores() {
                     
                     <TabsContent value="info" className="space-y-4 mt-4">
                       {/* Botón para editar ruta y notas */}
-                      <div className="flex justify-end">
+                      <div className="flex justify-center xs:justify-end mb-3">
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="flex items-center gap-1"
+                          className="flex items-center gap-1 w-full xs:w-auto"
                           onClick={() => {
                             setClienteRuta(selectedCliente.ruta || "");
                             setClienteNotas(selectedCliente.notas || "");
@@ -877,12 +877,14 @@ export default function Cobradores() {
                           
                           <div className="space-y-3">
                             <div>
-                              <div className="flex justify-between mb-1 text-sm">
-                                <span>Ratio Deuda-Ingresos</span>
+                              <div className="flex flex-wrap justify-between mb-1 text-sm">
+                                <span className="text-xs xs:text-sm">Ratio Deuda-Ingresos</span>
                                 <span className={
+                                  "font-semibold " + (
                                   getDebtToIncomeRatio() < 35 ? "text-green-600" : 
                                   getDebtToIncomeRatio() < 50 ? "text-yellow-600" : 
                                   "text-red-600"
+                                  )
                                 }>
                                   {getDebtToIncomeRatio()}%
                                 </span>
@@ -904,18 +906,18 @@ export default function Cobradores() {
                             </div>
                             
                             <div className="grid grid-cols-2 gap-2 mt-2">
-                              <div className="flex items-center p-2 rounded-md bg-muted/50">
-                                <ArrowUpCircle className="h-5 w-5 text-green-500 mr-2" />
-                                <div>
+                              <div className="flex flex-col xs:flex-row items-center xs:items-start p-2 rounded-md bg-muted/50">
+                                <ArrowUpCircle className="h-5 w-5 text-green-500 mb-1 xs:mb-0 xs:mr-2" />
+                                <div className="text-center xs:text-left">
                                   <div className="text-xs text-muted-foreground">Ingresos Est.</div>
-                                  <div className="font-medium">{formatCurrency(getEstimatedIncome())}</div>
+                                  <div className="font-medium text-sm">{formatCurrency(getEstimatedIncome())}</div>
                                 </div>
                               </div>
-                              <div className="flex items-center p-2 rounded-md bg-muted/50">
-                                <ArrowDownCircle className="h-5 w-5 text-red-500 mr-2" />
-                                <div>
+                              <div className="flex flex-col xs:flex-row items-center xs:items-start p-2 rounded-md bg-muted/50">
+                                <ArrowDownCircle className="h-5 w-5 text-red-500 mb-1 xs:mb-0 xs:mr-2" />
+                                <div className="text-center xs:text-left">
                                   <div className="text-xs text-muted-foreground">Pagos Mensuales</div>
-                                  <div className="font-medium">{formatCurrency(getTotalMonthlyPayments())}</div>
+                                  <div className="font-medium text-sm">{formatCurrency(getTotalMonthlyPayments())}</div>
                                 </div>
                               </div>
                             </div>
@@ -969,14 +971,16 @@ export default function Cobradores() {
                               />
                             </div>
                             
-                            <div className="flex justify-end gap-2">
+                            <div className="flex flex-col xs:flex-row justify-end gap-2">
                               <Button 
                                 variant="outline" 
+                                className="w-full xs:w-auto order-2 xs:order-1"
                                 onClick={() => setIsEditingCliente(false)}
                               >
                                 Cancelar
                               </Button>
                               <Button 
+                                className="w-full xs:w-auto order-1 xs:order-2"
                                 onClick={async () => {
                                   try {
                                     const res = await apiRequest("PUT", `/api/clientes/${selectedCliente.id}`, {
