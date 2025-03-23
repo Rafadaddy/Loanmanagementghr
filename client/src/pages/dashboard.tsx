@@ -101,13 +101,13 @@ export default function Dashboard() {
   return (
     <MainLayout>
       <header className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Panel de Control</h1>
-        <p className="text-sm text-gray-600">{fechaFormateada}</p>
+        <h1 className="text-2xl font-bold text-foreground">Panel de Control</h1>
+        <p className="text-sm text-muted-foreground">{fechaFormateada}</p>
       </header>
       
       {/* Stats Section */}
       <section className="mb-8">
-        <h2 className="text-lg font-semibold text-gray-700 mb-4">Estadísticas</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-4">Estadísticas</h2>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard 
@@ -142,7 +142,7 @@ export default function Dashboard() {
       
       {/* Quick Actions */}
       <section className="mb-8">
-        <h2 className="text-lg font-semibold text-gray-700 mb-4">Acciones Rápidas</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-4">Acciones Rápidas</h2>
         
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <ActionCard 
@@ -176,7 +176,7 @@ export default function Dashboard() {
       
       {/* Recent Activity */}
       <section>
-        <h2 className="text-lg font-semibold text-gray-700 mb-4">Actividad Reciente</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-4">Actividad Reciente</h2>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <ActivityCard 
