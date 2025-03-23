@@ -812,6 +812,11 @@ export default function Cobradores() {
                                   getDebtToIncomeRatio() < 50 ? "bg-yellow-100" : 
                                   "bg-red-100"
                                 }`}
+                                indicatorClassName={
+                                  getDebtToIncomeRatio() < 35 ? "bg-green-500" : 
+                                  getDebtToIncomeRatio() < 50 ? "bg-yellow-500" : 
+                                  "bg-red-500"
+                                }
                               />
                             </div>
                             
