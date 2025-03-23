@@ -3,6 +3,7 @@ import {
   Prestamo, InsertPrestamo, 
   Pago, InsertPago, 
   User, InsertUser, 
+  Cobrador, InsertCobrador,
   MovimientoCaja, InsertMovimientoCaja,
   ResultadoCalculoPrestamo, CalculoPrestamo 
 } from "@shared/schema";
@@ -57,6 +58,15 @@ export interface IStorage {
   }>;
   getMovimientosCajaPorFecha(fechaInicio: string, fechaFin: string): Promise<MovimientoCaja[]>;
   
+  // Cobradores
+  getAllCobradores(): Promise<Cobrador[]>;
+  getCobrador(id: number): Promise<Cobrador | undefined>;
+  getCobradorByUserId(userId: number): Promise<Cobrador | undefined>;
+  createCobrador(cobrador: InsertCobrador): Promise<Cobrador>;
+  updateCobrador(id: number, cobrador: Partial<Cobrador>): Promise<Cobrador | undefined>;
+  deleteCobrador(id: number): Promise<boolean>;
+  getClientesByCobrador(cobradorId: number): Promise<Cliente[]>;
+  
   // Sesión
   sessionStore: any; // Tipo simplificado para la store de sesión
 }
@@ -66,10 +76,12 @@ export class MemStorage implements IStorage {
   private clientes: Map<number, Cliente>;
   private prestamos: Map<number, Prestamo>;
   private pagos: Map<number, Pago>;
+  private cobradores: Map<number, Cobrador>;
   private currentUserId: number;
   private currentClienteId: number;
   private currentPrestamoId: number;
   private currentPagoId: number;
+  private currentCobradorId: number;
   sessionStore: any; // Tipo simplificado para la store de sesión
 
   private movimientosCaja: Map<number, MovimientoCaja> = new Map();

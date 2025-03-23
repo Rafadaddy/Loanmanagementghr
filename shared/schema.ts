@@ -8,12 +8,28 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   nombre: text("nombre").notNull(),
+  rol: text("rol").default("USUARIO").notNull(), // Roles: ADMIN, USUARIO, COBRADOR
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
   nombre: true,
+  rol: true,
+});
+
+// Tabla de cobradores (usuarios con rol de cobrador)
+export const cobradores = pgTable("cobradores", {
+  id: serial("id").primaryKey(),
+  user_id: integer("user_id")
+    .notNull()
+    .references(() => users.id),
+  zona: text("zona").notNull(),
+  activo: boolean("activo").default(true).notNull(),
+});
+
+export const insertCobradorSchema = createInsertSchema(cobradores).omit({
+  id: true,
 });
 
 // Tabla de clientes
@@ -26,6 +42,9 @@ export const clientes = pgTable("clientes", {
   email: text("email"),
   notas: text("notas"),
   fecha_registro: timestamp("fecha_registro").defaultNow().notNull(),
+  cobrador_id: integer("cobrador_id")
+    .references(() => cobradores.id),
+  ruta: text("ruta"), // Para organizar en rutas específicas dentro de la zona del cobrador
 });
 
 export const insertClienteSchema = createInsertSchema(clientes).omit({
@@ -86,6 +105,9 @@ export const insertPagoSchema = createInsertSchema(pagos).omit({
 // Tipos exportados
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export type InsertCobrador = z.infer<typeof insertCobradorSchema>;
+export type Cobrador = typeof cobradores.$inferSelect;
 
 export type InsertCliente = z.infer<typeof insertClienteSchema>;
 export type Cliente = typeof clientes.$inferSelect;
