@@ -13,8 +13,11 @@ import { Cliente, Prestamo, Pago } from "@shared/schema";
 interface Estadisticas {
   prestamosActivos: number;
   totalPrestado: number;
+  totalIntereses: number;
+  interesesPorCobrar: number;
   montosPagosHoy: number;
   prestamosAtrasados: number;
+  totalMoras: number;
   ultimosPrestamos: Prestamo[];
   ultimosPagos: Pago[];
   ultimosClientes: Cliente[];
@@ -109,7 +112,7 @@ export default function Dashboard() {
       <section className="mb-8">
         <h2 className="text-lg font-semibold text-foreground mb-4">Estadísticas</h2>
         
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <StatCard 
             title="Préstamos Activos" 
             value={isLoading ? "..." : estadisticas?.prestamosActivos.toString() || "0"} 
@@ -125,6 +128,20 @@ export default function Dashboard() {
           />
           
           <StatCard 
+            title="Intereses Totales" 
+            value={isLoading ? "..." : formatCurrency(estadisticas?.totalIntereses || 0)} 
+            icon="percentage" 
+            color="bg-purple-100" 
+          />
+          
+          <StatCard 
+            title="Intereses por Cobrar" 
+            value={isLoading ? "..." : formatCurrency(estadisticas?.interesesPorCobrar || 0)} 
+            icon="chart-line" 
+            color="bg-teal-100" 
+          />
+          
+          <StatCard 
             title="Pagos del Día" 
             value={isLoading ? "..." : formatCurrency(estadisticas?.montosPagosHoy || 0)} 
             icon="calendar-day" 
@@ -132,7 +149,7 @@ export default function Dashboard() {
           />
           
           <StatCard 
-            title="Pagos Atrasados" 
+            title="Préstamos Atrasados" 
             value={isLoading ? "..." : estadisticas?.prestamosAtrasados.toString() || "0"} 
             icon="exclamation-triangle" 
             color="bg-red-100" 

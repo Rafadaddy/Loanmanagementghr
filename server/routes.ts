@@ -505,6 +505,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Total prestado
       const totalPrestado = prestamos.reduce((sum, p) => sum + Number(p.monto_prestado), 0);
       
+      // Cálculo de intereses totales
+      const totalIntereses = prestamos.reduce((sum, p) => {
+        // Interés es la diferencia entre monto total a pagar y monto prestado
+        const interes = Number(p.monto_total_pagar) - Number(p.monto_prestado);
+        return sum + interes;
+      }, 0);
+      
+      // Intereses por cobrar (solo de préstamos activos)
+      const interesesPorCobrar = prestamos
+        .filter(p => p.estado === "ACTIVO" || p.estado === "ATRASADO")
+        .reduce((sum, p) => {
+          const interes = Number(p.monto_total_pagar) - Number(p.monto_prestado);
+          return sum + interes;
+        }, 0);
+      
       // Pagos del día
       const hoy = new Date();
       const inicio = new Date(hoy.setHours(0, 0, 0, 0));
@@ -539,6 +554,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         prestamosActivos,
         totalPrestado,
+        totalIntereses,
+        interesesPorCobrar,
         montosPagosHoy,
         prestamosAtrasados,
         totalMoras,
