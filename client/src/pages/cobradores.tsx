@@ -885,7 +885,7 @@ export default function Cobradores() {
                           
                           <div className="space-y-4">
                             <div className="space-y-1">
-                              <Label htmlFor="ruta">Ruta</Label>
+                              <div className="text-sm font-medium leading-none">Ruta</div>
                               <Input 
                                 id="ruta"
                                 value={clienteRuta}
@@ -895,13 +895,13 @@ export default function Cobradores() {
                             </div>
                             
                             <div className="space-y-1">
-                              <Label htmlFor="notas">Notas</Label>
-                              <Textarea 
+                              <div className="text-sm font-medium leading-none">Notas</div>
+                              <textarea 
                                 id="notas"
                                 value={clienteNotas}
                                 onChange={(e) => setClienteNotas(e.target.value)}
                                 placeholder="Agregar notas sobre el cliente"
-                                className="min-h-[100px]"
+                                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                               />
                             </div>
                             
