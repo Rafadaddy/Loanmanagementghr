@@ -346,11 +346,11 @@ export default function LoanDetails() {
   const { label: estadoLabel, className: estadoClass } = getLoanStatus(prestamo.estado);
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex min-h-screen bg-background">
       <Sidebar />
       <MobileHeader />
       
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 mt-16 md:mt-0 pb-16">
+      <main className="flex-1 overflow-y-auto p-3 md:p-6 mt-16 md:mt-0 pb-20">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <div className="flex items-center">
             <Button
