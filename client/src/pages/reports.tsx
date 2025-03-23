@@ -98,7 +98,7 @@ export default function Reports() {
     { name: "Atrasados", value: prestamos.filter(p => p.estado === "ATRASADO").length },
   ];
 
-  const COLORS = ["#357AFF", "#10B981", "#EF4444"];
+  const COLORS = ["#3B82F6", "#10B981", "#EF4444"];
 
   // Datos para gráfico de barras de montos
   const montosPorMes = () => {
@@ -199,8 +199,8 @@ export default function Reports() {
     <MainLayout>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Reportes</h1>
-          <p className="text-sm text-gray-600">Análisis y estadísticas del sistema</p>
+          <h1 className="text-2xl font-bold text-foreground">Reportes</h1>
+          <p className="text-sm text-muted-foreground">Análisis y estadísticas del sistema</p>
         </div>
         
         <Button 
@@ -250,12 +250,20 @@ export default function Reports() {
                       data={montosPorMes()}
                       margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="mes" />
-                      <YAxis />
-                      <Tooltip formatter={(value) => formatCurrency(value as number)} />
-                      <Legend />
-                      <Bar dataKey="prestamos" name="Préstamos" fill="#357AFF" />
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="mes" stroke="currentColor" />
+                      <YAxis stroke="currentColor" />
+                      <Tooltip 
+                        formatter={(value) => formatCurrency(value as number)}
+                        contentStyle={{ 
+                          backgroundColor: 'var(--background)', 
+                          borderColor: 'var(--border)',
+                          color: 'var(--foreground)'
+                        }}
+                        labelStyle={{ color: 'var(--foreground)' }}
+                      />
+                      <Legend wrapperStyle={{ color: 'var(--foreground)' }} />
+                      <Bar dataKey="prestamos" name="Préstamos" fill="#3B82F6" />
                       <Bar dataKey="pagos" name="Pagos" fill="#10B981" />
                     </BarChart>
                   </ResponsiveContainer>
@@ -328,7 +336,7 @@ export default function Reports() {
                               <TableRow key={pago.id}>
                                 <TableCell className="font-medium">{cliente?.nombre || 'Cliente desconocido'}</TableCell>
                                 <TableCell>{prestamo ? formatCurrency(prestamo.monto_prestado) : 'N/A'}</TableCell>
-                                <TableCell className="text-green-600 font-medium">{formatCurrency(pago.monto_pagado)}</TableCell>
+                                <TableCell className="text-emerald-600 dark:text-emerald-400 font-medium">{formatCurrency(pago.monto_pagado)}</TableCell>
                                 <TableCell>{formatDate(pago.fecha_pago)}</TableCell>
                                 <TableCell>{pago.numero_semana}</TableCell>
                                 <TableCell>
@@ -370,7 +378,7 @@ export default function Reports() {
                 Pagos
               </Button>
               
-              <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="mt-6 pt-6 border-t border-border">
                 <p className="text-sm font-medium mb-3">Estado de Préstamos</p>
                 <div className="h-[180px]">
                   <ResponsiveContainer width="100%" height="100%">
@@ -380,7 +388,11 @@ export default function Reports() {
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, percent }) => (
+                          <text x={0} y={0} textAnchor="middle" fill="currentColor" style={{ fontWeight: 500 }}>
+                            {`${name}: ${(percent * 100).toFixed(0)}%`}
+                          </text>
+                        )}
                         outerRadius={60}
                         fill="#8884d8"
                         dataKey="value"
@@ -389,7 +401,14 @@ export default function Reports() {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => `${value} préstamos`} />
+                      <Tooltip 
+                        formatter={(value) => `${value} préstamos`}
+                        contentStyle={{ 
+                          backgroundColor: 'var(--background)', 
+                          borderColor: 'var(--border)',
+                          color: 'var(--foreground)'
+                        }}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
