@@ -778,6 +778,23 @@ export default function Cobradores() {
                     </TabsList>
                     
                     <TabsContent value="info" className="space-y-4 mt-4">
+                      {/* Botón para editar ruta y notas */}
+                      <div className="flex justify-end">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex items-center gap-1"
+                          onClick={() => {
+                            setClienteRuta(selectedCliente.ruta || "");
+                            setClienteNotas(selectedCliente.notas || "");
+                            setIsEditingCliente(true);
+                          }}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Editar ruta/notas
+                        </Button>
+                      </div>
+                      
                       {/* Debt to Income Ratio Visualizer */}
                       {!isLoadingPrestamos && prestamosCliente.length > 0 && (
                         <div className="border rounded-md p-4 mb-4 space-y-3">
@@ -851,40 +868,125 @@ export default function Cobradores() {
                         </div>
                       )}
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <p className="text-sm text-muted-foreground">Teléfono</p>
-                          <p className="font-medium">{selectedCliente.telefono}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-sm text-muted-foreground">Dirección</p>
-                          <p className="font-medium">{selectedCliente.direccion || "No disponible"}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-sm text-muted-foreground">Ruta</p>
-                          <div className="font-medium">
-                            <Badge variant="outline" className="bg-yellow-100 text-yellow-800">{selectedCliente.ruta || "Sin asignar"}</Badge>
+                      {isEditingCliente ? (
+                        <div className="border rounded-md p-4 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-semibold">Modificar información</h3>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => setIsEditingCliente(false)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          
+                          <div className="space-y-4">
+                            <div className="space-y-1">
+                              <Label htmlFor="ruta">Ruta</Label>
+                              <Input 
+                                id="ruta"
+                                value={clienteRuta}
+                                onChange={(e) => setClienteRuta(e.target.value)}
+                                placeholder="Asignar ruta (ej: Zona Norte, Ruta 5, etc.)"
+                              />
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <Label htmlFor="notas">Notas</Label>
+                              <Textarea 
+                                id="notas"
+                                value={clienteNotas}
+                                onChange={(e) => setClienteNotas(e.target.value)}
+                                placeholder="Agregar notas sobre el cliente"
+                                className="min-h-[100px]"
+                              />
+                            </div>
+                            
+                            <div className="flex justify-end gap-2">
+                              <Button 
+                                variant="outline" 
+                                onClick={() => setIsEditingCliente(false)}
+                              >
+                                Cancelar
+                              </Button>
+                              <Button 
+                                onClick={async () => {
+                                  try {
+                                    const res = await apiRequest("PUT", `/api/clientes/${selectedCliente.id}`, {
+                                      ...selectedCliente,
+                                      ruta: clienteRuta,
+                                      notas: clienteNotas
+                                    });
+                                    
+                                    if (!res.ok) {
+                                      throw new Error("Error al actualizar cliente");
+                                    }
+                                    
+                                    const clienteActualizado = await res.json();
+                                    setSelectedCliente(clienteActualizado);
+                                    setIsEditingCliente(false);
+                                    
+                                    // Actualizar la lista de clientes
+                                    const nuevaLista = clientesCobrador.map((c) => 
+                                      c.id === clienteActualizado.id ? clienteActualizado : c
+                                    );
+                                    setClientesCobrador(nuevaLista);
+                                    
+                                    toast({
+                                      title: "Cliente actualizado",
+                                      description: "La información del cliente ha sido actualizada correctamente",
+                                    });
+                                  } catch (error) {
+                                    toast({
+                                      title: "Error",
+                                      description: "No se pudo actualizar la información del cliente",
+                                      variant: "destructive",
+                                    });
+                                  }
+                                }}
+                              >
+                                Guardar cambios
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                        <div className="space-y-1">
-                          <p className="text-sm text-muted-foreground">Fecha de registro</p>
-                          <p className="font-medium">{formatDate(selectedCliente.fecha_registro)}</p>
-                        </div>
-                        {selectedCliente.email && (
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-1">
-                            <p className="text-sm text-muted-foreground">Email</p>
-                            <p className="font-medium">{selectedCliente.email}</p>
+                            <p className="text-sm text-muted-foreground">Teléfono</p>
+                            <p className="font-medium">{selectedCliente.telefono}</p>
                           </div>
-                        )}
-                        
-                        {/* Notas con estilo mejorado */}
-                        <div className="space-y-1 md:col-span-2">
-                          <p className="text-sm text-muted-foreground">Notas</p>
-                          <div className="font-medium p-2 bg-muted/50 rounded-md">
-                            {selectedCliente.notas || "Sin notas adicionales"}
+                          <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">Dirección</p>
+                            <p className="font-medium">{selectedCliente.direccion || "No disponible"}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">Ruta</p>
+                            <div className="font-medium">
+                              <Badge variant="outline" className="bg-yellow-100 text-yellow-800">{selectedCliente.ruta || "Sin asignar"}</Badge>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">Fecha de registro</p>
+                            <p className="font-medium">{formatDate(selectedCliente.fecha_registro)}</p>
+                          </div>
+                          {selectedCliente.email && (
+                            <div className="space-y-1">
+                              <p className="text-sm text-muted-foreground">Email</p>
+                              <p className="font-medium">{selectedCliente.email}</p>
+                            </div>
+                          )}
+                          
+                          {/* Notas con estilo mejorado */}
+                          <div className="space-y-1 md:col-span-2">
+                            <p className="text-sm text-muted-foreground">Notas</p>
+                            <div className="font-medium p-2 bg-muted/50 rounded-md">
+                              {selectedCliente.notas || "Sin notas adicionales"}
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      )}
                     </TabsContent>
                     
                     <TabsContent value="loans" className="space-y-4 mt-4">
