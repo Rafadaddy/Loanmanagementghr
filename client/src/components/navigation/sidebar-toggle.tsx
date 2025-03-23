@@ -2,9 +2,16 @@ import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function SidebarToggle() {
   const { isOpen, toggle } = useSidebar();
+  const [location] = useLocation();
+  
+  // Ocultar el botón en la página de detalles del préstamo
+  if (location.includes("/prestamos/") && /\/prestamos\/\d+/.test(location)) {
+    return null;
+  }
 
   return (
     <Button
