@@ -217,7 +217,7 @@ export default function LoanCalculator({ onSave, className = "" }: LoanCalculato
               onValueChange={(value) => setMonto(value[0])}
               className="py-2"
             />
-            <div className="flex justify-between text-xs text-gray-500">
+            <div className="flex justify-between text-xs text-muted-foreground">
               <span>$1,000</span>
               <span>$25,000</span>
               <span>$50,000</span>
@@ -249,7 +249,7 @@ export default function LoanCalculator({ onSave, className = "" }: LoanCalculato
               onValueChange={(value) => setTasa(value[0])}
               className="py-2"
             />
-            <div className="flex justify-between text-xs text-gray-500">
+            <div className="flex justify-between text-xs text-muted-foreground">
               <span>1%</span>
               <span>25%</span>
               <span>50%</span>

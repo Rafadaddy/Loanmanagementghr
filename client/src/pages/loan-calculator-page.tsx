@@ -10,17 +10,17 @@ export default function LoanCalculatorPage() {
       </Helmet>
       
       <MainLayout>
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">
+        <h1 className="text-2xl font-bold text-foreground mb-6">
           Calculadora de Préstamos
         </h1>
         
         <div className="grid grid-cols-1 gap-6">
           <LoanCalculator />
           
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4">Información sobre Préstamos</h2>
+          <div className="bg-card rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4 text-foreground">Información sobre Préstamos</h2>
             
-            <div className="prose max-w-none">
+            <div className="prose dark:prose-invert max-w-none">
               <p>
                 Nuestra calculadora de préstamos te permite estimar con precisión:
               </p>
