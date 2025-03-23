@@ -354,7 +354,7 @@ export default function LoanDetails() {
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <MobileHeader />
-        <main className="flex-1 overflow-x-auto overflow-y-auto p-2 md:p-6 mt-14 md:mt-0 pb-20">
+        <main className="flex-1 overflow-x-auto overflow-y-auto p-2 md:p-6 mt-14 md:mt-0 pb-48">
           <div className="w-full mx-auto">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
               <div className="flex items-center">
