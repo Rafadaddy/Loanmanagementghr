@@ -249,41 +249,74 @@ export default function Cobradores() {
     
     setIsLoadingPrestamos(true);
     try {
+      console.log("Cargando préstamos para cliente ID:", clienteId);
+      
       // Obtener préstamos
       const resPrestamos = await apiRequest("GET", `/api/clientes/${clienteId}/prestamos`);
+      console.log("Respuesta de API de préstamos:", resPrestamos);
+      
       if (!resPrestamos.ok) {
-        throw new Error("Error al obtener préstamos del cliente");
+        throw new Error(`Error al obtener préstamos del cliente: ${resPrestamos.status}`);
       }
-      const prestamos = await resPrestamos.json();
-      setPrestamosCliente(prestamos || []);
+      
+      let prestamos = [];
+      try {
+        prestamos = await resPrestamos.json();
+        console.log("Préstamos obtenidos:", prestamos);
+      } catch (parseError) {
+        console.error("Error al parsear préstamos:", parseError);
+        prestamos = [];
+      }
+      
+      // Establecer los préstamos en el estado
+      setPrestamosCliente(Array.isArray(prestamos) ? prestamos : []);
       
       // Obtener pagos de todos los préstamos
-      if (prestamos && prestamos.length > 0) {
+      if (Array.isArray(prestamos) && prestamos.length > 0) {
         try {
-          const pagosPromises = prestamos.map((prestamo: Prestamo) => 
-            apiRequest("GET", `/api/prestamos/${prestamo.id}/pagos`)
+          console.log("Cargando pagos para", prestamos.length, "préstamos");
+          
+          const pagosPromises = prestamos.map((prestamo: Prestamo) => {
+            console.log("Solicitando pagos para préstamo ID:", prestamo.id);
+            return apiRequest("GET", `/api/prestamos/${prestamo.id}/pagos`)
               .then(res => {
                 if (!res.ok) {
-                  return []; // Si hay error en una solicitud de pagos, devolvemos array vacío
+                  console.log(`Error al cargar pagos para préstamo ${prestamo.id}:`, res.status);
+                  return [];
                 }
-                return res.json();
+                return res.json().catch(() => {
+                  console.log(`Error al parsear pagos para préstamo ${prestamo.id}`);
+                  return [];
+                });
               })
-              .catch(() => []) // En caso de error de red, devolvemos array vacío
-          );
+              .catch(err => {
+                console.error(`Error de red al cargar pagos para préstamo ${prestamo.id}:`, err);
+                return [];
+              });
+          });
           
           const pagosResults = await Promise.all(pagosPromises);
+          console.log("Resultados de pagos obtenidos:", pagosResults);
+          
           const todosLosPagos = pagosResults.flat();
+          console.log("Total de pagos procesados:", todosLosPagos.length);
+          
           setPagosCliente(todosLosPagos);
         } catch (pagosError) {
-          console.error("Error al cargar pagos:", pagosError);
+          console.error("Error al procesar pagos:", pagosError);
           setPagosCliente([]);
         }
       } else {
+        console.log("No hay préstamos para cargar pagos");
         setPagosCliente([]);
       }
       
       // Cargar los datos de ruta y notas del cliente seleccionado
       if (selectedCliente) {
+        console.log("Estableciendo datos del cliente:", { 
+          ruta: selectedCliente.ruta || "", 
+          notas: selectedCliente.notas || "" 
+        });
         setClienteRuta(selectedCliente.ruta || "");
         setClienteNotas(selectedCliente.notas || "");
       }
@@ -1030,7 +1063,7 @@ export default function Cobradores() {
                             <span className="text-sm text-muted-foreground">Cargando préstamos...</span>
                           </div>
                         </div>
-                      ) : prestamosCliente.length === 0 ? (
+                      ) : !prestamosCliente || prestamosCliente.length === 0 ? (
                         <div className="text-center py-6 bg-muted/20 rounded-md">
                           <p className="text-muted-foreground">Este cliente no tiene préstamos registrados</p>
                         </div>
@@ -1039,7 +1072,7 @@ export default function Cobradores() {
                           <h3 className="text-lg font-semibold">Préstamos ({prestamosCliente.length})</h3>
                           <div className="space-y-3">
                             {prestamosCliente.map((prestamo) => (
-                              <Card key={prestamo.id}>
+                              <Card key={prestamo.id || Math.random()}>
                                 <CardContent className="pt-6">
                                   <div className="flex justify-between items-start mb-2">
                                     <div className="space-y-1">
@@ -1049,30 +1082,30 @@ export default function Cobradores() {
                                       </div>
                                       <div className="text-sm text-muted-foreground">
                                         <Calendar className="h-3 w-3 inline mr-1" /> 
-                                        {formatDate(prestamo.fecha_prestamo)}
+                                        {prestamo.fecha_prestamo ? formatDate(prestamo.fecha_prestamo) : "Fecha no disponible"}
                                       </div>
                                     </div>
-                                    <Badge className={getLoanStatus(prestamo.estado).className}>
-                                      {getLoanStatus(prestamo.estado).label}
+                                    <Badge className={prestamo.estado ? getLoanStatus(prestamo.estado).className : ""}>
+                                      {prestamo.estado ? getLoanStatus(prestamo.estado).label : "Estado desconocido"}
                                     </Badge>
                                   </div>
                                   
                                   <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-3">
                                     <div>
                                       <p className="text-xs text-muted-foreground">Monto</p>
-                                      <p className="font-medium">{formatCurrency(prestamo.monto_prestado)}</p>
+                                      <p className="font-medium">{prestamo.monto_prestado ? formatCurrency(prestamo.monto_prestado) : "-"}</p>
                                     </div>
                                     <div>
                                       <p className="text-xs text-muted-foreground">Total a pagar</p>
-                                      <p className="font-medium">{formatCurrency(prestamo.monto_total_pagar)}</p>
+                                      <p className="font-medium">{prestamo.monto_total_pagar ? formatCurrency(prestamo.monto_total_pagar) : "-"}</p>
                                     </div>
                                     <div>
                                       <p className="text-xs text-muted-foreground">Plazo</p>
-                                      <p className="font-medium">{prestamo.numero_semanas} semanas</p>
+                                      <p className="font-medium">{prestamo.numero_semanas ? `${prestamo.numero_semanas} semanas` : "-"}</p>
                                     </div>
                                     <div>
                                       <p className="text-xs text-muted-foreground">Pago semanal</p>
-                                      <p className="font-medium">{formatCurrency(prestamo.pago_semanal)}</p>
+                                      <p className="font-medium">{prestamo.pago_semanal ? formatCurrency(prestamo.pago_semanal) : "-"}</p>
                                     </div>
                                   </div>
                                 </CardContent>
@@ -1091,7 +1124,7 @@ export default function Cobradores() {
                             <span className="text-sm text-muted-foreground">Cargando pagos...</span>
                           </div>
                         </div>
-                      ) : pagosCliente.length === 0 ? (
+                      ) : !pagosCliente || pagosCliente.length === 0 ? (
                         <div className="text-center py-6 bg-muted/20 rounded-md">
                           <p className="text-muted-foreground">Este cliente no tiene pagos registrados</p>
                         </div>
@@ -1101,30 +1134,43 @@ export default function Cobradores() {
                             <h3 className="text-lg font-semibold">Pagos ({pagosCliente.length})</h3>
                             <div className="text-sm text-right">
                               <div className="font-medium">Total pagado</div>
-                              <div className="text-primary">{formatCurrency(pagosCliente.reduce((sum, pago) => sum + parseFloat(pago.monto_pagado), 0))}</div>
+                              <div className="text-primary">
+                                {formatCurrency(pagosCliente.reduce((sum, pago) => 
+                                  sum + (pago.monto_pagado ? parseFloat(pago.monto_pagado) : 0), 0))}
+                              </div>
                             </div>
                           </div>
                           
                           <div className="space-y-2 max-h-[300px] overflow-auto">
-                            {pagosCliente.sort((a, b) => new Date(b.fecha_pago).getTime() - new Date(a.fecha_pago).getTime()).map((pago) => (
-                              <div key={pago.id} className="flex items-center justify-between p-3 rounded-md border">
-                                <div className="flex items-center space-x-2">
-                                  <Badge variant="outline" className="h-8 w-8 rounded-full flex items-center justify-center">
-                                    <DollarSign className="h-4 w-4" />
-                                  </Badge>
-                                  <div>
-                                    <div className="font-medium">Pago #{pago.id}</div>
-                                    <div className="text-xs text-muted-foreground">{formatDate(pago.fecha_pago)}</div>
+                            {Array.isArray(pagosCliente) && pagosCliente
+                              .filter(pago => pago && pago.id)
+                              .sort((a, b) => {
+                                if (!a.fecha_pago || !b.fecha_pago) return 0;
+                                return new Date(b.fecha_pago).getTime() - new Date(a.fecha_pago).getTime();
+                              })
+                              .map((pago) => (
+                                <div key={pago.id || Math.random()} className="flex items-center justify-between p-3 rounded-md border">
+                                  <div className="flex items-center space-x-2">
+                                    <Badge variant="outline" className="h-8 w-8 rounded-full flex items-center justify-center">
+                                      <DollarSign className="h-4 w-4" />
+                                    </Badge>
+                                    <div>
+                                      <div className="font-medium">Pago #{pago.id}</div>
+                                      <div className="text-xs text-muted-foreground">
+                                        {pago.fecha_pago ? formatDate(pago.fecha_pago) : "Fecha no disponible"}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="font-medium">
+                                      {pago.monto_pagado ? formatCurrency(pago.monto_pagado) : "-"}
+                                    </div>
+                                    <span className="inline-flex items-center text-xs">
+                                      <Badge variant="secondary">Préstamo #{pago.prestamo_id || "?"}</Badge>
+                                    </span>
                                   </div>
                                 </div>
-                                <div className="text-right">
-                                  <div className="font-medium">{formatCurrency(pago.monto_pagado)}</div>
-                                  <span className="inline-flex items-center text-xs">
-                                    <Badge variant="secondary">Préstamo #{pago.prestamo_id}</Badge>
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
+                              ))}
                           </div>
                         </div>
                       )}
