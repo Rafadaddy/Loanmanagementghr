@@ -229,7 +229,7 @@ export default function LoanDetails() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+      <div className="flex h-screen bg-background">
         <Sidebar />
         <MobileHeader />
         <main className="flex-1 overflow-y-auto p-4 md:p-6 mt-16 md:mt-0">
@@ -243,7 +243,7 @@ export default function LoanDetails() {
               <ArrowLeft className="h-4 w-4 mr-1" />
               Volver
             </Button>
-            <h1 className="text-2xl font-bold text-gray-800">Cargando detalles...</h1>
+            <h1 className="text-2xl font-bold text-foreground">Cargando detalles...</h1>
           </div>
           <div className="flex justify-center items-center h-96">
             <LoadingData text="Cargando información del préstamo..." />
@@ -255,7 +255,7 @@ export default function LoanDetails() {
 
   if (!prestamo || !cliente) {
     return (
-      <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+      <div className="flex h-screen bg-background">
         <Sidebar />
         <MobileHeader />
         <main className="flex-1 overflow-y-auto p-4 md:p-6 mt-16 md:mt-0">
@@ -269,15 +269,15 @@ export default function LoanDetails() {
               <ArrowLeft className="h-4 w-4 mr-1" />
               Volver
             </Button>
-            <h1 className="text-2xl font-bold text-gray-800">Préstamo no encontrado</h1>
+            <h1 className="text-2xl font-bold text-foreground">Préstamo no encontrado</h1>
           </div>
           <Card>
             <CardContent className="pt-6">
               <div className="text-center py-10">
                 <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
                 <h2 className="text-xl font-semibold mb-2">Préstamo no encontrado</h2>
-                <p className="text-gray-600 mb-6">El préstamo que estás buscando no existe o ha sido eliminado.</p>
-                <Button onClick={() => navigate("/prestamos")} className="bg-primary hover:bg-blue-600">
+                <p className="text-muted-foreground mb-6">El préstamo que estás buscando no existe o ha sido eliminado.</p>
+                <Button onClick={() => navigate("/prestamos")} className="bg-primary hover:bg-primary/90">
                   Volver a préstamos
                 </Button>
               </div>
@@ -293,7 +293,7 @@ export default function LoanDetails() {
   const { label: estadoLabel, className: estadoClass } = getLoanStatus(prestamo.estado);
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+    <div className="flex h-screen bg-background">
       <Sidebar />
       <MobileHeader />
       
@@ -310,8 +310,8 @@ export default function LoanDetails() {
               Volver
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">Detalles del Préstamo</h1>
-              <p className="text-sm text-gray-600">Préstamo #{prestamo.id} - {cliente.nombre}</p>
+              <h1 className="text-2xl font-bold text-foreground">Detalles del Préstamo</h1>
+              <p className="text-sm text-muted-foreground">Préstamo #{prestamo.id} - {cliente.nombre}</p>
             </div>
           </div>
           
@@ -380,9 +380,9 @@ export default function LoanDetails() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-10">
                 <div className="space-y-1">
-                  <p className="text-sm text-gray-500">Cliente</p>
+                  <p className="text-sm text-muted-foreground">Cliente</p>
                   <div className="flex items-center">
-                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-2 text-xs font-medium text-gray-600">
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center mr-2 text-xs font-medium text-muted-foreground">
                       {cliente.nombre.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                     </div>
                     <p className="text-base font-medium">{cliente.nombre}</p>
@@ -390,12 +390,12 @@ export default function LoanDetails() {
                 </div>
                 
                 <div className="space-y-1">
-                  <p className="text-sm text-gray-500">Estado</p>
+                  <p className="text-sm text-muted-foreground">Estado</p>
                   <Badge className={estadoClass}>{estadoLabel}</Badge>
                 </div>
                 
                 <div className="space-y-1">
-                  <p className="text-sm text-gray-500">Monto Prestado</p>
+                  <p className="text-sm text-muted-foreground">Monto Prestado</p>
                   <p className="text-xl font-semibold flex items-center">
                     <CreditCard className="h-4 w-4 mr-2 text-primary" />
                     {formatCurrency(prestamo.monto_prestado)}
@@ -403,7 +403,7 @@ export default function LoanDetails() {
                 </div>
                 
                 <div className="space-y-1">
-                  <p className="text-sm text-gray-500">Monto Total a Pagar</p>
+                  <p className="text-sm text-muted-foreground">Monto Total a Pagar</p>
                   <p className="text-xl font-semibold flex items-center">
                     <Banknote className="h-4 w-4 mr-2 text-green-600" />
                     {formatCurrency(prestamo.monto_total_pagar)}
@@ -411,7 +411,7 @@ export default function LoanDetails() {
                 </div>
 
                 <div className="space-y-1">
-                  <p className="text-sm text-gray-500">Total Pagado</p>
+                  <p className="text-sm text-muted-foreground">Total Pagado</p>
                   <p className="text-xl font-semibold flex items-center">
                     <Banknote className="h-4 w-4 mr-2 text-blue-600" />
                     {formatCurrency(totalPagadoData?.totalPagado || 0)}
@@ -419,7 +419,7 @@ export default function LoanDetails() {
                 </div>
 
                 <div className="space-y-1">
-                  <p className="text-sm text-gray-500">Mora Acumulada</p>
+                  <p className="text-sm text-muted-foreground">Mora Acumulada</p>
                   <p className="text-xl font-semibold flex items-center">
                     <Percent className="h-4 w-4 mr-2 text-red-600" />
                     {formatCurrency(prestamo.monto_mora_acumulada || 0)}
@@ -427,7 +427,7 @@ export default function LoanDetails() {
                 </div>
 
                 <div className="space-y-1">
-                  <p className="text-sm text-gray-500">Balance Pendiente</p>
+                  <p className="text-sm text-muted-foreground">Balance Pendiente</p>
                   <p className="text-xl font-semibold flex items-center">
                     <Banknote className="h-4 w-4 mr-2 text-orange-600" />
                     {formatCurrency((parseFloat(prestamo.monto_total_pagar) + parseFloat(prestamo.monto_mora_acumulada || "0")) - (totalPagadoData?.totalPagado || 0))}
@@ -435,41 +435,41 @@ export default function LoanDetails() {
                 </div>
                 
                 <div className="space-y-1">
-                  <p className="text-sm text-gray-500">Fecha del Préstamo</p>
+                  <p className="text-sm text-muted-foreground">Fecha del Préstamo</p>
                   <p className="text-base font-medium flex items-center">
-                    <Calendar className="h-4 w-4 mr-2 text-gray-500" />
+                    <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
                     {formatDate(prestamo.fecha_prestamo)}
                   </p>
                 </div>
                 
                 <div className="space-y-1">
-                  <p className="text-sm text-gray-500">Tasa de Interés</p>
+                  <p className="text-sm text-muted-foreground">Tasa de Interés</p>
                   <p className="text-base font-medium flex items-center">
-                    <Percent className="h-4 w-4 mr-2 text-gray-500" />
+                    <Percent className="h-4 w-4 mr-2 text-muted-foreground" />
                     {prestamo.tasa_interes}%
                   </p>
                 </div>
 
                 <div className="space-y-1">
-                  <p className="text-sm text-gray-500">Tasa de Mora</p>
+                  <p className="text-sm text-muted-foreground">Tasa de Mora</p>
                   <p className="text-base font-medium flex items-center">
-                    <Percent className="h-4 w-4 mr-2 text-gray-500" />
+                    <Percent className="h-4 w-4 mr-2 text-muted-foreground" />
                     {prestamo.tasa_mora || 0}%
                   </p>
                 </div>
                 
                 <div className="space-y-1">
-                  <p className="text-sm text-gray-500">Frecuencia de Pago</p>
+                  <p className="text-sm text-muted-foreground">Frecuencia de Pago</p>
                   <p className="text-base font-medium flex items-center">
-                    <Clock className="h-4 w-4 mr-2 text-gray-500" />
+                    <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
                     {prestamo.frecuencia_pago}
                   </p>
                 </div>
                 
                 <div className="space-y-1">
-                  <p className="text-sm text-gray-500">Pago Semanal</p>
+                  <p className="text-sm text-muted-foreground">Pago Semanal</p>
                   <p className="text-base font-medium flex items-center">
-                    <Banknote className="h-4 w-4 mr-2 text-gray-500" />
+                    <Banknote className="h-4 w-4 mr-2 text-muted-foreground" />
                     {formatCurrency(prestamo.pago_semanal)}
                   </p>
                 </div>
@@ -477,13 +477,13 @@ export default function LoanDetails() {
               
               <div className="mt-8">
                 <div className="flex justify-between items-center mb-2">
-                  <p className="text-sm text-gray-500">Progreso de Pago</p>
+                  <p className="text-sm text-muted-foreground">Progreso de Pago</p>
                   <p className="text-sm font-medium">{prestamo.semanas_pagadas} de {prestamo.numero_semanas} semanas</p>
                 </div>
                 <Progress value={progresoSemanas} className="h-2" />
                 <div className="flex justify-between mt-1">
-                  <p className="text-xs text-gray-500">0%</p>
-                  <p className="text-xs text-gray-500">100%</p>
+                  <p className="text-xs text-muted-foreground">0%</p>
+                  <p className="text-xs text-muted-foreground">100%</p>
                 </div>
               </div>
             </CardContent>
@@ -496,23 +496,23 @@ export default function LoanDetails() {
             <CardContent>
               <ul className="space-y-4">
                 <li className="flex flex-col">
-                  <span className="text-sm text-gray-500">Nombre</span>
+                  <span className="text-sm text-muted-foreground">Nombre</span>
                   <span className="font-medium">{cliente.nombre}</span>
                 </li>
                 <li className="flex flex-col">
-                  <span className="text-sm text-gray-500">Teléfono</span>
+                  <span className="text-sm text-muted-foreground">Teléfono</span>
                   <span className="font-medium">{cliente.telefono}</span>
                 </li>
                 <li className="flex flex-col">
-                  <span className="text-sm text-gray-500">Dirección</span>
+                  <span className="text-sm text-muted-foreground">Dirección</span>
                   <span className="font-medium">{cliente.direccion}</span>
                 </li>
                 <li className="flex flex-col">
-                  <span className="text-sm text-gray-500">Documento de Identidad</span>
+                  <span className="text-sm text-muted-foreground">Documento de Identidad</span>
                   <span className="font-medium">{cliente.documento_identidad}</span>
                 </li>
                 <li className="flex flex-col">
-                  <span className="text-sm text-gray-500">Fecha de Registro</span>
+                  <span className="text-sm text-muted-foreground">Fecha de Registro</span>
                   <span className="font-medium">{formatDate(cliente.fecha_registro)}</span>
                 </li>
               </ul>
@@ -545,7 +545,7 @@ export default function LoanDetails() {
           <CardContent>
             {pagos.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-500">No hay pagos registrados para este préstamo</p>
+                <p className="text-muted-foreground">No hay pagos registrados para este préstamo</p>
                 {prestamo.estado !== "PAGADO" && (
                   <Button 
                     className="mt-4 bg-primary hover:bg-blue-600"
