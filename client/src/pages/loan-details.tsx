@@ -350,7 +350,7 @@ export default function LoanDetails() {
       <Sidebar />
       <MobileHeader />
       
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 mt-16 md:mt-0">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 mt-16 md:mt-0 pb-16">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <div className="flex items-center">
             <Button
@@ -368,10 +368,10 @@ export default function LoanDetails() {
             </div>
           </div>
           
-          <div className="mt-4 md:mt-0 flex items-center gap-2">
+          <div className="mt-4 md:mt-0 flex flex-wrap items-center gap-2">
             {prestamo.estado !== "PAGADO" && (
               <Button 
-                className="bg-primary hover:bg-primary/90"
+                className="bg-primary hover:bg-primary/90 text-sm sm:text-base w-full sm:w-auto"
                 onClick={() => setPaymentFormOpen(true)}
               >
                 <Banknote className="h-4 w-4 mr-2" />
@@ -383,6 +383,7 @@ export default function LoanDetails() {
               <Button 
                 variant="outline"
                 onClick={() => setChangeDayDialogOpen(true)}
+                className="text-sm sm:text-base w-full sm:w-auto"
               >
                 <Calendar className="h-4 w-4 mr-2" />
                 Cambiar Día de Pago
@@ -391,12 +392,15 @@ export default function LoanDetails() {
             
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline">
+                <Button 
+                  variant="outline"
+                  className="text-sm sm:text-base w-full sm:w-auto"
+                >
                   <ArrowUpDown className="h-4 w-4 mr-2" />
                   Cambiar Estado
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Cambiar Estado del Préstamo</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -619,17 +623,17 @@ export default function LoanDetails() {
                 )}
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Semana</TableHead>
-                      <TableHead>Monto Pagado</TableHead>
-                      <TableHead>Mora</TableHead>
-                      <TableHead>Restante</TableHead>
-                      <TableHead>Fecha de Pago</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead className="text-right">Acciones</TableHead>
+                      <TableHead className="whitespace-nowrap">Semana</TableHead>
+                      <TableHead className="whitespace-nowrap">Monto Pagado</TableHead>
+                      <TableHead className="whitespace-nowrap">Mora</TableHead>
+                      <TableHead className="whitespace-nowrap">Restante</TableHead>
+                      <TableHead className="whitespace-nowrap">Fecha de Pago</TableHead>
+                      <TableHead className="whitespace-nowrap">Estado</TableHead>
+                      <TableHead className="whitespace-nowrap text-right">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -638,19 +642,19 @@ export default function LoanDetails() {
                       
                       return (
                         <TableRow key={pago.id}>
-                          <TableCell>Semana {pago.numero_semana}</TableCell>
-                          <TableCell className="font-medium text-green-500 dark:text-green-400">{formatCurrency(pago.monto_pagado)}</TableCell>
-                          <TableCell className="font-medium text-red-500 dark:text-red-400">
+                          <TableCell className="whitespace-nowrap">Semana {pago.numero_semana}</TableCell>
+                          <TableCell className="whitespace-nowrap font-medium text-green-500 dark:text-green-400">{formatCurrency(pago.monto_pagado)}</TableCell>
+                          <TableCell className="whitespace-nowrap font-medium text-red-500 dark:text-red-400">
                             {parseFloat(pago.monto_mora || "0") > 0 ? formatCurrency(pago.monto_mora) : "-"}
                           </TableCell>
-                          <TableCell className="font-medium text-orange-500 dark:text-orange-400">
+                          <TableCell className="whitespace-nowrap font-medium text-orange-500 dark:text-orange-400">
                             {parseFloat(pago.monto_restante || "0") > 0 ? formatCurrency(pago.monto_restante) : "-"}
                           </TableCell>
-                          <TableCell>{formatDate(pago.fecha_pago)}</TableCell>
-                          <TableCell>
+                          <TableCell className="whitespace-nowrap">{formatDate(pago.fecha_pago)}</TableCell>
+                          <TableCell className="whitespace-nowrap">
                             <Badge className={className}>{label}</Badge>
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="whitespace-nowrap text-right">
                             <Button 
                               size="sm" 
                               variant="outline"
@@ -684,7 +688,7 @@ export default function LoanDetails() {
 
         {/* Diálogo para editar pagos */}
         <Dialog open={editPaymentDialogOpen} onOpenChange={setEditPaymentDialogOpen}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[95vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Editar Pago</DialogTitle>
               <DialogDescription>
@@ -694,11 +698,11 @@ export default function LoanDetails() {
             
             {selectedPago && (
               <div className="space-y-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="semana" className="text-right">
+                <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+                  <Label htmlFor="semana" className="sm:text-right">
                     Semana
                   </Label>
-                  <div className="col-span-3">
+                  <div className="sm:col-span-3">
                     <Input
                       id="semana"
                       value={`Semana ${selectedPago.numero_semana}`}
@@ -707,11 +711,11 @@ export default function LoanDetails() {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="fecha" className="text-right">
+                <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+                  <Label htmlFor="fecha" className="sm:text-right">
                     Fecha de pago
                   </Label>
-                  <div className="col-span-3">
+                  <div className="sm:col-span-3">
                     <Input
                       id="fecha"
                       value={formatDate(selectedPago.fecha_pago)}
@@ -720,11 +724,11 @@ export default function LoanDetails() {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="monto" className="text-right">
+                <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+                  <Label htmlFor="monto" className="sm:text-right">
                     Monto pagado
                   </Label>
-                  <div className="col-span-3">
+                  <div className="sm:col-span-3">
                     <Input
                       id="monto"
                       type="number"
@@ -732,18 +736,21 @@ export default function LoanDetails() {
                       value={nuevoMontoPagado}
                       onChange={(e) => setNuevoMontoPagado(e.target.value)}
                       placeholder="Ingrese el nuevo monto"
-                      className="col-span-3"
                     />
                   </div>
                 </div>
               </div>
             )}
             
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setEditPaymentDialogOpen(false)}>
+            <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setEditPaymentDialogOpen(false)} className="w-full sm:w-auto">
                 Cancelar
               </Button>
-              <Button onClick={handleUpdatePayment} disabled={actualizarPagoMutation.isPending}>
+              <Button 
+                onClick={handleUpdatePayment} 
+                disabled={actualizarPagoMutation.isPending}
+                className="w-full sm:w-auto"
+              >
                 {actualizarPagoMutation.isPending ? (
                   <span className="flex items-center gap-1">
                     <LoadingButton className="h-4 w-4" />
@@ -759,7 +766,7 @@ export default function LoanDetails() {
         
         {/* Diálogo para cambiar día de pago */}
         <Dialog open={changeDayDialogOpen} onOpenChange={setChangeDayDialogOpen}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[95vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Cambiar Día de Pago</DialogTitle>
               <DialogDescription>
@@ -768,18 +775,17 @@ export default function LoanDetails() {
             </DialogHeader>
             
             <div className="space-y-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="nuevaFecha" className="text-right">
+              <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+                <Label htmlFor="nuevaFecha" className="sm:text-right">
                   Nueva Fecha
                 </Label>
-                <div className="col-span-3">
+                <div className="sm:col-span-3">
                   <Input
                     id="nuevaFecha"
                     type="date"
                     value={nuevaFechaPago}
                     onChange={(e) => setNuevaFechaPago(e.target.value)}
                     placeholder="Seleccione la nueva fecha"
-                    className="col-span-3"
                   />
                 </div>
               </div>
@@ -790,11 +796,19 @@ export default function LoanDetails() {
               </div>
             </div>
             
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setChangeDayDialogOpen(false)}>
+            <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-0">
+              <Button 
+                variant="outline" 
+                onClick={() => setChangeDayDialogOpen(false)}
+                className="w-full sm:w-auto"
+              >
                 Cancelar
               </Button>
-              <Button onClick={handleChangeDaySubmit} disabled={cambiarDiaPagoMutation.isPending || !nuevaFechaPago}>
+              <Button 
+                onClick={handleChangeDaySubmit} 
+                disabled={cambiarDiaPagoMutation.isPending || !nuevaFechaPago}
+                className="w-full sm:w-auto"
+              >
                 {cambiarDiaPagoMutation.isPending ? (
                   <span className="flex items-center gap-1">
                     <LoadingButton className="h-4 w-4" />

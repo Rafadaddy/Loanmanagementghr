@@ -29,7 +29,7 @@ interface LoanScheduleProps {
     id: number;
     prestamo_id: number;
     monto_pagado: string;
-    fecha_pago: string;
+    fecha_pago: string | Date;
     numero_semana: number;
     estado: string;
     es_pago_parcial: string;
@@ -45,7 +45,7 @@ interface CuotaProgramada {
   montoProgramado: string;
   estado: "PENDIENTE" | "PAGADO" | "PARCIAL";
   montoPagado?: string;
-  fechaPago?: string;
+  fechaPago?: string | Date;
   resto?: string;
   mora?: string;
 }
@@ -181,9 +181,9 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
   };
 
   return (
-    <Card className="mt-6">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2">
+    <Card className="mt-6 mb-6">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
+        <CardTitle className="flex items-center gap-2 mb-3 sm:mb-0">
           <Calendar className="h-5 w-5" />
           Cronograma de Pagos
         </CardTitle>
@@ -195,7 +195,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
             className="flex items-center gap-1"
           >
             <FileText className="h-4 w-4" />
-            PDF
+            <span className="hidden sm:inline">Exportar a </span>PDF
           </Button>
           <Button 
             variant="outline" 
@@ -204,31 +204,31 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
             className="flex items-center gap-1"
           >
             <FileSpreadsheet className="h-4 w-4" />
-            Excel
+            <span className="hidden sm:inline">Exportar a </span>Excel
           </Button>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nº Cuota</TableHead>
-                <TableHead>Fecha Programada</TableHead>
-                <TableHead>Monto</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Fecha de Pago</TableHead>
-                <TableHead>Monto Pagado</TableHead>
-                <TableHead>Mora</TableHead>
-                <TableHead>Restante</TableHead>
+                <TableHead className="whitespace-nowrap">Nº Cuota</TableHead>
+                <TableHead className="whitespace-nowrap">Fecha Programada</TableHead>
+                <TableHead className="whitespace-nowrap">Monto</TableHead>
+                <TableHead className="whitespace-nowrap">Estado</TableHead>
+                <TableHead className="whitespace-nowrap">Fecha de Pago</TableHead>
+                <TableHead className="whitespace-nowrap">Monto Pagado</TableHead>
+                <TableHead className="whitespace-nowrap">Mora</TableHead>
+                <TableHead className="whitespace-nowrap">Restante</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {cronograma.map((cuota) => (
                 <TableRow key={cuota.numero}>
-                  <TableCell>Semana {cuota.numero}</TableCell>
-                  <TableCell>{formatDate(cuota.fechaProgramada)}</TableCell>
-                  <TableCell>{formatCurrency(cuota.montoProgramado)}</TableCell>
+                  <TableCell className="whitespace-nowrap">Semana {cuota.numero}</TableCell>
+                  <TableCell className="whitespace-nowrap">{formatDate(cuota.fechaProgramada)}</TableCell>
+                  <TableCell className="whitespace-nowrap">{formatCurrency(cuota.montoProgramado)}</TableCell>
                   <TableCell>
                     <Badge
                       className={
@@ -242,14 +242,14 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
                       {cuota.estado}
                     </Badge>
                   </TableCell>
-                  <TableCell>{cuota.fechaPago ? formatDate(cuota.fechaPago) : "-"}</TableCell>
-                  <TableCell>
+                  <TableCell className="whitespace-nowrap">{cuota.fechaPago ? formatDate(cuota.fechaPago) : "-"}</TableCell>
+                  <TableCell className="whitespace-nowrap">
                     {cuota.montoPagado ? formatCurrency(cuota.montoPagado) : "-"}
                   </TableCell>
-                  <TableCell className="text-red-500">
+                  <TableCell className="text-red-500 whitespace-nowrap">
                     {cuota.mora && parseFloat(cuota.mora) > 0 ? formatCurrency(cuota.mora) : "-"}
                   </TableCell>
-                  <TableCell className="text-orange-500">
+                  <TableCell className="text-orange-500 whitespace-nowrap">
                     {cuota.resto && parseFloat(cuota.resto) > 0 ? formatCurrency(cuota.resto) : "-"}
                   </TableCell>
                 </TableRow>
