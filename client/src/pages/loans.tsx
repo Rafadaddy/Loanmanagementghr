@@ -156,8 +156,8 @@ export default function Loans() {
     <MainLayout>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Préstamos</h1>
-          <p className="text-sm text-gray-600">Gestión de préstamos del sistema</p>
+          <h1 className="text-2xl font-bold text-foreground">Préstamos</h1>
+          <p className="text-sm text-muted-foreground">Gestión de préstamos del sistema</p>
         </div>
         
         <Button 
@@ -191,11 +191,11 @@ export default function Loans() {
               </Select>
               
               <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
                   placeholder="Buscar por cliente o monto..."
-                  className="pl-8 w-full md:w-64 bg-gray-50"
+                  className="pl-8 w-full md:w-64 bg-muted/50"
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -205,12 +205,12 @@ export default function Loans() {
                 />
                 {searchTerm.trim() !== "" && (
                   <div className="absolute right-2 top-2.5 flex items-center">
-                    <span className="text-xs text-gray-500 mr-2">
+                    <span className="text-xs text-muted-foreground mr-2">
                       {filteredPrestamos.length} coincidencias
                     </span>
                     <button 
                       type="button"
-                      className="text-gray-400 hover:text-gray-600"
+                      className="text-muted-foreground hover:text-foreground"
                       onClick={() => {
                         setSearchTerm("");
                         setCurrentPage(1);
@@ -228,7 +228,7 @@ export default function Loans() {
           {isLoading ? (
             <LoadingData text="Cargando préstamos..." />
           ) : paginatedPrestamos.length === 0 ? (
-            <div className="text-center py-4 text-gray-500">
+            <div className="text-center py-4 text-muted-foreground">
               {searchTerm || statusFilter !== "TODOS"
                 ? "No se encontraron préstamos con esos criterios de búsqueda" 
                 : "No hay préstamos registrados"}
@@ -374,7 +374,7 @@ export default function Loans() {
             <AlertDialogDescription>
               ¿Está seguro que desea eliminar este préstamo? Esta acción no se puede deshacer.
               {prestamoAEliminar && clientes && (
-                <div className="mt-4 p-3 bg-gray-50 rounded-md">
+                <div className="mt-4 p-3 bg-muted rounded-md">
                   <p><strong>Cliente:</strong> {clientes.find(c => c.id === prestamoAEliminar.cliente_id)?.nombre || 'Cliente desconocido'}</p>
                   <p><strong>Monto:</strong> {formatCurrency(prestamoAEliminar.monto_prestado)}</p>
                   <p><strong>Fecha:</strong> {formatDate(prestamoAEliminar.fecha_prestamo)}</p>
