@@ -71,7 +71,8 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
     for (let i = 1; i <= prestamo.numero_semanas; i++) {
       // Calcular fecha programada (sumando semanas)
       const fechaProgramada = new Date(fechaInicio);
-      fechaProgramada.setDate(fechaProgramada.getDate() + ((i - 1) * 7));
+      // Primera cuota es 7 días después, las siguientes se van sumando de 7 en 7
+      fechaProgramada.setDate(fechaProgramada.getDate() + (i * 7));
       
       // Determinar estado basado en pagos realizados
       const pagoRealizado = pagosMap.get(i);

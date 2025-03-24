@@ -238,8 +238,13 @@ export class MemStorage implements IStorage {
     const id = this.currentPrestamoId++;
     const fechaPrestamo = new Date(prestamo.fecha_prestamo);
     
-    // Calcular próxima fecha de pago (7 días después de la fecha de préstamo)
-    const proximaFechaPago = addDays(fechaPrestamo, 7);
+    // Usar fecha de pago proporcionada o calcular la próxima fecha de pago (7 días después de la fecha del préstamo)
+    let proximaFechaPago;
+    if (prestamo.proxima_fecha_pago) {
+      proximaFechaPago = new Date(prestamo.proxima_fecha_pago);
+    } else {
+      proximaFechaPago = addDays(fechaPrestamo, 7);
+    }
     
     // Asegurar que todos los campos requeridos estén presentes
     const nuevoPrestamo: Prestamo = {

@@ -262,7 +262,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         frecuencia_pago: req.body.frecuencia_pago,
         monto_total_pagar: req.body.monto_total_pagar,
         pago_semanal: req.body.pago_semanal,
-        proxima_fecha_pago: req.body.proxima_fecha_pago || req.body.fecha_prestamo,
+        proxima_fecha_pago: req.body.proxima_fecha_pago,
       });
       
       // Crear préstamo

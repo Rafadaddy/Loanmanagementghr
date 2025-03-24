@@ -187,6 +187,14 @@ export default function LoanForm({ open, onOpenChange, onSuccess }: LoanFormProp
     }
 
     // Convertir valores y asegurar que son del tipo correcto
+    // Calcular fecha del primer pago (7 días después de la fecha de préstamo)
+    const fechaPrestamo = new Date(values.fecha_prestamo);
+    const fechaPrimerPago = new Date(fechaPrestamo);
+    fechaPrimerPago.setDate(fechaPrestamo.getDate() + 7);
+    
+    // Formatear la fecha en formato YYYY-MM-DD
+    const proximaFechaPago = fechaPrimerPago.toISOString().split('T')[0];
+    
     const dataToSend = {
       cliente_id: parseInt(values.cliente_id),
       monto_prestado: values.monto_prestado,  // Enviamos como string
@@ -197,7 +205,7 @@ export default function LoanForm({ open, onOpenChange, onSuccess }: LoanFormProp
       frecuencia_pago: values.frecuencia_pago,
       monto_total_pagar: calculoResultado.monto_total_pagar.toString(), // Convertimos a string
       pago_semanal: calculoResultado.pago_semanal.toString(),           // Convertimos a string
-      proxima_fecha_pago: values.fecha_prestamo // Inicialmente la misma que fecha de préstamo
+      proxima_fecha_pago: proximaFechaPago // Primera fecha de pago (7 días después)
     };
     
     console.log("Datos a enviar:", dataToSend);
