@@ -52,21 +52,33 @@ export default function CobrosDia() {
   // Filtrar préstamos que tienen pago programado para la fecha seleccionada
   const pagosDia = prestamos
     .filter(prestamo => {
-      // Si hay una fecha inicial personalizada, la usamos como referencia
-      let fechaComparacion = prestamo.fecha_inicial_personalizada 
-        ? new Date(prestamo.fecha_inicial_personalizada) 
-        : new Date(prestamo.proxima_fecha_pago);
+      // Solo procesar préstamos activos
+      if (prestamo.estado !== "ACTIVO") return false;
       
-      // Si el préstamo tiene semanas pagadas, ajustamos fechaComparacion en base a la próxima fecha de pago
-      if (prestamo.semanas_pagadas > 0) {
-        fechaComparacion = new Date(prestamo.proxima_fecha_pago);
+      // Determinar la fecha inicial del préstamo (primera fecha de pago)
+      let primeraFechaPago: Date;
+      
+      if (prestamo.fecha_inicial_personalizada) {
+        // Si existe una fecha inicial personalizada, la usamos
+        primeraFechaPago = new Date(prestamo.fecha_inicial_personalizada);
+      } else {
+        // De lo contrario, calculamos 7 días después de la fecha del préstamo
+        const fechaPrestamo = new Date(prestamo.fecha_prestamo);
+        primeraFechaPago = new Date(fechaPrestamo);
+        primeraFechaPago.setDate(fechaPrestamo.getDate() + 7);
       }
       
-      // Convertimos la fecha a formato YYYY-MM-DD para comparar con filterDate
-      const fechaFormateada = fechaComparacion.toISOString().split('T')[0];
+      // Calcular la fecha de pago correspondiente a la semana actual
+      // Similar a la lógica en loan-schedule.tsx
+      const numeroSemana = prestamo.semanas_pagadas + 1; // Próxima semana a pagar
+      const fechaPago = new Date(primeraFechaPago);
+      fechaPago.setDate(primeraFechaPago.getDate() + ((numeroSemana - 1) * 7));
       
-      // Solo mostramos préstamos activos con fecha coincidente
-      return fechaFormateada === filterDate && prestamo.estado === "ACTIVO";
+      // Convertir a formato YYYY-MM-DD para comparar
+      const fechaFormateada = fechaPago.toISOString().split('T')[0];
+      
+      // Verificar si coincide con la fecha filtrada
+      return fechaFormateada === filterDate;
     })
     .map(prestamo => {
       const cliente = clientes.find(c => c.id === prestamo.cliente_id);
@@ -259,7 +271,7 @@ export default function CobrosDia() {
           item.cliente?.direccion || 'Sin dirección',
           item.cliente?.telefono || 'Sin teléfono',
           item.monto_prestado,
-          `${item.semanas_pagadas}/${item.numero_semanas}`,
+          `${item.semanas_pagadas + 1}/${item.numero_semanas}`,
           item.pago_semanal
         ]);
       });
