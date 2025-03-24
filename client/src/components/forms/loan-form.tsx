@@ -14,7 +14,7 @@ import { useLoading } from "@/hooks/use-loading";
 import { LoadingButton } from "@/components/ui/loading";
 import { insertPrestamoSchema, CalculoPrestamo, ResultadoCalculoPrestamo, Cliente } from "@shared/schema";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, addDaysToDate, normalizeDate, createConsistentDate } from "@/lib/utils";
 import { Search } from "lucide-react";
 
 // Extender el esquema para validación

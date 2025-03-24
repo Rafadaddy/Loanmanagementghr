@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, addDaysToDate, normalizeDate, createConsistentDate } from "@/lib/utils";
 import { FileText, FileSpreadsheet, Calendar, RefreshCw, Edit, Clock } from "lucide-react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -251,16 +251,12 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
         setNuevaFecha(fechaInicial);
       } else if (prestamo.semanas_pagadas === 0) {
         // Primera fecha de pago calculada (7 días después del préstamo)
-        const fechaPrestamo = new Date(prestamo.fecha_prestamo);
-        const primerPago = new Date(fechaPrestamo);
-        primerPago.setDate(fechaPrestamo.getDate() + 7);
-        setNuevaFecha(primerPago.toISOString().split('T')[0]);
+        const primerPagoISO = addDaysToDate(prestamo.fecha_prestamo, 7);
+        setNuevaFecha(primerPagoISO);
       } else {
         // Calcular la primera fecha basada en la próxima fecha de pago
-        const proximaFechaPago = new Date(prestamo.proxima_fecha_pago);
-        const primeraFecha = new Date(proximaFechaPago);
-        primeraFecha.setDate(proximaFechaPago.getDate() - (prestamo.semanas_pagadas * 7));
-        setNuevaFecha(primeraFecha.toISOString().split('T')[0]);
+        const primeraFechaISO = addDaysToDate(prestamo.proxima_fecha_pago, -(prestamo.semanas_pagadas * 7));
+        setNuevaFecha(primeraFechaISO);
       }
     }
   }, [showFechaDialog]);
