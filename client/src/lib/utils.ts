@@ -45,13 +45,18 @@ export function normalizeDate(date: Date | string): string {
 /**
  * Crea una fecha nueva con correcto manejo de timezone.
  * Acepta tanto formato YYYY-MM-DD como instancias de Date.
+ * Garantiza que se muestre la fecha exacta ingresada, sin ajustes de zona horaria.
  */
 export function createConsistentDate(date: Date | string): Date {
   // Normalizar primero a formato YYYY-MM-DD
   const normalizedDate = normalizeDate(date);
   
-  // Crear fecha a media noche UTC para evitar problemas de zona horaria
-  return new Date(`${normalizedDate}T00:00:00Z`);
+  // Separar el año, mes y día
+  const [year, month, day] = normalizedDate.split('-').map(Number);
+  
+  // Crear la fecha usando el constructor que respeta la fecha local
+  // month-1 porque en JavaScript los meses son 0-indexados
+  return new Date(year, month-1, day, 12, 0, 0);
 }
 
 /**
