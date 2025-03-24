@@ -252,13 +252,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validar y parsear los datos
-      // No corregimos las fechas para evitar inconsistencias
-      const fechaPrestamo = new Date(req.body.fecha_prestamo);
-      
-      const proximaFechaPago = new Date(req.body.proxima_fecha_pago);
-      
-      const fechaPrestamoISO = formatISO(fechaPrestamo, { representation: 'date' });
-      const proximaFechaPagoISO = formatISO(proximaFechaPago, { representation: 'date' });
+      // Usamos las fechas tal como vienen del cliente, sin crear nuevos objetos Date
+      // que podrían causar problemas de zona horaria
+      const fechaPrestamoISO = req.body.fecha_prestamo;
+      const proximaFechaPagoISO = req.body.proxima_fecha_pago;
       
       const prestamoData = insertPrestamoSchema.parse({
         ...req.body,
@@ -343,7 +340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             prestamo_id: pagoData.prestamo_id,
             cliente_id: prestamo?.cliente_id || null,
             descripcion: `Pago ${pagoData.es_pago_parcial ? 'parcial' : 'completo'} de préstamo. Cliente: ${cliente?.nombre || 'Desconocido'}. Semana ${pagoData.numero_semana}`,
-            fecha: new Date(),
+            fecha: pagoData.fecha_pago, // Usar la fecha del pago directamente
             creado_por: req.user!.id
           };
           
@@ -957,19 +954,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (semanasYaPagadas === 0) {
           // Si no hay semanas pagadas, la primera fecha es la nueva fecha
-          fechaInicialPrimeraCuota = formatISO(nuevaFecha, { representation: 'date' });
+          // Formateamos la fecha sin crear un nuevo objeto Date para evitar problemas de zona horaria
+          fechaInicialPrimeraCuota = req.body.fecha_pago;
         } else {
           // Si hay semanas pagadas, retrocedemos desde la nueva fecha para obtener la primera fecha
-          const primeraFecha = new Date(nuevaFecha);
-          primeraFecha.setDate(primeraFecha.getDate() - (semanasYaPagadas * 7));
-          fechaInicialPrimeraCuota = formatISO(primeraFecha, { representation: 'date' });
+          // Usamos la fecha que viene del cliente y calculamos la diferencia en días
+          const fechaBase = req.body.fecha_pago;
+          // Creamos una fecha ISO restando los días correspondientes
+          const fechaPartes = fechaBase.split('-');
+          const anio = parseInt(fechaPartes[0]);
+          const mes = parseInt(fechaPartes[1]) - 1; // Meses van de 0-11
+          const dia = parseInt(fechaPartes[2]) - (semanasYaPagadas * 7);
+          
+          // Creamos la fecha y obtenemos el formato YYYY-MM-DD
+          const tempDate = new Date(Date.UTC(anio, mes, dia));
+          fechaInicialPrimeraCuota = tempDate.toISOString().split('T')[0];
         }
       }
       
       // Actualizar el préstamo
       const prestamoActualizado = {
         ...prestamo,
-        proxima_fecha_pago: formatISO(nuevaFecha, { representation: 'date' }),
+        proxima_fecha_pago: req.body.fecha_pago, // Usar directamente la fecha que viene del cliente
         // Guardamos la fecha inicial personalizada si se ha solicitado cambiar todas las fechas
         fecha_inicial_personalizada: cambiarTodasFechas ? fechaInicialPrimeraCuota : undefined,
         // Guardamos el día de la semana seleccionado (0-6, donde 0 es domingo)
