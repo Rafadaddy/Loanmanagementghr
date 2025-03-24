@@ -790,11 +790,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cobradorData = insertCobradorSchema.parse(req.body);
       
       // Verificar si ya existe un cobrador con ese user_id
-      const cobradorExistente = await storage.getCobradorByUserId(userId);
-      if (cobradorExistente) {
-        return res.status(400).json({ 
-          message: "Ya existe un cobrador asignado a este usuario" 
-        });
+      // Solo hacemos esta verificación para usuarios comunes, no para administradores
+      if (usuario.rol !== "ADMIN") {
+        const cobradorExistente = await storage.getCobradorByUserId(userId);
+        if (cobradorExistente) {
+          return res.status(400).json({ 
+            message: "Ya existe un cobrador asignado a este usuario" 
+          });
+        }
       }
       
       // Crear cobrador
@@ -891,10 +894,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filtrar los usuarios que ya son cobradores
       const userIdsConCobradores = cobradores.map(c => c.user_id);
       
-      // Excluir usuarios que ya tienen un cobrador asignado, excepto admins
+      // Incluir todos los usuarios que no tienen un cobrador asignado
+      // Nota: ahora permitimos al administrador ser asignado múltiples veces
       const usuariosDisponibles = usuarios.filter(usuario => 
-        !userIdsConCobradores.includes(usuario.id) || 
-        usuario.rol === "ADMIN"
+        !userIdsConCobradores.includes(usuario.id) || usuario.rol === "ADMIN"
       );
       
       res.json(usuariosDisponibles);
