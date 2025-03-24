@@ -252,17 +252,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validar y parsear los datos
+      // Corregir el problema de fecha: añadir un día a la fecha_prestamo y proxima_fecha_pago
+      const fechaPrestamo = new Date(req.body.fecha_prestamo);
+      fechaPrestamo.setDate(fechaPrestamo.getDate() + 1);
+      
+      const proximaFechaPago = new Date(req.body.proxima_fecha_pago);
+      proximaFechaPago.setDate(proximaFechaPago.getDate() + 1);
+      
+      const fechaPrestamoISO = formatISO(fechaPrestamo, { representation: 'date' });
+      const proximaFechaPagoISO = formatISO(proximaFechaPago, { representation: 'date' });
+      
       const prestamoData = insertPrestamoSchema.parse({
         ...req.body,
         cliente_id: clienteId,
         monto_prestado: req.body.monto_prestado,
         tasa_interes: req.body.tasa_interes,
-        fecha_prestamo: req.body.fecha_prestamo,
+        fecha_prestamo: fechaPrestamoISO,
         numero_semanas: parseInt(req.body.numero_semanas),
         frecuencia_pago: req.body.frecuencia_pago,
         monto_total_pagar: req.body.monto_total_pagar,
         pago_semanal: req.body.pago_semanal,
-        proxima_fecha_pago: req.body.proxima_fecha_pago,
+        proxima_fecha_pago: proximaFechaPagoISO,
       });
       
       // Crear préstamo
