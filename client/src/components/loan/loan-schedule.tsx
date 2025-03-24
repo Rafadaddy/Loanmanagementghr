@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { FileText, FileSpreadsheet, Calendar, RefreshCw, Edit, Clock, Loader2 } from "lucide-react";
+import { FileText, FileSpreadsheet, Calendar, RefreshCw, Clock } from "lucide-react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
