@@ -58,7 +58,6 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
   useEffect(() => {
     // Generar el cronograma completo del préstamo
     const schedule: CuotaProgramada[] = [];
-    const fechaInicio = new Date(prestamo.fecha_prestamo);
     const pagoSemanal = parseFloat(prestamo.pago_semanal);
     
     // Mapa para un acceso más rápido a los pagos realizados
@@ -67,12 +66,28 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
       pagosMap.set(pago.numero_semana, pago);
     });
     
+    // Si el préstamo tiene semanas pagadas, necesitamos calcular en base a la próxima fecha de pago
+    // y retroceder para las semanas anteriores
+    const semanasYaPagadas = prestamo.semanas_pagadas || 0;
+    const proximaFechaPago = new Date(prestamo.proxima_fecha_pago);
+    
     // Generar todas las semanas del préstamo
     for (let i = 1; i <= prestamo.numero_semanas; i++) {
-      // Calcular fecha programada (sumando semanas)
-      const fechaProgramada = new Date(fechaInicio);
-      // Primera cuota es 7 días después, las siguientes se van sumando de 7 en 7
-      fechaProgramada.setDate(fechaProgramada.getDate() + (i * 7));
+      let fechaProgramada: Date;
+      
+      if (i <= semanasYaPagadas) {
+        // Para semanas ya pagadas, calculamos hacia atrás desde la próxima fecha de pago
+        // Ejemplo: si la próxima fecha es el 10 y ya pagamos 2 semanas, la semana 1 fue el 27 y la semana 2 el 3
+        const semanasHaciaAtras = semanasYaPagadas - i + 1;
+        fechaProgramada = new Date(proximaFechaPago);
+        fechaProgramada.setDate(fechaProgramada.getDate() - (semanasHaciaAtras * 7));
+      } else {
+        // Para semanas futuras, calculamos hacia adelante desde la próxima fecha de pago
+        // Ejemplo: si la próxima fecha es el 10 (semana 3), la semana 4 será el 17, la semana 5 el 24, etc.
+        const semanasHaciaAdelante = i - semanasYaPagadas - 1;
+        fechaProgramada = new Date(proximaFechaPago);
+        fechaProgramada.setDate(fechaProgramada.getDate() + (semanasHaciaAdelante * 7));
+      }
       
       // Determinar estado basado en pagos realizados
       const pagoRealizado = pagosMap.get(i);
