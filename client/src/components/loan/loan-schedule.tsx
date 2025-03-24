@@ -328,7 +328,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
             title="Cambiar fecha inicial del cronograma"
           >
             <Clock className="h-3.5 w-3.5 mr-1" />
-            {fechaInicial ? "Fecha personalizada" : "Fecha por defecto"}
+            Cambiar fecha
           </Button>
           {fechaInicial && (
             <Button 
