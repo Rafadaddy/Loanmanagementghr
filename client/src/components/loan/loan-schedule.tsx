@@ -320,16 +320,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
             Cronograma de Pagos
           </CardTitle>
           {/* Botón para cambiar la fecha inicial del cronograma */}
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={openFechaDialog}
-            className="flex items-center h-7 px-2 text-xs hover:bg-secondary"
-            title="Cambiar fecha inicial del cronograma"
-          >
-            <Clock className="h-3.5 w-3.5 mr-1" />
-            Cambiar fecha
-          </Button>
+          {/* Eliminamos este botón para evitar confusiones con "Cambiar Día de Pago" */}
           {fechaInicial && (
             <Button 
               variant="ghost" 
