@@ -77,15 +77,28 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
       
       if (i <= semanasYaPagadas) {
         // Para semanas ya pagadas, calculamos hacia atrás desde la próxima fecha de pago
-        // Ejemplo: si la próxima fecha es el 10 y ya pagamos 2 semanas, la semana 1 fue el 27 y la semana 2 el 3
+        // La próxima fecha de pago corresponde a la semana (semanasYaPagadas + 1)
+        
+        // Calculamos cuántas semanas necesitamos retroceder
         const semanasHaciaAtras = semanasYaPagadas - i + 1;
+        
+        // Creamos una nueva fecha a partir de la próxima fecha de pago
         fechaProgramada = new Date(proximaFechaPago);
+        
+        // Ajustamos la fecha restando las semanas que necesitamos ir hacia atrás
+        // Multiplicamos por 7 para obtener los días
         fechaProgramada.setDate(fechaProgramada.getDate() - (semanasHaciaAtras * 7));
       } else {
         // Para semanas futuras, calculamos hacia adelante desde la próxima fecha de pago
-        // Ejemplo: si la próxima fecha es el 10 (semana 3), la semana 4 será el 17, la semana 5 el 24, etc.
-        const semanasHaciaAdelante = i - semanasYaPagadas - 1;
+        // La semana actual a pagar es (semanasYaPagadas + 1), que corresponde a proximaFechaPago
+        // Por lo tanto, para la semana i, necesitamos avanzar (i - (semanasYaPagadas + 1)) semanas
+        
+        const semanasHaciaAdelante = i - (semanasYaPagadas + 1);
+        
+        // Creamos una nueva fecha a partir de la próxima fecha de pago
         fechaProgramada = new Date(proximaFechaPago);
+        
+        // Ajustamos la fecha sumando las semanas que necesitamos ir hacia adelante
         fechaProgramada.setDate(fechaProgramada.getDate() + (semanasHaciaAdelante * 7));
       }
       
