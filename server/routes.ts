@@ -929,6 +929,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fechaProximoPagoActual = new Date(prestamo.proxima_fecha_pago);
       const nuevaFecha = new Date(nuevaFechaPago);
       
+      // Corregir el problema de la fecha sumando un día para asegurar que sea la fecha correcta
+      nuevaFecha.setDate(nuevaFecha.getDate() + 1);
+      
       // Verificar que la nueva fecha sea válida
       if (isNaN(nuevaFecha.getTime())) {
         return res.status(400).json({ message: "Formato de fecha inválido. Utilice YYYY-MM-DD" });
