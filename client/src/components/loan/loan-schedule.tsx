@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { FileText, FileSpreadsheet, Calendar, RefreshCw, Clock } from "lucide-react";
 import { jsPDF } from "jspdf";
-import { addDays, format } from "date-fns";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
