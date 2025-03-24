@@ -27,6 +27,8 @@ interface LoanScheduleProps {
     semanas_pagadas: number;
     proxima_fecha_pago: string;
     tasa_mora?: string;
+    fecha_inicial_personalizada?: string;
+    dia_pago?: number;
   };
   pagosRealizados: Array<{
     id: number;
@@ -98,8 +100,11 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
     let primeraFechaPago: Date;
     
     if (fechaInicial) {
-      // Si hay una fecha inicial personalizada, la usamos como primera cuota
+      // Si hay una fecha inicial personalizada desde nuestro estado local, la usamos
       primeraFechaPago = new Date(fechaInicial);
+    } else if (prestamo.fecha_inicial_personalizada) {
+      // Si el préstamo tiene una fecha inicial personalizada guardada, la usamos
+      primeraFechaPago = new Date(prestamo.fecha_inicial_personalizada);
     } else if (semanasYaPagadas === 0) {
       // Si no hay semanas pagadas, la primera fecha es 7 días después del préstamo
       const fechaPrestamo = new Date(prestamo.fecha_prestamo);

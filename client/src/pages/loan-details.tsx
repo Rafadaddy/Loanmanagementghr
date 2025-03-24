@@ -42,7 +42,10 @@ import {
   ArrowUpDown, 
   AlertTriangle,
   Edit,
-  Menu
+  Menu,
+  CalendarDays,
+  CalendarClock,
+  CalendarCheck
 } from "lucide-react";
 import {
   Dialog,
@@ -344,8 +347,65 @@ export default function LoanDetails() {
   const progresoSemanas = (prestamo.semanas_pagadas / prestamo.numero_semanas) * 100;
   const { label: estadoLabel, className: estadoClass } = getLoanStatus(prestamo.estado);
 
+  // Diálogo para cambiar el día de pago
+  const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+  
+  // Al abrir el diálogo, establecer la fecha inicial con la próxima fecha de pago del préstamo
+  useEffect(() => {
+    if (changeDayDialogOpen && prestamo) {
+      setNuevaFechaPago(prestamo.proxima_fecha_pago);
+    }
+  }, [changeDayDialogOpen, prestamo]);
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Diálogo para cambiar el día de pago */}
+      <Dialog open={changeDayDialogOpen} onOpenChange={setChangeDayDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Cambiar día de pago</DialogTitle>
+            <DialogDescription>
+              Esta acción modificará el día de la semana para todos los pagos futuros. 
+              El sistema recalculará automáticamente el cronograma de pagos.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="nueva-fecha-pago" className="text-right">
+                Nueva fecha
+              </Label>
+              <Input
+                id="nueva-fecha-pago"
+                type="date"
+                value={nuevaFechaPago}
+                onChange={(e) => setNuevaFechaPago(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="text-sm text-muted-foreground mt-2">
+              <p>Día de la semana seleccionado: <strong>
+                {nuevaFechaPago ? diasSemana[new Date(nuevaFechaPago).getDay()] : "No seleccionado"}
+              </strong></p>
+              <p className="mt-1">Todos los pagos futuros serán programados para los días <strong>
+                {nuevaFechaPago ? diasSemana[new Date(nuevaFechaPago).getDay()] : ""}
+              </strong>.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setChangeDayDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              type="submit" 
+              onClick={handleChangeDaySubmit}
+              disabled={!nuevaFechaPago || cambiarDiaPagoMutation.isPending}
+            >
+              {cambiarDiaPagoMutation.isPending ? <LoadingButton /> : "Confirmar cambio"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       <div className="fixed top-0 left-0 z-50 w-full bg-background border-b">
         <div className="p-2 flex items-center">
           <Button

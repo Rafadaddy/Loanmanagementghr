@@ -75,6 +75,8 @@ export const prestamos = pgTable("prestamos", {
   proxima_fecha_pago: date("proxima_fecha_pago").notNull(),
   dias_atraso: integer("dias_atraso").default(0).notNull(),
   monto_mora_acumulada: numeric("monto_mora_acumulada", { precision: 10, scale: 2 }).default("0").notNull(),
+  fecha_inicial_personalizada: date("fecha_inicial_personalizada"), // Fecha personalizada para la primera cuota
+  dia_pago: integer("dia_pago"), // Día de la semana para los pagos (0-6, donde 0 es domingo)
 });
 
 export const insertPrestamoSchema = createInsertSchema(prestamos).omit({
