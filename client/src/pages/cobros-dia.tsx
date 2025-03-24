@@ -119,9 +119,8 @@ export default function CobrosDia() {
       doc.text('Ruta de Cobros Diarios', 14, 20);
       
       doc.setFontSize(12);
-      // Corregir el problema de zona horaria para la fecha en el PDF
+      // Ya no necesitamos corregir la zona horaria
       const fechaPDF = new Date(filterDate);
-      fechaPDF.setDate(fechaPDF.getDate() + 1);
       doc.text(`Fecha: ${formatDate(fechaPDF.toISOString().split('T')[0])}`, 14, 30);
       doc.text(`Total a cobrar: ${formatCurrency(totalACobrar)}`, 14, 38);
       doc.text(`Total de clientes: ${sortedPagos.length}`, 14, 46);
@@ -236,9 +235,8 @@ export default function CobrosDia() {
       });
       
       // Preparar los datos para Excel
-      // Corregir el problema de zona horaria para la fecha en el Excel
+      // Ya no necesitamos corregir la zona horaria
       const fechaExcel = new Date(filterDate);
-      fechaExcel.setDate(fechaExcel.getDate() + 1);
       const excelData = [
         ['Ruta de Cobros Diarios', '', '', '', '', ''],
         [`Fecha: ${formatDate(fechaExcel.toISOString().split('T')[0])}`, '', '', '', '', ''],
@@ -399,9 +397,8 @@ export default function CobrosDia() {
             <div className="text-lg md:text-2xl font-bold text-blue-600 dark:text-blue-500">
               {
                 (() => {
-                  // Corregir el problema de zona horaria añadiendo un día a la fecha que se muestra
+                  // Ya no necesitamos corregir la zona horaria con +1 día
                   const fechaMostrar = new Date(filterDate);
-                  fechaMostrar.setDate(fechaMostrar.getDate() + 1);
                   return formatDate(fechaMostrar.toISOString().split('T')[0]);
                 })()
               }
@@ -409,9 +406,8 @@ export default function CobrosDia() {
             <p className="text-xs md:text-sm text-muted-foreground">
               {
                 (() => {
-                  // Corregir el problema de zona horaria para el día de la semana
+                  // Ya no necesitamos corregir la zona horaria
                   const fechaMostrar = new Date(filterDate);
-                  fechaMostrar.setDate(fechaMostrar.getDate() + 1);
                   return fechaMostrar.toLocaleDateString('es-ES', { weekday: 'long' });
                 })()
               }
