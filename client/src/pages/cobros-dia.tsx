@@ -109,7 +109,10 @@ export default function CobrosDia() {
       doc.text('Ruta de Cobros Diarios', 14, 20);
       
       doc.setFontSize(12);
-      doc.text(`Fecha: ${formatDate(filterDate)}`, 14, 30);
+      // Corregir el problema de zona horaria para la fecha en el PDF
+      const fechaPDF = new Date(filterDate);
+      fechaPDF.setDate(fechaPDF.getDate() + 1);
+      doc.text(`Fecha: ${formatDate(fechaPDF.toISOString().split('T')[0])}`, 14, 30);
       doc.text(`Total a cobrar: ${formatCurrency(totalACobrar)}`, 14, 38);
       doc.text(`Total de clientes: ${sortedPagos.length}`, 14, 46);
       doc.text(`Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, 14, 54);
@@ -223,9 +226,12 @@ export default function CobrosDia() {
       });
       
       // Preparar los datos para Excel
+      // Corregir el problema de zona horaria para la fecha en el Excel
+      const fechaExcel = new Date(filterDate);
+      fechaExcel.setDate(fechaExcel.getDate() + 1);
       const excelData = [
         ['Ruta de Cobros Diarios', '', '', '', '', ''],
-        [`Fecha: ${formatDate(filterDate)}`, '', '', '', '', ''],
+        [`Fecha: ${formatDate(fechaExcel.toISOString().split('T')[0])}`, '', '', '', '', ''],
         [`Total a cobrar: ${formatCurrency(totalACobrar)}`, '', '', '', '', ''],
         [`Total de clientes: ${sortedPagos.length}`, '', '', '', '', ''],
         [`Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, '', '', '', '', ''],
@@ -381,10 +387,24 @@ export default function CobrosDia() {
           </CardHeader>
           <CardContent className="p-3 pt-0">
             <div className="text-lg md:text-2xl font-bold text-blue-600 dark:text-blue-500">
-              {formatDate(filterDate)}
+              {
+                (() => {
+                  // Corregir el problema de zona horaria añadiendo un día a la fecha que se muestra
+                  const fechaMostrar = new Date(filterDate);
+                  fechaMostrar.setDate(fechaMostrar.getDate() + 1);
+                  return formatDate(fechaMostrar.toISOString().split('T')[0]);
+                })()
+              }
             </div>
             <p className="text-xs md:text-sm text-muted-foreground">
-              {new Date(filterDate).toLocaleDateString('es-ES', { weekday: 'long' })}
+              {
+                (() => {
+                  // Corregir el problema de zona horaria para el día de la semana
+                  const fechaMostrar = new Date(filterDate);
+                  fechaMostrar.setDate(fechaMostrar.getDate() + 1);
+                  return fechaMostrar.toLocaleDateString('es-ES', { weekday: 'long' });
+                })()
+              }
             </p>
           </CardContent>
         </Card>
