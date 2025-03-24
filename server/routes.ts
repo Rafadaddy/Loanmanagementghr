@@ -340,7 +340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             prestamo_id: pagoData.prestamo_id,
             cliente_id: prestamo?.cliente_id || null,
             descripcion: `Pago ${pagoData.es_pago_parcial ? 'parcial' : 'completo'} de préstamo. Cliente: ${cliente?.nombre || 'Desconocido'}. Semana ${pagoData.numero_semana}`,
-            fecha: pagoData.fecha_pago, // Usar la fecha del pago directamente
+            fecha: pagoData.fecha_pago || new Date().toISOString().split('T')[0], // Usar la fecha del pago o fecha actual
             creado_por: req.user!.id
           };
           

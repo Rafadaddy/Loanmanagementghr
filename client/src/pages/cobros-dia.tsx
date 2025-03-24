@@ -235,11 +235,10 @@ export default function CobrosDia() {
       });
       
       // Preparar los datos para Excel
-      // Ya no necesitamos corregir la zona horaria
-      const fechaExcel = new Date(filterDate);
+      // Usar nuestras funciones de utilidad para manejar fechas
       const excelData = [
         ['Ruta de Cobros Diarios', '', '', '', '', ''],
-        [`Fecha: ${formatDate(fechaExcel.toISOString().split('T')[0])}`, '', '', '', '', ''],
+        [`Fecha: ${formatDate(filterDate)}`, '', '', '', '', ''],
         [`Total a cobrar: ${formatCurrency(totalACobrar)}`, '', '', '', '', ''],
         [`Total de clientes: ${sortedPagos.length}`, '', '', '', '', ''],
         [`Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, '', '', '', '', ''],
@@ -395,22 +394,10 @@ export default function CobrosDia() {
           </CardHeader>
           <CardContent className="p-3 pt-0">
             <div className="text-lg md:text-2xl font-bold text-blue-600 dark:text-blue-500">
-              {
-                (() => {
-                  // Ya no necesitamos corregir la zona horaria con +1 día
-                  const fechaMostrar = new Date(filterDate);
-                  return formatDate(fechaMostrar.toISOString().split('T')[0]);
-                })()
-              }
+              {formatDate(filterDate)}
             </div>
             <p className="text-xs md:text-sm text-muted-foreground">
-              {
-                (() => {
-                  // Ya no necesitamos corregir la zona horaria
-                  const fechaMostrar = new Date(filterDate);
-                  return fechaMostrar.toLocaleDateString('es-ES', { weekday: 'long' });
-                })()
-              }
+              {new Date(filterDate).toLocaleDateString('es-ES', { weekday: 'long' }).replace(/^\w/, c => c.toUpperCase())}
             </p>
           </CardContent>
         </Card>

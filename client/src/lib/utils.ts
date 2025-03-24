@@ -56,11 +56,25 @@ export function createConsistentDate(date: Date | string): Date {
 
 /**
  * Calcula una fecha en el futuro a partir de otra, añadiendo los días especificados.
+ * Esta función asegura que el día calculado sea exactamente 'days' después
+ * del día indicado, sin problemas de zona horaria.
  */
 export function addDaysToDate(date: Date | string, days: number): string {
-  const baseDate = createConsistentDate(date);
-  baseDate.setDate(baseDate.getDate() + days);
-  return normalizeDate(baseDate);
+  // Normalizar primero el formato de la fecha a YYYY-MM-DD
+  const normalizedDate = normalizeDate(date);
+  
+  // Separar la fecha en componentes
+  const [year, month, day] = normalizedDate.split('-').map(Number);
+  
+  // Crear una fecha UTC para evitar problemas de zona horaria
+  // Nota: month-1 porque los meses en JavaScript son 0-indexados
+  const utcDate = new Date(Date.UTC(year, month-1, day, 12, 0, 0));
+  
+  // Agregar los días (usando 12:00 UTC asegura que no hay problemas de DST)
+  utcDate.setUTCDate(utcDate.getUTCDate() + days);
+  
+  // Convertir de vuelta a formato YYYY-MM-DD
+  return utcDate.toISOString().split('T')[0];
 }
 
 export function formatDate(date: Date | string) {
