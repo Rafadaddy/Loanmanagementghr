@@ -49,11 +49,24 @@ export default function CobrosDia() {
     queryKey: ['/api/clientes'],
   });
 
-  // Filtrar préstamos que tienen pago hoy o en una fecha específica
+  // Filtrar préstamos que tienen pago programado para la fecha seleccionada
   const pagosDia = prestamos
     .filter(prestamo => {
-      const proxima_fecha = new Date(prestamo.proxima_fecha_pago).toISOString().split('T')[0];
-      return proxima_fecha === filterDate && prestamo.estado === "ACTIVO";
+      // Si hay una fecha inicial personalizada, la usamos como referencia
+      let fechaComparacion = prestamo.fecha_inicial_personalizada 
+        ? new Date(prestamo.fecha_inicial_personalizada) 
+        : new Date(prestamo.proxima_fecha_pago);
+      
+      // Si el préstamo tiene semanas pagadas, ajustamos fechaComparacion en base a la próxima fecha de pago
+      if (prestamo.semanas_pagadas > 0) {
+        fechaComparacion = new Date(prestamo.proxima_fecha_pago);
+      }
+      
+      // Convertimos la fecha a formato YYYY-MM-DD para comparar con filterDate
+      const fechaFormateada = fechaComparacion.toISOString().split('T')[0];
+      
+      // Solo mostramos préstamos activos con fecha coincidente
+      return fechaFormateada === filterDate && prestamo.estado === "ACTIVO";
     })
     .map(prestamo => {
       const cliente = clientes.find(c => c.id === prestamo.cliente_id);
@@ -126,7 +139,7 @@ export default function CobrosDia() {
           item.cliente?.direccion || 'Sin dirección',
           item.cliente?.telefono || 'Sin teléfono',
           formatCurrency(item.monto_prestado),
-          `${item.semanas_pagadas}/${item.numero_semanas}`,
+          `${item.semanas_pagadas + 1}/${item.numero_semanas}`,
           formatCurrency(item.pago_semanal)
         ]),
         styles: {
@@ -512,7 +525,7 @@ export default function CobrosDia() {
                             
                             <div className="flex items-center justify-between text-xs mt-1">
                               <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 text-xs">
-                                Semana {item.semanas_pagadas}/{item.numero_semanas}
+                                Semana {item.semanas_pagadas + 1}/{item.numero_semanas}
                               </Badge>
                               <span className="text-muted-foreground">
                                 Préstamo: {formatCurrency(item.monto_prestado)}
@@ -553,7 +566,7 @@ export default function CobrosDia() {
                             <TableCell>{formatCurrency(item.monto_prestado)}</TableCell>
                             <TableCell>
                               <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800">
-                                {item.semanas_pagadas}/{item.numero_semanas}
+                                {item.semanas_pagadas + 1}/{item.numero_semanas}
                               </Badge>
                             </TableCell>
                             <TableCell className="font-semibold text-emerald-600 dark:text-emerald-500">
