@@ -125,7 +125,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
       // Si no hay semanas pagadas, la primera fecha es 7 días después del préstamo
       const fechaPrestamo = new Date(prestamo.fecha_prestamo);
       primeraFechaPago = new Date(fechaPrestamo);
-      primeraFechaPago.setDate(fechaPrestamo.getDate() + 7);
+      primeraFechaPago.setDate(fechaPrestamo.getDate() + 6); // Usamos 6 días para corregir el día extra
     } else {
       // Si hay semanas pagadas, calculamos la primera fecha a partir de la próxima fecha de pago
       const proximaFechaPago = new Date(prestamo.proxima_fecha_pago);
@@ -150,7 +150,6 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
         const diferencia = prestamo.dia_pago - diaActual;
         
         // Ajuste para evitar añadir un día extra
-        // Solo aplicamos el ajuste si es necesario
         if (diferencia !== 0) {
           // Si la diferencia es positiva, avanzamos los días necesarios
           // Si es negativa, retrocedemos (7 + diferencia) para obtener el mismo día de la semana anterior
@@ -158,6 +157,9 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
           fecha.setDate(fecha.getDate() + ajuste);
         }
       }
+      
+      // Restamos un día al resultado para corregir el día extra
+      fecha.setDate(fecha.getDate() - 1);
       
       return fecha;
     };
@@ -291,10 +293,10 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
         // Si hay una fecha personalizada, la usamos
         setNuevaFecha(fechaInicial);
       } else if (prestamo.semanas_pagadas === 0) {
-        // Primera fecha de pago calculada (7 días después del préstamo)
+        // Primera fecha de pago calculada (6 días después del préstamo para corregir el día extra)
         const fechaPrestamo = new Date(prestamo.fecha_prestamo);
         const primerPago = new Date(fechaPrestamo);
-        primerPago.setDate(fechaPrestamo.getDate() + 7);
+        primerPago.setDate(fechaPrestamo.getDate() + 6);
         setNuevaFecha(primerPago.toISOString().split('T')[0]);
       } else {
         // Calcular la primera fecha basada en la próxima fecha de pago
