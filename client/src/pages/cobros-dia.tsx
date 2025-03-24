@@ -126,7 +126,7 @@ export default function CobrosDia() {
           item.cliente?.direccion || 'Sin dirección',
           item.cliente?.telefono || 'Sin teléfono',
           formatCurrency(item.monto_prestado),
-          `${item.semanas_pagadas + 1}/${item.numero_semanas}`,
+          `${item.semanas_pagadas}/${item.numero_semanas}`,
           formatCurrency(item.pago_semanal)
         ]),
         styles: {
@@ -246,7 +246,7 @@ export default function CobrosDia() {
           item.cliente?.direccion || 'Sin dirección',
           item.cliente?.telefono || 'Sin teléfono',
           item.monto_prestado,
-          `${item.semanas_pagadas + 1}/${item.numero_semanas}`,
+          `${item.semanas_pagadas}/${item.numero_semanas}`,
           item.pago_semanal
         ]);
       });
@@ -512,7 +512,7 @@ export default function CobrosDia() {
                             
                             <div className="flex items-center justify-between text-xs mt-1">
                               <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 text-xs">
-                                Semana {item.semanas_pagadas + 1}/{item.numero_semanas}
+                                Semana {item.semanas_pagadas}/{item.numero_semanas}
                               </Badge>
                               <span className="text-muted-foreground">
                                 Préstamo: {formatCurrency(item.monto_prestado)}
@@ -553,7 +553,7 @@ export default function CobrosDia() {
                             <TableCell>{formatCurrency(item.monto_prestado)}</TableCell>
                             <TableCell>
                               <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800">
-                                {item.semanas_pagadas + 1}/{item.numero_semanas}
+                                {item.semanas_pagadas}/{item.numero_semanas}
                               </Badge>
                             </TableCell>
                             <TableCell className="font-semibold text-emerald-600 dark:text-emerald-500">
