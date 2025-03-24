@@ -960,7 +960,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...prestamo,
         proxima_fecha_pago: formatISO(nuevaFecha, { representation: 'date' }),
         // Guardamos la fecha inicial personalizada si se ha solicitado cambiar todas las fechas
-        fecha_inicial_personalizada: cambiarTodasFechas ? fechaInicialPrimeraCuota : undefined
+        fecha_inicial_personalizada: cambiarTodasFechas ? fechaInicialPrimeraCuota : undefined,
+        // Guardamos el día de la semana seleccionado (0-6, donde 0 es domingo)
+        dia_pago: nuevoDiaSemana
       };
       
       const resultado = await storage.updatePrestamo(id, prestamoActualizado);
