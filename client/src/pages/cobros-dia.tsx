@@ -34,9 +34,8 @@ import * as XLSX from "xlsx";
 export default function CobrosDia() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  // Ajustar la fecha al formato correcto (con offset de un día para corregir el problema de zona horaria)
+  // Configurar fecha actual (sin offset adicional)
   const todayDate = new Date();
-  todayDate.setDate(todayDate.getDate() + 1); // Añadir un día para compensar el problema de zona horaria
   const [filterDate, setFilterDate] = useState(todayDate.toISOString().split('T')[0]);
   const [sortBy, setSortBy] = useState("direccion");
 
@@ -320,10 +319,8 @@ export default function CobrosDia() {
   const isLoading = loadingPrestamos || loadingClientes;
 
   const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    // Añadir un día a la fecha seleccionada para compensar el problema de zona horaria
-    const selectedDate = new Date(event.target.value);
-    selectedDate.setDate(selectedDate.getDate() + 1);
-    setFilterDate(selectedDate.toISOString().split('T')[0]);
+    // Usar la fecha seleccionada directamente sin modificarla
+    setFilterDate(event.target.value);
   };
 
   return (
@@ -383,7 +380,9 @@ export default function CobrosDia() {
             <CardTitle className="text-sm md:text-lg">Fecha</CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-0">
-            <div className="text-lg md:text-2xl font-bold text-blue-600 dark:text-blue-500">{formatDate(filterDate)}</div>
+            <div className="text-lg md:text-2xl font-bold text-blue-600 dark:text-blue-500">
+              {formatDate(filterDate)}
+            </div>
             <p className="text-xs md:text-sm text-muted-foreground">
               {new Date(filterDate).toLocaleDateString('es-ES', { weekday: 'long' })}
             </p>
