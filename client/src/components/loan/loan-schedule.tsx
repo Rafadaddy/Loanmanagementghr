@@ -4,10 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { FileText, FileSpreadsheet, Calendar } from "lucide-react";
+import { FileText, FileSpreadsheet, Calendar, RefreshCw, Edit, Clock } from "lucide-react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface LoanScheduleProps {
   prestamo: {
@@ -55,6 +58,25 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
   const MAX_MOBILE_ITEMS = 12;
   const [cronograma, setCronograma] = useState<CuotaProgramada[]>([]);
 
+  // Estado para la fecha personalizada de la primera cuota
+  const [fechaInicial, setFechaInicial] = useState<string | null>(null);
+  const [showFechaDialog, setShowFechaDialog] = useState(false);
+  
+  // Función para abrir el diálogo de cambio de fecha inicial
+  const openFechaDialog = () => setShowFechaDialog(true);
+  
+  // Función para aplicar la nueva fecha inicial
+  const aplicarFechaInicial = (fecha: string) => {
+    setFechaInicial(fecha);
+    setShowFechaDialog(false);
+  };
+  
+  // Función para resetear la fecha inicial a la del préstamo
+  const resetFechaInicial = () => {
+    setFechaInicial(null);
+    setShowFechaDialog(false);
+  };
+
   useEffect(() => {
     // Generar el cronograma completo del préstamo
     const schedule: CuotaProgramada[] = [];
@@ -69,38 +91,40 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
     // Si el préstamo tiene semanas pagadas, necesitamos calcular en base a la próxima fecha de pago
     // y retroceder para las semanas anteriores
     const semanasYaPagadas = prestamo.semanas_pagadas || 0;
-    const proximaFechaPago = new Date(prestamo.proxima_fecha_pago);
+    
+    // Usamos una nueva fecha para evitar errores de zona horaria
+    // Si hay una fecha personalizada, la usamos como primera cuota
+    // Esto permite al usuario cambiar manualmente la fecha de inicio del cronograma
+    let primeraFechaPago: Date;
+    
+    if (fechaInicial) {
+      // Si hay una fecha inicial personalizada, la usamos como primera cuota
+      primeraFechaPago = new Date(fechaInicial);
+    } else if (semanasYaPagadas === 0) {
+      // Si no hay semanas pagadas, la primera fecha es 7 días después del préstamo
+      const fechaPrestamo = new Date(prestamo.fecha_prestamo);
+      primeraFechaPago = new Date(fechaPrestamo);
+      primeraFechaPago.setDate(fechaPrestamo.getDate() + 7);
+    } else {
+      // Si hay semanas pagadas, calculamos la primera fecha a partir de la próxima fecha de pago
+      const proximaFechaPago = new Date(prestamo.proxima_fecha_pago);
+      primeraFechaPago = new Date(proximaFechaPago);
+      primeraFechaPago.setDate(proximaFechaPago.getDate() - (semanasYaPagadas * 7));
+    }
+    
+    // Crear una función auxiliar para calcular la fecha de una semana específica
+    const calcularFechaSemana = (numeroSemana: number): Date => {
+      const fecha = new Date(primeraFechaPago);
+      // Ajustamos la fecha sumando las semanas (número de semana - 1) * 7 días
+      // Restamos 1 porque la primera semana ya tiene la fecha correcta (primeraFechaPago)
+      fecha.setDate(primeraFechaPago.getDate() + ((numeroSemana - 1) * 7));
+      return fecha;
+    };
     
     // Generar todas las semanas del préstamo
     for (let i = 1; i <= prestamo.numero_semanas; i++) {
-      let fechaProgramada: Date;
-      
-      if (i <= semanasYaPagadas) {
-        // Para semanas ya pagadas, calculamos hacia atrás desde la próxima fecha de pago
-        // La próxima fecha de pago corresponde a la semana (semanasYaPagadas + 1)
-        
-        // Calculamos cuántas semanas necesitamos retroceder
-        const semanasHaciaAtras = semanasYaPagadas - i + 1;
-        
-        // Creamos una nueva fecha a partir de la próxima fecha de pago
-        fechaProgramada = new Date(proximaFechaPago);
-        
-        // Ajustamos la fecha restando las semanas que necesitamos ir hacia atrás
-        // Multiplicamos por 7 para obtener los días
-        fechaProgramada.setDate(fechaProgramada.getDate() - (semanasHaciaAtras * 7));
-      } else {
-        // Para semanas futuras, calculamos hacia adelante desde la próxima fecha de pago
-        // La semana actual a pagar es (semanasYaPagadas + 1), que corresponde a proximaFechaPago
-        // Por lo tanto, para la semana i, necesitamos avanzar (i - (semanasYaPagadas + 1)) semanas
-        
-        const semanasHaciaAdelante = i - (semanasYaPagadas + 1);
-        
-        // Creamos una nueva fecha a partir de la próxima fecha de pago
-        fechaProgramada = new Date(proximaFechaPago);
-        
-        // Ajustamos la fecha sumando las semanas que necesitamos ir hacia adelante
-        fechaProgramada.setDate(fechaProgramada.getDate() + (semanasHaciaAdelante * 7));
-      }
+      // Calculamos la fecha programada para esta semana
+      const fechaProgramada = calcularFechaSemana(i);
       
       // Determinar estado basado en pagos realizados
       const pagoRealizado = pagosMap.get(i);
@@ -211,13 +235,108 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
     XLSX.writeFile(wb, `cronograma_prestamo_${prestamo.id}.xlsx`);
   };
 
+  // Estado para el formulario de cambio de fecha
+  const [nuevaFecha, setNuevaFecha] = useState<string>("");
+  
+  // Función para manejar el cambio de fecha
+  const handleFechaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNuevaFecha(e.target.value);
+  };
+  
+  // Al abrir el diálogo, establecer la fecha actual o la fecha inicial personalizada
+  useEffect(() => {
+    if (showFechaDialog) {
+      if (fechaInicial) {
+        // Si hay una fecha personalizada, la usamos
+        setNuevaFecha(fechaInicial);
+      } else if (prestamo.semanas_pagadas === 0) {
+        // Primera fecha de pago calculada (7 días después del préstamo)
+        const fechaPrestamo = new Date(prestamo.fecha_prestamo);
+        const primerPago = new Date(fechaPrestamo);
+        primerPago.setDate(fechaPrestamo.getDate() + 7);
+        setNuevaFecha(primerPago.toISOString().split('T')[0]);
+      } else {
+        // Calcular la primera fecha basada en la próxima fecha de pago
+        const proximaFechaPago = new Date(prestamo.proxima_fecha_pago);
+        const primeraFecha = new Date(proximaFechaPago);
+        primeraFecha.setDate(proximaFechaPago.getDate() - (prestamo.semanas_pagadas * 7));
+        setNuevaFecha(primeraFecha.toISOString().split('T')[0]);
+      }
+    }
+  }, [showFechaDialog]);
+  
+  // Función para aplicar la nueva fecha
+  const handleAplicarFecha = () => {
+    if (nuevaFecha) {
+      aplicarFechaInicial(nuevaFecha);
+    }
+  };
+
   return (
     <Card className="mt-4 mb-6 w-full max-w-full overflow-hidden">
+      {/* Diálogo para cambiar la fecha inicial */}
+      <Dialog open={showFechaDialog} onOpenChange={setShowFechaDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Cambiar fecha inicial del cronograma</DialogTitle>
+            <DialogDescription>
+              Esta acción modificará la fecha de la primera cuota y recalculará todas las fechas del cronograma.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="fecha-inicial" className="text-right">
+                Fecha
+              </Label>
+              <Input
+                id="fecha-inicial"
+                type="date"
+                value={nuevaFecha}
+                onChange={handleFechaChange}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowFechaDialog(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" onClick={handleAplicarFecha}>
+              Aplicar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-3">
-        <CardTitle className="flex items-center gap-1 text-base">
-          <Calendar className="h-4 w-4" />
-          Cronograma de Pagos
-        </CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-1 text-base">
+            <Calendar className="h-4 w-4" />
+            Cronograma de Pagos
+          </CardTitle>
+          {/* Botón para cambiar la fecha inicial del cronograma */}
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={openFechaDialog}
+            className="flex items-center h-7 px-2 text-xs hover:bg-secondary"
+            title="Cambiar fecha inicial del cronograma"
+          >
+            <Clock className="h-3.5 w-3.5 mr-1" />
+            {fechaInicial ? "Fecha personalizada" : "Fecha por defecto"}
+          </Button>
+          {fechaInicial && (
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={resetFechaInicial}
+              className="flex items-center h-7 px-1 text-xs text-muted-foreground hover:bg-secondary"
+              title="Restaurar fecha inicial predeterminada"
+            >
+              <RefreshCw className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
         <div className="flex gap-2">
           <Button 
             variant="outline" 
