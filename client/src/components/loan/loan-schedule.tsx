@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { FileText, FileSpreadsheet, Calendar, RefreshCw, Clock } from "lucide-react";
 import { jsPDF } from "jspdf";
+import { addDays, format } from "date-fns";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -139,6 +140,19 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
       // Ajustamos la fecha sumando las semanas (número de semana - 1) * 7 días
       // Restamos 1 porque la primera semana ya tiene la fecha correcta (primeraFechaPago)
       fecha.setDate(primeraFechaPago.getDate() + ((numeroSemana - 1) * 7));
+      
+      // Importante: Si el préstamo tiene un día_pago definido, ajustamos la fecha a ese día
+      if (prestamo.dia_pago !== undefined) {
+        // Ajustar al día de la semana específico (0-6, donde 0 es domingo)
+        // Primero obtenemos el día actual de la semana de esta fecha
+        const diaActual = fecha.getDay(); // 0-6
+        // Calculamos la diferencia para llegar al día deseado
+        // La propiedad dia_pago es 0-6, donde 0 es domingo
+        const diferencia = prestamo.dia_pago - diaActual;
+        // Ajustamos la fecha para que caiga en el día específico de la semana
+        fecha.setDate(fecha.getDate() + diferencia);
+      }
+      
       return fecha;
     };
     
