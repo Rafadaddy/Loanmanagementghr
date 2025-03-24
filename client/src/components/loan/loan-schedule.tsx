@@ -119,7 +119,8 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
     
     // Crear una función auxiliar para calcular la fecha de una semana específica
     const calcularFechaSemana = (numeroSemana: number): Date => {
-      const fecha = new Date(primeraFechaPago);
+      // Creamos una nueva fecha sin problemas de zona horaria
+      const fecha = new Date(primeraFechaPago.getTime());
       // Ajustamos la fecha sumando las semanas (número de semana - 1) * 7 días
       // Restamos 1 porque la primera semana ya tiene la fecha correcta (primeraFechaPago)
       fecha.setDate(primeraFechaPago.getDate() + ((numeroSemana - 1) * 7));
