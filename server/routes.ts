@@ -939,8 +939,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fechaProximoPagoActual = new Date(prestamo.proxima_fecha_pago);
       const nuevaFecha = new Date(nuevaFechaPago);
       
-      // Corregir el problema de la fecha sumando un día para asegurar que sea la fecha correcta
-      nuevaFecha.setDate(nuevaFecha.getDate() + 1);
+      // No añadimos un día extra para evitar inconsistencias entre las diferentes partes del sistema
+      // La fecha debe ser exactamente la que selecciona el usuario
       
       // Verificar que la nueva fecha sea válida
       if (isNaN(nuevaFecha.getTime())) {

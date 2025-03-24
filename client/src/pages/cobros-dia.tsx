@@ -55,27 +55,12 @@ export default function CobrosDia() {
       // Solo procesar préstamos activos
       if (prestamo.estado !== "ACTIVO") return false;
       
-      // Determinar la fecha inicial del préstamo (primera fecha de pago)
-      let primeraFechaPago: Date;
-      
-      if (prestamo.fecha_inicial_personalizada) {
-        // Si existe una fecha inicial personalizada, la usamos
-        primeraFechaPago = new Date(prestamo.fecha_inicial_personalizada);
-      } else {
-        // De lo contrario, calculamos 7 días después de la fecha del préstamo
-        const fechaPrestamo = new Date(prestamo.fecha_prestamo);
-        primeraFechaPago = new Date(fechaPrestamo);
-        primeraFechaPago.setDate(fechaPrestamo.getDate() + 7);
-      }
-      
-      // Calcular la fecha de pago correspondiente a la semana actual
-      // Similar a la lógica en loan-schedule.tsx
-      const numeroSemana = prestamo.semanas_pagadas + 1; // Próxima semana a pagar
-      const fechaPago = new Date(primeraFechaPago);
-      fechaPago.setDate(primeraFechaPago.getDate() + ((numeroSemana - 1) * 7));
+      // Usar directamente la próxima fecha de pago del préstamo
+      // Esta es la forma más precisa y coherente con el resto del sistema
+      const proximaFechaPago = new Date(prestamo.proxima_fecha_pago);
       
       // Convertir a formato YYYY-MM-DD para comparar
-      const fechaFormateada = fechaPago.toISOString().split('T')[0];
+      const fechaFormateada = proximaFechaPago.toISOString().split('T')[0];
       
       // Verificar si coincide con la fecha filtrada
       return fechaFormateada === filterDate;
