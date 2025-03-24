@@ -914,7 +914,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "ID de préstamo inválido" });
       }
       
-      const { nuevaFechaPago } = req.body;
+      const { nuevaFechaPago, cambiarTodasFechas = true } = req.body;
       if (!nuevaFechaPago) {
         return res.status(400).json({ message: "La nueva fecha de pago es requerida" });
       }
@@ -936,14 +936,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Obtener el día de la semana de la nueva fecha (0: domingo, 1: lunes, ..., 6: sábado)
       const nuevoDiaSemana = nuevaFecha.getDay();
+      const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
       
-      // Actualizar las fechas para todas las semanas futuras
-      const prestamoActualizado = {
-        ...prestamo,
-        proxima_fecha_pago: formatISO(nuevaFecha, { representation: 'date' })
-      };
+      // Si cambiarTodasFechas es verdadero, necesitamos calcular una fecha inicial para la primera cuota
+      let fechaInicialPrimeraCuota = null;
+      if (cambiarTodasFechas) {
+        // Calculamos la fecha de la primera cuota basándonos en la nueva fecha
+        const semanasYaPagadas = prestamo.semanas_pagadas || 0;
+        
+        if (semanasYaPagadas === 0) {
+          // Si no hay semanas pagadas, la primera fecha es la nueva fecha
+          fechaInicialPrimeraCuota = formatISO(nuevaFecha, { representation: 'date' });
+        } else {
+          // Si hay semanas pagadas, retrocedemos desde la nueva fecha para obtener la primera fecha
+          const primeraFecha = new Date(nuevaFecha);
+          primeraFecha.setDate(primeraFecha.getDate() - (semanasYaPagadas * 7));
+          fechaInicialPrimeraCuota = formatISO(primeraFecha, { representation: 'date' });
+        }
+      }
       
       // Actualizar el préstamo
+      const prestamoActualizado = {
+        ...prestamo,
+        proxima_fecha_pago: formatISO(nuevaFecha, { representation: 'date' }),
+        // Guardamos la fecha inicial personalizada si se ha solicitado cambiar todas las fechas
+        fecha_inicial_personalizada: cambiarTodasFechas ? fechaInicialPrimeraCuota : undefined
+      };
+      
       const resultado = await storage.updatePrestamo(id, prestamoActualizado);
       
       if (!resultado) {
@@ -953,7 +972,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         message: "Día de pago actualizado correctamente",
         prestamo: resultado,
-        nuevoDiaSemana: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"][nuevoDiaSemana]
+        nuevoDiaSemana: diasSemana[nuevoDiaSemana],
+        fechaInicialPrimeraCuota
       });
     } catch (error) {
       console.error("Error al cambiar día de pago:", error);
