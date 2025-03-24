@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, getDateTimeFormat, getShortDate } from "@/lib/utils";
 import MainLayout from "@/components/layout/main-layout";
-import { Prestamo, Cliente, Cobrador } from "@shared/schema";
+import { Prestamo, Cliente } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, FileSpreadsheet, FileText, MapPin, Search, X, Users } from "lucide-react";
+import { Calendar, FileSpreadsheet, FileText, MapPin, Search, X } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -25,22 +25,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { LoadingData } from "@/components/ui/loading";
 import { jsPDF } from "jspdf";
-import { format, isEqual, parseISO, addDays } from "date-fns";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
-
-interface PrestamoConCliente extends Prestamo {
-  cliente?: Cliente;
-}
 
 export default function CobrosDia() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
   const [sortBy, setSortBy] = useState("direccion");
-  const [cobradorSeleccionado, setCobradorSeleccionado] = useState<string>("todos");
 
   // Cargar la lista de préstamos
   const { data: prestamos = [], isLoading: loadingPrestamos } = useQuery<Prestamo[]>({
@@ -51,79 +46,36 @@ export default function CobrosDia() {
   const { data: clientes = [], isLoading: loadingClientes } = useQuery<Cliente[]>({
     queryKey: ['/api/clientes'],
   });
-  
-  // Cargar la lista de cobradores
-  const { data: cobradores = [], isLoading: loadingCobradores } = useQuery<Cobrador[]>({
-    queryKey: ['/api/cobradores'],
-  });
 
-  // Función para comparar fechas correctamente ignorando la zona horaria
-  const compararFechas = (fecha1: string, fecha2: string): boolean => {
-    try {
-      // Convertir fechas a formato estándar para comparación
-      const f1 = new Date(fecha1);
-      const f2 = new Date(fecha2);
-      
-      // Establecer hora, minutos, segundos a 0 para comparar solo la fecha
-      f1.setHours(0, 0, 0, 0);
-      f2.setHours(0, 0, 0, 0);
-      
-      // Comparar timestamps o formato de fecha para mayor seguridad
-      return f1.getTime() === f2.getTime() || 
-             format(f1, 'yyyy-MM-dd') === format(f2, 'yyyy-MM-dd');
-    } catch (error) {
-      console.error("Error al comparar fechas:", error);
-      return false;
-    }
-  };
-
-  // Filtrar préstamos que tienen pago en la fecha seleccionada
+  // Filtrar préstamos que tienen pago hoy o en una fecha específica
   const pagosDia = prestamos
     .filter(prestamo => {
-      const fechaProximoPago = new Date(prestamo.proxima_fecha_pago);
-      fechaProximoPago.setHours(0, 0, 0, 0);
+      // Convertimos las fechas a formato yyyy-mm-dd para evitar problemas por horas
+      const fechaPrestamo = new Date(prestamo.proxima_fecha_pago);
+      const fechaStr = fechaPrestamo.toISOString().split('T')[0];
       
-      const fechaFiltro = new Date(filterDate);
-      fechaFiltro.setHours(0, 0, 0, 0);
-      
-      return compararFechas(prestamo.proxima_fecha_pago, filterDate) && 
-             prestamo.estado === "ACTIVO";
+      return fechaStr === filterDate && prestamo.estado === "ACTIVO";
     })
     .map(prestamo => {
       const cliente = clientes.find(c => c.id === prestamo.cliente_id);
       return { ...prestamo, cliente };
     })
     .filter(prestamo => {
-      // Si hay un cobrador seleccionado, filtrar por ese cobrador
-      if (cobradorSeleccionado !== "todos") {
-        const clienteCobrador = prestamo.cliente?.cobrador_id ? 
-                               prestamo.cliente.cobrador_id.toString() : 
-                               undefined;
-        
-        if (!clienteCobrador || clienteCobrador !== cobradorSeleccionado) {
-          return false;
-        }
-      }
-
-      // Si hay término de búsqueda, filtrar por coincidencias
-      if (searchTerm.trim() !== "") {
-        const clienteNombre = prestamo.cliente?.nombre || '';
-        const clienteDireccion = prestamo.cliente?.direccion || '';
-        const clienteTelefono = prestamo.cliente?.telefono || '';
-        
-        return (
-          clienteNombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
-          clienteDireccion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          clienteTelefono.includes(searchTerm) ||
-          prestamo.monto_prestado.toString().includes(searchTerm) ||
-          prestamo.pago_semanal.toString().includes(searchTerm)
-        );
-      }
+      const clienteNombre = prestamo.cliente?.nombre || '';
+      const clienteDireccion = prestamo.cliente?.direccion || '';
+      const clienteTelefono = prestamo.cliente?.telefono || '';
       
-      return true;
+      // Filtrar por término de búsqueda
+      return (
+        clienteNombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        clienteDireccion.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        clienteTelefono.includes(searchTerm) ||
+        prestamo.monto_prestado.toString().includes(searchTerm) ||
+        prestamo.pago_semanal.toString().includes(searchTerm)
+      );
     });
 
-  // Ordenar préstamos según el criterio seleccionado
+  // Ordenar por criterios específicos
   const sortedPagos = [...pagosDia].sort((a, b) => {
     if (sortBy === "direccion") {
       return (a.cliente?.direccion || '').localeCompare(b.cliente?.direccion || '');
@@ -135,32 +87,6 @@ export default function CobrosDia() {
     return 0;
   });
 
-  // Agrupar por zonas (usando las primeras palabras de la dirección como proxy para zonas)
-  const obtenerZona = (direccion = '') => {
-    const partes = direccion.split(' ');
-    return partes.length > 0 ? partes[0] : 'Sin zona';
-  };
-
-  const zonas = sortedPagos.reduce((acc, item) => {
-    const zona = obtenerZona(item.cliente?.direccion);
-    if (!acc[zona]) {
-      acc[zona] = [];
-    }
-    acc[zona].push(item);
-    return acc;
-  }, {} as Record<string, PrestamoConCliente[]>);
-
-  const totalACobrar = sortedPagos.reduce((total, prestamo) => {
-    return total + parseFloat(prestamo.pago_semanal);
-  }, 0);
-
-  const isLoading = loadingPrestamos || loadingClientes || loadingCobradores;
-
-  const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setFilterDate(event.target.value);
-  };
-  
-  // Función para generar PDF de la ruta de cobros
   const handleDownloadPDF = async () => {
     try {
       if (sortedPagos.length === 0) {
@@ -187,19 +113,11 @@ export default function CobrosDia() {
       doc.text(`Fecha: ${formatDate(filterDate)}`, 14, 30);
       doc.text(`Total a cobrar: ${formatCurrency(totalACobrar)}`, 14, 38);
       doc.text(`Total de clientes: ${sortedPagos.length}`, 14, 46);
-      
-      // Agregar el cobrador seleccionado al encabezado si hay uno específico
-      if (cobradorSeleccionado !== "todos") {
-        const nombreCobrador = cobradores.find(c => c.id.toString() === cobradorSeleccionado)?.nombre || "Desconocido";
-        doc.text(`Cobrador: ${nombreCobrador}`, 14, 54);
-        doc.text(`Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, 14, 62);
-      } else {
-        doc.text(`Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, 14, 54);
-      }
+      doc.text(`Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, 14, 54);
       
       // Crear tabla
       autoTable(doc, {
-        startY: cobradorSeleccionado !== "todos" ? 70 : 62,
+        startY: 60,
         head: [['Cliente', 'Dirección', 'Teléfono', 'Préstamo', 'Semana', 'A Cobrar']],
         body: sortedPagos.map(item => [
           item.cliente?.nombre || 'Cliente desconocido',
@@ -273,11 +191,7 @@ export default function CobrosDia() {
       }
       
       // Guardar el PDF
-      const cobradorTexto = cobradorSeleccionado !== "todos" ? 
-        `_${cobradores.find(c => c.id.toString() === cobradorSeleccionado)?.nombre.replace(/\s+/g, '_')}` : 
-        '';
-      
-      doc.save(`ruta_cobros_${filterDate}${cobradorTexto}.pdf`);
+      doc.save(`ruta_cobros_${filterDate}.pdf`);
       
       toast({
         title: "PDF generado",
@@ -293,7 +207,6 @@ export default function CobrosDia() {
     }
   };
   
-  // Función para generar Excel de la ruta de cobros
   const handleDownloadExcel = async () => {
     try {
       if (sortedPagos.length === 0) {
@@ -310,15 +223,10 @@ export default function CobrosDia() {
         description: "El archivo Excel de la ruta de cobro se está generando...",
       });
       
-      const nombreCobrador = cobradorSeleccionado !== "todos" ?
-        cobradores.find(c => c.id.toString() === cobradorSeleccionado)?.nombre || "Desconocido" :
-        "Todos";
-      
       // Preparar los datos para Excel
       const excelData = [
         ['Ruta de Cobros Diarios', '', '', '', '', ''],
         [`Fecha: ${formatDate(filterDate)}`, '', '', '', '', ''],
-        [`Cobrador: ${nombreCobrador}`, '', '', '', '', ''],
         [`Total a cobrar: ${formatCurrency(totalACobrar)}`, '', '', '', '', ''],
         [`Total de clientes: ${sortedPagos.length}`, '', '', '', '', ''],
         [`Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, '', '', '', '', ''],
@@ -374,11 +282,7 @@ export default function CobrosDia() {
       XLSX.utils.book_append_sheet(wb, ws2, "Por Zonas");
       
       // Generar el archivo y guardarlo
-      const cobradorTexto = cobradorSeleccionado !== "todos" ? 
-        `_${nombreCobrador.replace(/\s+/g, '_')}` : 
-        '';
-      
-      XLSX.writeFile(wb, `ruta_cobros_${filterDate}${cobradorTexto}.xlsx`);
+      XLSX.writeFile(wb, `ruta_cobros_${filterDate}.xlsx`);
       
       toast({
         title: "Excel generado",
@@ -392,6 +296,31 @@ export default function CobrosDia() {
         variant: "destructive",
       });
     }
+  };
+
+  // Agrupar por zonas (usando las primeras palabras de la dirección como proxy para zonas)
+  const obtenerZona = (direccion = '') => {
+    const partes = direccion.split(' ');
+    return partes.length > 0 ? partes[0] : 'Sin zona';
+  };
+
+  const zonas = sortedPagos.reduce((acc, item) => {
+    const zona = obtenerZona(item.cliente?.direccion);
+    if (!acc[zona]) {
+      acc[zona] = [];
+    }
+    acc[zona].push(item);
+    return acc;
+  }, {} as Record<string, typeof sortedPagos>);
+
+  const totalACobrar = sortedPagos.reduce((total, prestamo) => {
+    return total + parseFloat(prestamo.pago_semanal);
+  }, 0);
+
+  const isLoading = loadingPrestamos || loadingClientes;
+
+  const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFilterDate(event.target.value);
   };
 
   return (
@@ -498,26 +427,6 @@ export default function CobrosDia() {
         </div>
         
         <div className="flex flex-row gap-2">
-          {/* Filtro por cobrador */}
-          <Select 
-            defaultValue="todos" 
-            onValueChange={setCobradorSeleccionado}
-            value={cobradorSeleccionado}
-          >
-            <SelectTrigger className="w-full md:w-48 text-sm h-9 flex items-center">
-              <Users className="h-3.5 w-3.5 mr-2" />
-              <SelectValue placeholder="Filtrar por cobrador" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos los cobradores</SelectItem>
-              {cobradores.map((cobrador) => (
-                <SelectItem key={cobrador.id} value={cobrador.id.toString()}>
-                  {cobrador.nombre}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
           {/* Ordenar por */}
           <Select 
             defaultValue="direccion" 

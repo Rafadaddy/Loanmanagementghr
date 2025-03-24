@@ -148,8 +148,15 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
         // Calculamos la diferencia para llegar al día deseado
         // La propiedad dia_pago es 0-6, donde 0 es domingo
         const diferencia = prestamo.dia_pago - diaActual;
-        // Ajustamos la fecha para que caiga en el día específico de la semana
-        fecha.setDate(fecha.getDate() + diferencia);
+        
+        // Ajuste para evitar añadir un día extra
+        // Solo aplicamos el ajuste si es necesario
+        if (diferencia !== 0) {
+          // Si la diferencia es positiva, avanzamos los días necesarios
+          // Si es negativa, retrocedemos (7 + diferencia) para obtener el mismo día de la semana anterior
+          const ajuste = diferencia > 0 ? diferencia : (7 + diferencia);
+          fecha.setDate(fecha.getDate() + ajuste);
+        }
       }
       
       return fecha;
