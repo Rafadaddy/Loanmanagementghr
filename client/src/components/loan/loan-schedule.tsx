@@ -97,34 +97,28 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
     // Usamos una nueva fecha para evitar errores de zona horaria
     // Si hay una fecha personalizada, la usamos como primera cuota
     // Esto permite al usuario cambiar manualmente la fecha de inicio del cronograma
-    let primeraFechaPago: Date;
+    // Vamos a usar nuestras funciones de utilidad para manejar fechas de manera consistente
+    let primeraFechaISO: string;
     
     if (fechaInicial) {
       // Si hay una fecha inicial personalizada desde nuestro estado local, la usamos
-      primeraFechaPago = new Date(fechaInicial);
+      primeraFechaISO = normalizeDate(fechaInicial);
     } else if (prestamo.fecha_inicial_personalizada) {
       // Si el préstamo tiene una fecha inicial personalizada guardada, la usamos
-      primeraFechaPago = new Date(prestamo.fecha_inicial_personalizada);
+      primeraFechaISO = normalizeDate(prestamo.fecha_inicial_personalizada);
     } else if (semanasYaPagadas === 0) {
       // Si no hay semanas pagadas, la primera fecha es 7 días después del préstamo
-      const fechaPrestamo = new Date(prestamo.fecha_prestamo);
-      primeraFechaPago = new Date(fechaPrestamo);
-      primeraFechaPago.setDate(fechaPrestamo.getDate() + 7);
+      primeraFechaISO = addDaysToDate(prestamo.fecha_prestamo, 7);
     } else {
       // Si hay semanas pagadas, calculamos la primera fecha a partir de la próxima fecha de pago
-      const proximaFechaPago = new Date(prestamo.proxima_fecha_pago);
-      primeraFechaPago = new Date(proximaFechaPago);
-      primeraFechaPago.setDate(proximaFechaPago.getDate() - (semanasYaPagadas * 7));
+      primeraFechaISO = addDaysToDate(prestamo.proxima_fecha_pago, -(semanasYaPagadas * 7));
     }
     
     // Crear una función auxiliar para calcular la fecha de una semana específica
     const calcularFechaSemana = (numeroSemana: number): Date => {
-      // Creamos una nueva fecha sin problemas de zona horaria
-      const fecha = new Date(primeraFechaPago.getTime());
-      // Ajustamos la fecha sumando las semanas (número de semana - 1) * 7 días
-      // Restamos 1 porque la primera semana ya tiene la fecha correcta (primeraFechaPago)
-      fecha.setDate(primeraFechaPago.getDate() + ((numeroSemana - 1) * 7));
-      return fecha;
+      // Calcular la fecha para la semana especificada usando nuestra utilidad de fechas
+      const fechaSemanaISO = addDaysToDate(primeraFechaISO, (numeroSemana - 1) * 7);
+      return createConsistentDate(fechaSemanaISO);
     };
     
     // Generar todas las semanas del préstamo

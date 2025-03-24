@@ -13,35 +13,95 @@ export function formatCurrency(amount: number | string) {
   }).format(numAmount);
 }
 
+/**
+ * Normaliza una fecha en formato ISO YYYY-MM-DD.
+ * Esta función asegura que tengamos una representación unificada de fechas en todo el sistema
+ * sin problemas de zona horaria.
+ */
+export function normalizeDate(date: Date | string): string {
+  if (!date) return "";
+  
+  // Si es un string, asegurar que sea una fecha válida
+  if (typeof date === 'string') {
+    // Si es formato ISO, extraer solo la parte de la fecha
+    if (date.includes('T')) {
+      return date.split('T')[0];
+    }
+    
+    // Si es un formato de fecha simple (YYYY-MM-DD), usarlo directamente
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return date;
+    }
+    
+    // Convertir a Fecha y luego a formato ISO
+    const dateObj = new Date(date);
+    return dateObj.toISOString().split('T')[0];
+  }
+  
+  // Si es una instancia de Date, convertir a ISO y tomar solo la parte de fecha
+  return date.toISOString().split('T')[0];
+}
+
+/**
+ * Crea una fecha nueva con correcto manejo de timezone.
+ * Acepta tanto formato YYYY-MM-DD como instancias de Date.
+ */
+export function createConsistentDate(date: Date | string): Date {
+  // Normalizar primero a formato YYYY-MM-DD
+  const normalizedDate = normalizeDate(date);
+  
+  // Crear fecha a media noche UTC para evitar problemas de zona horaria
+  return new Date(`${normalizedDate}T00:00:00Z`);
+}
+
+/**
+ * Calcula una fecha en el futuro a partir de otra, añadiendo los días especificados.
+ */
+export function addDaysToDate(date: Date | string, days: number): string {
+  const baseDate = createConsistentDate(date);
+  baseDate.setDate(baseDate.getDate() + days);
+  return normalizeDate(baseDate);
+}
+
 export function formatDate(date: Date | string) {
-  const dateObj = typeof date === "string" ? new Date(date) : date;
+  if (!date) return "-";
+  
+  // Usar nuestra función de creación de fecha consistente
+  const consistentDate = createConsistentDate(date);
+  
   return new Intl.DateTimeFormat("es-ES", {
     day: "numeric",
     month: "long",
     year: "numeric",
-  }).format(dateObj);
+  }).format(consistentDate);
 }
 
 export function getShortDate(date: Date | string) {
-  const dateObj = typeof date === "string" ? new Date(date) : date;
+  // Usar nuestra función de creación de fecha consistente
+  const consistentDate = createConsistentDate(date);
+  
   return new Intl.DateTimeFormat("es-ES", {
     day: "numeric",
     month: "short",
     year: "numeric",
-  }).format(dateObj);
+  }).format(consistentDate);
 }
 
 export function formatTime(date: Date | string) {
-  const dateObj = typeof date === "string" ? new Date(date) : date;
+  // Usar nuestra función de creación de fecha consistente
+  const consistentDate = createConsistentDate(date);
+  
   return new Intl.DateTimeFormat("es-ES", {
     hour: "numeric",
     minute: "numeric",
-  }).format(dateObj);
+  }).format(consistentDate);
 }
 
 export function getDateTimeFormat(date: Date | string) {
-  const dateObj = typeof date === "string" ? new Date(date) : date;
-  return `${getShortDate(dateObj)}, ${formatTime(dateObj)}`;
+  // Usar nuestra función de creación de fecha consistente
+  const consistentDate = createConsistentDate(date);
+  
+  return `${getShortDate(consistentDate)}, ${formatTime(consistentDate)}`;
 }
 
 export function getInitials(name: string): string {

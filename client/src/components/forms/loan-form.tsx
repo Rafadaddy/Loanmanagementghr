@@ -188,13 +188,9 @@ export default function LoanForm({ open, onOpenChange, onSuccess }: LoanFormProp
 
     // Convertir valores y asegurar que son del tipo correcto
     // Calcular fecha del primer pago (7 días después de la fecha de préstamo)
-    // Asegurarnos de crear fechas basadas en el formato YYYY-MM-DD sin modificación por zona horaria
-    const fechaPrestamo = new Date(values.fecha_prestamo + 'T00:00:00Z');
-    const fechaPrimerPago = new Date(fechaPrestamo.getTime());
-    fechaPrimerPago.setDate(fechaPrestamo.getDate() + 7);
-    
-    // Formatear la fecha en formato YYYY-MM-DD sin ajustes de zona horaria
-    const proximaFechaPago = fechaPrimerPago.toISOString().split('T')[0];
+    // Usar nuestras funciones de utilidad para calcular fechas de manera consistente
+    // Calcular la fecha del primer pago (7 días después de la fecha del préstamo)
+    const proximaFechaPago = addDaysToDate(values.fecha_prestamo, 7);
     
     const dataToSend = {
       cliente_id: parseInt(values.cliente_id),
