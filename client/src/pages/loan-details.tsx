@@ -160,7 +160,8 @@ export default function LoanDetails() {
   const cambiarDiaPagoMutation = useMutation({
     mutationFn: async (nuevaFecha: string) => {
       const res = await apiRequest("POST", `/api/prestamos/${prestamoId}/cambiar-dia-pago`, { 
-        nuevaFechaPago: nuevaFecha 
+        nuevaFechaPago: nuevaFecha,
+        cambiarTodasFechas: true
       });
       return res.json();
     },
@@ -279,6 +280,15 @@ export default function LoanDetails() {
       }
     );
   };
+  
+  // Modificamos el setChangeDayDialogOpen para inicializar la fecha
+  const openChangeDayDialog = () => {
+    // Establecer la fecha antes de abrir el diálogo
+    if (prestamo) {
+      setNuevaFechaPago(prestamo.proxima_fecha_pago);
+    }
+    setChangeDayDialogOpen(true);
+  };
 
   const isLoading = loadingPrestamo || loadingCliente || loadingPagos || loadingTotalPagado;
 
@@ -349,13 +359,6 @@ export default function LoanDetails() {
 
   // Diálogo para cambiar el día de pago
   const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-  
-  // Effect para inicializar la fecha cuando se abre el diálogo
-  useEffect(() => {
-    if (changeDayDialogOpen && prestamo) {
-      setNuevaFechaPago(prestamo.proxima_fecha_pago);
-    }
-  }, [changeDayDialogOpen, prestamo]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -445,7 +448,7 @@ export default function LoanDetails() {
               {prestamo.estado !== "PAGADO" && (
                 <Button 
                   variant="outline"
-                  onClick={() => setChangeDayDialogOpen(true)}
+                  onClick={openChangeDayDialog}
                   className="text-sm sm:text-base w-full sm:w-auto"
                 >
                   <Calendar className="h-4 w-4 mr-2" />
