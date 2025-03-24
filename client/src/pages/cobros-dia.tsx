@@ -34,7 +34,10 @@ import * as XLSX from "xlsx";
 export default function CobrosDia() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
+  // Ajustar la fecha al formato correcto (con offset de un día para corregir el problema de zona horaria)
+  const todayDate = new Date();
+  todayDate.setDate(todayDate.getDate() + 1); // Añadir un día para compensar el problema de zona horaria
+  const [filterDate, setFilterDate] = useState(todayDate.toISOString().split('T')[0]);
   const [sortBy, setSortBy] = useState("direccion");
 
   // Cargar la lista de préstamos
@@ -317,7 +320,10 @@ export default function CobrosDia() {
   const isLoading = loadingPrestamos || loadingClientes;
 
   const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setFilterDate(event.target.value);
+    // Añadir un día a la fecha seleccionada para compensar el problema de zona horaria
+    const selectedDate = new Date(event.target.value);
+    selectedDate.setDate(selectedDate.getDate() + 1);
+    setFilterDate(selectedDate.toISOString().split('T')[0]);
   };
 
   return (
