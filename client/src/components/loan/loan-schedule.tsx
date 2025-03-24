@@ -4,14 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { FileText, FileSpreadsheet, Calendar, RefreshCw, Clock } from "lucide-react";
+import { FileText, FileSpreadsheet, Calendar, RefreshCw, Edit, Clock } from "lucide-react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loading } from "@/components/ui/loading";
 
 interface LoanScheduleProps {
   prestamo: {
@@ -65,34 +64,19 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
   const [fechaInicial, setFechaInicial] = useState<string | null>(null);
   const [showFechaDialog, setShowFechaDialog] = useState(false);
   
-  // Estado para manejar la carga durante los cambios de fecha
-  const [isLoading, setIsLoading] = useState(false);
-  
   // Función para abrir el diálogo de cambio de fecha inicial
   const openFechaDialog = () => setShowFechaDialog(true);
   
   // Función para aplicar la nueva fecha inicial
   const aplicarFechaInicial = (fecha: string) => {
-    setIsLoading(true); // Activar estado de carga
     setFechaInicial(fecha);
     setShowFechaDialog(false);
-    
-    // Simular un tiempo de carga breve para mostrar el efecto visual
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
   };
   
   // Función para resetear la fecha inicial a la del préstamo
   const resetFechaInicial = () => {
-    setIsLoading(true); // Activar estado de carga
     setFechaInicial(null);
     setShowFechaDialog(false);
-    
-    // Simular un tiempo de carga breve para mostrar el efecto visual
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
   };
 
   useEffect(() => {
@@ -125,7 +109,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
       // Si no hay semanas pagadas, la primera fecha es 7 días después del préstamo
       const fechaPrestamo = new Date(prestamo.fecha_prestamo);
       primeraFechaPago = new Date(fechaPrestamo);
-      primeraFechaPago.setDate(fechaPrestamo.getDate() + 6); // Usamos 6 días para corregir el día extra
+      primeraFechaPago.setDate(fechaPrestamo.getDate() + 7);
     } else {
       // Si hay semanas pagadas, calculamos la primera fecha a partir de la próxima fecha de pago
       const proximaFechaPago = new Date(prestamo.proxima_fecha_pago);
@@ -139,28 +123,6 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
       // Ajustamos la fecha sumando las semanas (número de semana - 1) * 7 días
       // Restamos 1 porque la primera semana ya tiene la fecha correcta (primeraFechaPago)
       fecha.setDate(primeraFechaPago.getDate() + ((numeroSemana - 1) * 7));
-      
-      // Importante: Si el préstamo tiene un día_pago definido, ajustamos la fecha a ese día
-      if (prestamo.dia_pago !== undefined) {
-        // Ajustar al día de la semana específico (0-6, donde 0 es domingo)
-        // Primero obtenemos el día actual de la semana de esta fecha
-        const diaActual = fecha.getDay(); // 0-6
-        // Calculamos la diferencia para llegar al día deseado
-        // La propiedad dia_pago es 0-6, donde 0 es domingo
-        const diferencia = prestamo.dia_pago - diaActual;
-        
-        // Ajuste para evitar añadir un día extra
-        if (diferencia !== 0) {
-          // Si la diferencia es positiva, avanzamos los días necesarios
-          // Si es negativa, retrocedemos (7 + diferencia) para obtener el mismo día de la semana anterior
-          const ajuste = diferencia > 0 ? diferencia : (7 + diferencia);
-          fecha.setDate(fecha.getDate() + ajuste);
-        }
-      }
-      
-      // Restamos un día al resultado para corregir el día extra
-      fecha.setDate(fecha.getDate() - 1);
-      
       return fecha;
     };
     
@@ -293,10 +255,10 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
         // Si hay una fecha personalizada, la usamos
         setNuevaFecha(fechaInicial);
       } else if (prestamo.semanas_pagadas === 0) {
-        // Primera fecha de pago calculada (6 días después del préstamo para corregir el día extra)
+        // Primera fecha de pago calculada (7 días después del préstamo)
         const fechaPrestamo = new Date(prestamo.fecha_prestamo);
         const primerPago = new Date(fechaPrestamo);
-        primerPago.setDate(fechaPrestamo.getDate() + 6);
+        primerPago.setDate(fechaPrestamo.getDate() + 7);
         setNuevaFecha(primerPago.toISOString().split('T')[0]);
       } else {
         // Calcular la primera fecha basada en la próxima fecha de pago
@@ -402,137 +364,128 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
         </div>
       </CardHeader>
       <CardContent className="px-2 py-2 sm:p-6 max-w-full overflow-x-auto">
-        {/* Mostrar indicador de carga cuando se está calculando el cronograma */}
-        {isLoading ? (
-          <div className="flex items-center justify-center p-10">
-            <Loading text="Recalculando fechas..." />
-          </div>
-        ) : (
-          <>
-            {/* Vista móvil - Tarjetas individuales */}
-            <div className="block md:hidden space-y-2">
-              {cronograma.length > 0 ? (
-                cronograma.slice(0, MAX_MOBILE_ITEMS).map((cuota) => (
-                  <div key={cuota.numero} className="border rounded-lg p-2 shadow-sm">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-medium text-sm">Semana {cuota.numero}</span>
-                      <Badge
-                        className={
-                          cuota.estado === "PAGADO"
-                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 text-xs h-5"
-                            : cuota.estado === "PARCIAL"
-                            ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 text-xs h-5"
-                            : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 text-xs h-5"
-                        }
-                      >
-                        {cuota.estado}
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
-                      <div>
-                        <p className="text-muted-foreground">Fecha:</p>
-                        <p className="font-medium">{formatDate(cuota.fechaProgramada)}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Monto:</p>
-                        <p className="font-medium">{formatCurrency(cuota.montoProgramado)}</p>
-                      </div>
-                      {cuota.estado !== "PENDIENTE" && (
-                        <>
-                          <div>
-                            <p className="text-muted-foreground">Pagó el:</p>
-                            <p className="font-medium">{cuota.fechaPago ? formatDate(cuota.fechaPago) : "-"}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Pagó:</p>
-                            <p className="font-medium text-green-500">{cuota.montoPagado ? formatCurrency(cuota.montoPagado) : "-"}</p>
-                          </div>
-                        </>
-                      )}
-                      {(cuota.mora && parseFloat(cuota.mora) > 0) && (
-                        <div>
-                          <p className="text-muted-foreground">Mora:</p>
-                          <p className="font-medium text-red-500">{formatCurrency(cuota.mora)}</p>
-                        </div>
-                      )}
-                      {(cuota.resto && parseFloat(cuota.resto) > 0) && (
-                        <div>
-                          <p className="text-muted-foreground">Restante:</p>
-                          <p className="font-medium text-orange-500">{formatCurrency(cuota.resto)}</p>
-                        </div>
-                      )}
-                    </div>
+        {/* Vista móvil - Tarjetas individuales */}
+        <div className="block md:hidden space-y-2">
+          {cronograma.length > 0 ? (
+            cronograma.slice(0, MAX_MOBILE_ITEMS).map((cuota) => (
+              <div key={cuota.numero} className="border rounded-lg p-2 shadow-sm">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="font-medium text-sm">Semana {cuota.numero}</span>
+                  <Badge
+                    className={
+                      cuota.estado === "PAGADO"
+                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 text-xs h-5"
+                        : cuota.estado === "PARCIAL"
+                        ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 text-xs h-5"
+                        : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 text-xs h-5"
+                    }
+                  >
+                    {cuota.estado}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
+                  <div>
+                    <p className="text-muted-foreground">Fecha:</p>
+                    <p className="font-medium">{formatDate(cuota.fechaProgramada)}</p>
                   </div>
-                ))
-              ) : (
-                <div className="p-2 text-center text-muted-foreground text-sm">
-                  No hay información de cronograma disponible
+                  <div>
+                    <p className="text-muted-foreground">Monto:</p>
+                    <p className="font-medium">{formatCurrency(cuota.montoProgramado)}</p>
+                  </div>
+                  {cuota.estado !== "PENDIENTE" && (
+                    <>
+                      <div>
+                        <p className="text-muted-foreground">Pagó el:</p>
+                        <p className="font-medium">{cuota.fechaPago ? formatDate(cuota.fechaPago) : "-"}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Pagó:</p>
+                        <p className="font-medium text-green-500">{cuota.montoPagado ? formatCurrency(cuota.montoPagado) : "-"}</p>
+                      </div>
+                    </>
+                  )}
+                  {(cuota.mora && parseFloat(cuota.mora) > 0) && (
+                    <div>
+                      <p className="text-muted-foreground">Mora:</p>
+                      <p className="font-medium text-red-500">{formatCurrency(cuota.mora)}</p>
+                    </div>
+                  )}
+                  {(cuota.resto && parseFloat(cuota.resto) > 0) && (
+                    <div>
+                      <p className="text-muted-foreground">Restante:</p>
+                      <p className="font-medium text-orange-500">{formatCurrency(cuota.resto)}</p>
+                    </div>
+                  )}
                 </div>
-              )}
-              {cronograma.length > MAX_MOBILE_ITEMS && (
-                <div className="text-center text-xs text-muted-foreground mt-2 p-2 border rounded-lg">
-                  Mostrando {MAX_MOBILE_ITEMS} de {cronograma.length} semanas.
-                  <br />Para ver todas las semanas, descargue el PDF o Excel.
-                </div>
-              )}
-            </div>
-
-            {/* Vista desktop - Tabla horizontal */}
-            <div className="hidden md:block rounded-md border overflow-x-auto">
-              <Table className="cronograma-table">
-                <TableHeader>
-                  <TableRow className="table-row">
-                    <TableHead className="table-header w-[12%]">Nº Cuota</TableHead>
-                    <TableHead className="table-header w-[12%]">Fecha Programada</TableHead>
-                    <TableHead className="table-header w-[12%]">Monto</TableHead>
-                    <TableHead className="table-header w-[12%]">Estado</TableHead>
-                    <TableHead className="table-header w-[12%]">Fecha de Pago</TableHead>
-                    <TableHead className="table-header w-[12%]">Monto Pagado</TableHead>
-                    <TableHead className="table-header w-[12%]">Mora</TableHead>
-                    <TableHead className="table-header w-[12%]">Restante</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {cronograma.map((cuota) => (
-                    <TableRow key={cuota.numero} className="table-row">
-                      <TableCell className="table-cell">Semana {cuota.numero}</TableCell>
-                      <TableCell className="table-cell">{formatDate(cuota.fechaProgramada)}</TableCell>
-                      <TableCell className="table-cell">{formatCurrency(cuota.montoProgramado)}</TableCell>
-                      <TableCell className="table-cell">
-                        <Badge
-                          className={
-                            cuota.estado === "PAGADO"
-                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                              : cuota.estado === "PARCIAL"
-                              ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-                              : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-                          }
-                        >
-                          {cuota.estado}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="table-cell">{cuota.fechaPago ? formatDate(cuota.fechaPago) : "-"}</TableCell>
-                      <TableCell className="table-cell">
-                        {cuota.montoPagado ? formatCurrency(cuota.montoPagado) : "-"}
-                      </TableCell>
-                      <TableCell className="table-cell text-red-500">
-                        {cuota.mora && parseFloat(cuota.mora) > 0 ? formatCurrency(cuota.mora) : "-"}
-                      </TableCell>
-                      <TableCell className="table-cell text-orange-500">
-                        {cuota.resto && parseFloat(cuota.resto) > 0 ? formatCurrency(cuota.resto) : "-"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            
-            {cronograma.length === 0 && (
-              <div className="p-4 text-center text-muted-foreground">
-                No hay información de cronograma disponible
               </div>
-            )}
-          </>
+            ))
+          ) : (
+            <div className="p-2 text-center text-muted-foreground text-sm">
+              No hay información de cronograma disponible
+            </div>
+          )}
+          {cronograma.length > MAX_MOBILE_ITEMS && (
+            <div className="text-center text-xs text-muted-foreground mt-2 p-2 border rounded-lg">
+              Mostrando {MAX_MOBILE_ITEMS} de {cronograma.length} semanas.
+              <br />Para ver todas las semanas, descargue el PDF o Excel.
+            </div>
+          )}
+        </div>
+
+        {/* Vista desktop - Tabla horizontal */}
+        <div className="hidden md:block rounded-md border overflow-x-auto">
+          <Table className="cronograma-table">
+            <TableHeader>
+              <TableRow className="table-row">
+                <TableHead className="table-header w-[12%]">Nº Cuota</TableHead>
+                <TableHead className="table-header w-[12%]">Fecha Programada</TableHead>
+                <TableHead className="table-header w-[12%]">Monto</TableHead>
+                <TableHead className="table-header w-[12%]">Estado</TableHead>
+                <TableHead className="table-header w-[12%]">Fecha de Pago</TableHead>
+                <TableHead className="table-header w-[12%]">Monto Pagado</TableHead>
+                <TableHead className="table-header w-[12%]">Mora</TableHead>
+                <TableHead className="table-header w-[12%]">Restante</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {cronograma.map((cuota) => (
+                <TableRow key={cuota.numero} className="table-row">
+                  <TableCell className="table-cell">Semana {cuota.numero}</TableCell>
+                  <TableCell className="table-cell">{formatDate(cuota.fechaProgramada)}</TableCell>
+                  <TableCell className="table-cell">{formatCurrency(cuota.montoProgramado)}</TableCell>
+                  <TableCell className="table-cell">
+                    <Badge
+                      className={
+                        cuota.estado === "PAGADO"
+                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                          : cuota.estado === "PARCIAL"
+                          ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+                          : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                      }
+                    >
+                      {cuota.estado}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="table-cell">{cuota.fechaPago ? formatDate(cuota.fechaPago) : "-"}</TableCell>
+                  <TableCell className="table-cell">
+                    {cuota.montoPagado ? formatCurrency(cuota.montoPagado) : "-"}
+                  </TableCell>
+                  <TableCell className="table-cell text-red-500">
+                    {cuota.mora && parseFloat(cuota.mora) > 0 ? formatCurrency(cuota.mora) : "-"}
+                  </TableCell>
+                  <TableCell className="table-cell text-orange-500">
+                    {cuota.resto && parseFloat(cuota.resto) > 0 ? formatCurrency(cuota.resto) : "-"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        
+        {cronograma.length === 0 && (
+          <div className="p-4 text-center text-muted-foreground">
+            No hay información de cronograma disponible
+          </div>
         )}
       </CardContent>
     </Card>
