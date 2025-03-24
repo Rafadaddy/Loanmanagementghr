@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { formatCurrency, formatDate, getLoanStatus, getPaymentStatus } from "@/lib/utils";
@@ -350,7 +350,7 @@ export default function LoanDetails() {
   // Diálogo para cambiar el día de pago
   const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
   
-  // Al abrir el diálogo, establecer la fecha inicial con la próxima fecha de pago del préstamo
+  // Effect para inicializar la fecha cuando se abre el diálogo
   useEffect(() => {
     if (changeDayDialogOpen && prestamo) {
       setNuevaFechaPago(prestamo.proxima_fecha_pago);
