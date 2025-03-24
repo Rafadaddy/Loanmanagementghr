@@ -252,12 +252,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validar y parsear los datos
-      // Corregir el problema de fecha: añadir un día a la fecha_prestamo y proxima_fecha_pago
+      // No corregimos las fechas para evitar inconsistencias
       const fechaPrestamo = new Date(req.body.fecha_prestamo);
-      fechaPrestamo.setDate(fechaPrestamo.getDate() + 1);
       
       const proximaFechaPago = new Date(req.body.proxima_fecha_pago);
-      proximaFechaPago.setDate(proximaFechaPago.getDate() + 1);
       
       const fechaPrestamoISO = formatISO(fechaPrestamo, { representation: 'date' });
       const proximaFechaPagoISO = formatISO(proximaFechaPago, { representation: 'date' });
