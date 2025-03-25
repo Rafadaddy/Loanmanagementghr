@@ -5,6 +5,7 @@ import { formatCurrency, formatDate, getLoanStatus, getPaymentStatus } from "@/l
 import PaymentForm from "@/components/forms/payment-form";
 import LoanSchedule from "@/components/loan/loan-schedule";
 import { Prestamo, Cliente, Pago } from "@shared/schema";
+import { PrestamoDisplay, PagoDisplay } from "@/types/loan";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLoading } from "@/hooks/use-loading";
@@ -169,11 +170,6 @@ export default function LoanDetails() {
       return res.json();
     },
     onSuccess: (data) => {
-      // Invalidar todas las consultas relevantes
-      queryClient.invalidateQueries({ queryKey: [`/api/prestamos/${prestamoId}`] });
-      queryClient.invalidateQueries({ queryKey: ['/api/prestamos'] });
-      queryClient.invalidateQueries({ queryKey: [`/api/prestamos/${prestamoId}/pagos`] });
-      
       // Cerrar el diálogo de cambio de día
       setChangeDayDialogOpen(false);
       setNuevaFechaPago("");
@@ -183,17 +179,15 @@ export default function LoanDetails() {
         description: `El día de pago ha sido cambiado a ${data.nuevoDiaSemana}.`,
       });
       
-      // Refrescar los datos del préstamo
-      queryClient.refetchQueries({ queryKey: [`/api/prestamos/${prestamoId}`] })
-        .then(() => {
-          // Forzar la regeneración del cronograma cambiando la key
-          setCronogramaKey(prevKey => prevKey + 1);
-          
-          toast({
-            title: "Cronograma actualizado",
-            description: "El cronograma ha sido actualizado con las nuevas fechas.",
-          });
-        });
+      // Usamos una estrategia más agresiva para forzar la recarga total de los datos
+      // y evitar problemas de caché o datos no actualizados
+      startLoading("Actualizando cronograma...");
+      
+      setTimeout(() => {
+        // Después de un breve retraso, recargamos la página completa
+        // para asegurar que todos los datos se refresquen totalmente
+        window.location.reload();
+      }, 1000);
     },
     onError: (error) => {
       toast({
@@ -830,8 +824,8 @@ export default function LoanDetails() {
           <div className="mt-6">
             <LoanSchedule 
               key={cronogramaKey}
-              prestamo={prestamo}
-              pagosRealizados={pagos}
+              prestamo={prestamo as unknown as PrestamoDisplay}
+              pagosRealizados={pagos as unknown as PagoDisplay[]}
               nombreCliente={cliente.nombre}
             />
           </div>

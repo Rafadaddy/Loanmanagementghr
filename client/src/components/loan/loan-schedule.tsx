@@ -11,36 +11,11 @@ import * as XLSX from "xlsx";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PrestamoDisplay, PagoDisplay } from "@/types/loan";
 
 interface LoanScheduleProps {
-  prestamo: {
-    id: number;
-    cliente_id: number;
-    monto_prestado: string;
-    tasa_interes: string;
-    fecha_prestamo: string;
-    frecuencia_pago: string;
-    numero_semanas: number;
-    pago_semanal: string;
-    monto_total_pagar: string;
-    estado: string;
-    semanas_pagadas: number;
-    proxima_fecha_pago: string;
-    tasa_mora?: string;
-    fecha_inicial_personalizada?: string;
-    dia_pago?: number;
-  };
-  pagosRealizados: Array<{
-    id: number;
-    prestamo_id: number;
-    monto_pagado: string;
-    fecha_pago: string | Date;
-    numero_semana: number;
-    estado: string;
-    es_pago_parcial: string;
-    monto_restante: string;
-    monto_mora?: string;
-  }>;
+  prestamo: PrestamoDisplay;
+  pagosRealizados: Array<PagoDisplay>;
   nombreCliente: string;
 }
 
