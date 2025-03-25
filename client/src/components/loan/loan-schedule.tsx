@@ -79,6 +79,14 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
     setShowFechaDialog(false);
   };
 
+  // Clave para forzar la recarga del cronograma cuando cambia el día de pago
+  // Este useEffect se ejecutará cada vez que el préstamo o los pagos cambien
+  useEffect(() => {
+    // Resetear el estado local de fecha inicial cuando el préstamo cambia
+    // Esto asegura que se use siempre la fecha más actualizada del préstamo
+    setFechaInicial(null);
+  }, [prestamo.dia_pago, prestamo.fecha_inicial_personalizada]);
+    
   useEffect(() => {
     // Generar el cronograma completo del préstamo
     const schedule: CuotaProgramada[] = [];
@@ -105,6 +113,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
       primeraFechaISO = normalizeDate(fechaInicial);
     } else if (prestamo.fecha_inicial_personalizada) {
       // Si el préstamo tiene una fecha inicial personalizada guardada, la usamos
+      // Esta será actualizada cuando se cambie el día de pago
       primeraFechaISO = normalizeDate(prestamo.fecha_inicial_personalizada);
     } else if (semanasYaPagadas === 0) {
       // Si no hay semanas pagadas, la primera fecha es 7 días después del préstamo
