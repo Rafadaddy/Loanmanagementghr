@@ -26,7 +26,7 @@ export default function SidebarToggle() {
         isOpen 
           ? "top-16 left-[252px] h-10 w-6 rounded-l-none rounded-r-md" 
           : "top-16 left-[58px] h-10 w-6 rounded-l-none rounded-r-md",
-        "flex items-center justify-center p-0 transition-all duration-300"
+        "hidden md:flex items-center justify-center p-0 transition-all duration-300"
       )}
       title={isOpen ? "Ocultar menú" : "Mostrar menú"}
     >
