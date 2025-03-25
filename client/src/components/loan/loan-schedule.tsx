@@ -45,6 +45,7 @@ interface CuotaProgramada {
 export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente }: LoanScheduleProps) {
   // Log para verificar cuando se reconstruye el componente
   console.log("Componente LoanSchedule recreado con fechas:", prestamo.fecha_prestamo, prestamo.fecha_inicial_personalizada, prestamo.proxima_fecha_pago);
+  console.log("Estado de eliminación del cronograma:", prestamo.cronograma_eliminado);
   // Garantizar que solo mostramos un número limitado de semanas en móvil para mejor rendimiento
   const MAX_MOBILE_ITEMS = 12;
   const [cronograma, setCronograma] = useState<CuotaProgramada[]>([]);
@@ -59,7 +60,8 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
   const [fechaInicial, setFechaInicial] = useState<string | null>(null);
   const [showFechaDialog, setShowFechaDialog] = useState(false);
   // Estado para controlar si el cronograma ha sido eliminado manualmente
-  const [cronogramaEliminado, setCronogramaEliminado] = useState<boolean>(false);
+  // Inicializar desde el valor almacenado en el préstamo
+  const [cronogramaEliminado, setCronogramaEliminado] = useState<boolean>(prestamo.cronograma_eliminado || false);
   
   // Función para abrir el diálogo de cambio de fecha inicial
   const openFechaDialog = () => setShowFechaDialog(true);
@@ -82,7 +84,8 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          fecha_inicial_personalizada: fecha 
+          fecha_inicial_personalizada: fecha,
+          cronograma_eliminado: false 
         })
       });
       console.log("Fecha inicial guardada en la base de datos:", fecha);
@@ -96,13 +99,28 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
   };
   
   // Función para resetear la fecha inicial a la del préstamo
-  const resetFechaInicial = () => {
+  const resetFechaInicial = async () => {
     setFechaInicial(null);
     setShowFechaDialog(false);
     
     // Si el cronograma estaba eliminado, lo volvemos a activar
     if (cronogramaEliminado) {
       setCronogramaEliminado(false);
+      
+      // Guardar el estado restaurado en la base de datos
+      try {
+        await fetch(`/api/prestamos/${prestamo.id}/set-fecha-inicial`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            fecha_inicial_personalizada: null,
+            cronograma_eliminado: false 
+          })
+        });
+        console.log("Estado de cronograma restaurado en la base de datos");
+      } catch (error) {
+        console.error("Error al restaurar el estado del cronograma:", error);
+      }
     }
   };
 
@@ -435,12 +453,13 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
                   // Marcar que el cronograma ha sido eliminado manualmente para evitar regeneración
                   setCronogramaEliminado(true);
                   
-                  // Intentar eliminar la fecha personalizada del préstamo
+                  // Intentar eliminar la fecha personalizada del préstamo y guardar el estado de eliminación
                   fetch(`/api/prestamos/${prestamo.id}/set-fecha-inicial`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                      fecha_inicial_personalizada: null 
+                      fecha_inicial_personalizada: null,
+                      cronograma_eliminado: true
                     })
                   }).catch(err => console.error("Error al resetear fecha inicial:", err));
                   

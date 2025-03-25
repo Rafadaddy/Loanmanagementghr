@@ -15,6 +15,7 @@ export interface PrestamoDisplay {
   tasa_mora?: string;
   fecha_inicial_personalizada?: string | null;
   dia_pago?: number | null;
+  cronograma_eliminado?: boolean;
 }
 
 export interface PagoDisplay {
