@@ -452,9 +452,9 @@ export default function LoanDetails() {
               
               {prestamo.estado !== "PAGADO" && (
                 <Button 
-                  variant="outline"
+                  variant="secondary"
                   onClick={openChangeDayDialog}
-                  className="text-sm sm:text-base w-full sm:w-auto"
+                  className="text-sm sm:text-base w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
                 >
                   <Calendar className="h-4 w-4 mr-2" />
                   Cambiar Día de Pago
