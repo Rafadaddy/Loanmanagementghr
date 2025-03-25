@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { formatCurrency, formatDate, getDateTimeFormat, getShortDate } from "@/lib/utils";
 import MainLayout from "@/components/layout/main-layout";
 import { Prestamo, Cliente, Cobrador } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Download, FileSpreadsheet, FileText, MapPin, Search, UserCircle2, X } from "lucide-react";
+import { Calendar, ChevronLeft, Download, FileSpreadsheet, FileText, MapPin, Search, UserCircle2, X } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -352,9 +353,21 @@ export default function CobrosDia() {
   return (
     <MainLayout>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold">Cobros del Día</h1>
-          <p className="text-xs md:text-sm text-muted-foreground">Organiza tu ruta de cobros diarios</p>
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard" className="md:hidden">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 mr-1"
+              title="Volver al menú"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold">Cobros del Día</h1>
+            <p className="text-xs md:text-sm text-muted-foreground">Organiza tu ruta de cobros diarios</p>
+          </div>
         </div>
         
         <div className="flex flex-row items-center gap-2 mt-2 md:mt-0">
