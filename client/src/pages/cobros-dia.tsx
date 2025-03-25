@@ -2,10 +2,10 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { formatCurrency, formatDate, getDateTimeFormat, getShortDate } from "@/lib/utils";
 import MainLayout from "@/components/layout/main-layout";
-import { Prestamo, Cliente } from "@shared/schema";
+import { Prestamo, Cliente, Cobrador } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Download, FileSpreadsheet, FileText, MapPin, Search, X } from "lucide-react";
+import { Calendar, Download, FileSpreadsheet, FileText, MapPin, Search, UserCircle2, X } from "lucide-react";
 import {
   Table,
   TableBody,
