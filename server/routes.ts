@@ -1038,7 +1038,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Guardamos la fecha inicial personalizada si se ha solicitado cambiar todas las fechas
         fecha_inicial_personalizada: cambiarTodasFechas ? fechaInicialPrimeraCuota : prestamo.fecha_inicial_personalizada,
         // Guardamos el día de la semana seleccionado (0-6, donde 0 es domingo)
-        dia_pago: nuevoDiaSemana
+        dia_pago: nuevoDiaSemana,
+        // IMPORTANTE: Preservamos el estado de eliminación del cronograma
+        cronograma_eliminado: prestamo.cronograma_eliminado 
       };
       
       const resultado = await storage.updatePrestamo(id, prestamoActualizado);
