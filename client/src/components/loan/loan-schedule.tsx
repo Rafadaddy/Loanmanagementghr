@@ -72,6 +72,8 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
     setFechaInicial(fecha);
     setShowFechaDialog(false);
     
+    console.log("Aplicando nueva fecha inicial y reactivando cronograma");
+    
     // Si el cronograma estaba eliminado, lo volvemos a activar
     if (cronogramaEliminado) {
       setCronogramaEliminado(false);
@@ -79,8 +81,9 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
     
     // Guardar en el préstamo para persistencia
     try {
+      console.log("Guardando nueva fecha inicial en la base de datos:", fecha);
       // Realizar petición para actualizar la fecha inicial del préstamo
-      await fetch(`/api/prestamos/${prestamo.id}/set-fecha-inicial`, {
+      const response = await fetch(`/api/prestamos/${prestamo.id}/set-fecha-inicial`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -88,14 +91,25 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
           cronograma_eliminado: false 
         })
       });
-      console.log("Fecha inicial guardada en la base de datos:", fecha);
+      
+      if (!response.ok) {
+        throw new Error(`Error al guardar la fecha inicial: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log("Fecha inicial y estado del cronograma actualizados correctamente:", data);
+      
+      // Incrementar el contador para forzar actualización
+      setForceRefreshCounter(prev => prev + 1);
+      console.log("Forzando regeneración del cronograma con la nueva fecha");
     } catch (error) {
       console.error("Error al guardar la fecha inicial:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo guardar la nueva fecha inicial en la base de datos.",
+        variant: "destructive"
+      });
     }
-    
-    // Incrementar el contador para forzar actualización
-    setForceRefreshCounter(prev => prev + 1);
-    console.log("Aplicando nueva fecha inicial:", fecha);
   };
   
   // Función para resetear la fecha inicial a la del préstamo
@@ -127,6 +141,8 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
   // Clave para forzar la recarga del cronograma cuando cambia el día de pago
   // Este useEffect se ejecutará cada vez que el préstamo o los pagos cambien
   useEffect(() => {
+    console.log("Evaluando si regenerar cronograma - Estado eliminado:", cronogramaEliminado);
+    
     // Solo actualizamos si el cronograma no ha sido eliminado manualmente
     if (!cronogramaEliminado) {
       // Resetear el estado local de fecha inicial cuando el préstamo cambia
@@ -136,15 +152,21 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
       // Incrementar el contador del cronograma para forzar su recreación
       setForceRefreshCounter(prev => prev + 1);
       console.log("Reseteando fecha inicial y forzando actualización del cronograma");
+    } else {
+      console.log("Cronograma marcado como eliminado, no se regenerará");
     }
-  }, [prestamo.dia_pago, prestamo.fecha_inicial_personalizada, prestamo.proxima_fecha_pago, cronogramaEliminado]);
+  }, [prestamo.dia_pago, prestamo.fecha_inicial_personalizada, prestamo.proxima_fecha_pago]);
     
   useEffect(() => {
     // Si el cronograma ha sido eliminado manualmente, no lo recreamos
     if (cronogramaEliminado) {
+      console.log("Cronograma marcado como eliminado, no se generará ninguna cuota");
+      // Asegurar que el cronograma esté vacío
+      setCronograma([]);
       return;
     }
     
+    console.log("Generando cronograma de cuotas");
     // Generar el cronograma completo del préstamo
     const schedule: CuotaProgramada[] = [];
     const pagoSemanal = parseFloat(prestamo.pago_semanal);
