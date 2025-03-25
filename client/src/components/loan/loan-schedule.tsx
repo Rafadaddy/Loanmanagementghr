@@ -367,45 +367,43 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
     <Card className="mt-4 mb-6 w-full max-w-full overflow-hidden">
       {/* Diálogo para cambiar la fecha inicial */}
       <Dialog open={showFechaDialog} onOpenChange={setShowFechaDialog}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Establecer fecha inicial del cronograma</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="w-[calc(100%-24px)] max-w-[425px] p-4 md:p-6 rounded-lg">
+          <DialogHeader className="mb-2">
+            <DialogTitle className="text-center text-lg md:text-xl">Establecer fecha inicial del cronograma</DialogTitle>
+            <DialogDescription className="text-center text-sm">
               Esta acción establecerá la fecha de la primera cuota y recalculará todas las fechas del cronograma.
-              Se utilizará esta fecha como base para todas las cuotas.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="fecha-inicial" className="text-right">
-                Primera cuota
+          <div className="py-3 space-y-4">
+            <div className="flex flex-col space-y-2">
+              <Label htmlFor="fecha-inicial" className="text-sm font-medium">
+                Primera cuota:
               </Label>
               <Input
                 id="fecha-inicial"
                 type="date"
                 value={nuevaFecha}
                 onChange={handleFechaChange}
-                className="col-span-3"
+                className="h-10 px-3 w-full text-base"
               />
             </div>
             
             <div className="p-3 bg-muted rounded-md text-sm text-muted-foreground">
               <p className="font-semibold mb-1">Información importante:</p>
-              <ul className="list-disc list-inside space-y-1">
+              <ul className="list-disc list-inside space-y-1 text-xs md:text-sm">
                 <li>Esta fecha será utilizada como fecha de la primera cuota.</li>
                 <li>Las cuotas posteriores se programarán cada 7 días a partir de esta fecha.</li>
-                <li>La fecha inicial recomendada es {
-                  prestamo.semanas_pagadas === 0 
-                    ? `${formatDate(addDaysToDate(prestamo.fecha_prestamo, 7))} (7 días después del préstamo).`
-                    : `${formatDate(addDaysToDate(prestamo.proxima_fecha_pago, -(prestamo.semanas_pagadas * 7)))} (calculada desde la próxima fecha de pago).`
-                }</li>
+                <li className="break-words">
+                  La fecha inicial recomendada es {
+                    prestamo.semanas_pagadas === 0 
+                      ? <span className="font-medium">{formatDate(addDaysToDate(prestamo.fecha_prestamo, 7))}</span>
+                      : <span className="font-medium">{formatDate(addDaysToDate(prestamo.proxima_fecha_pago, -(prestamo.semanas_pagadas * 7)))}</span>
+                  }
+                </li>
               </ul>
             </div>
           </div>
-          <DialogFooter className="flex flex-col sm:flex-row gap-2">
-            <Button variant="outline" onClick={() => setShowFechaDialog(false)} className="sm:order-1">
-              Cancelar
-            </Button>
+          <DialogFooter className="mt-2 flex flex-col gap-2">
             <Button 
               variant="default" 
               onClick={() => {
@@ -423,7 +421,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
                   description: `Se ha establecido la fecha inicial recomendada: ${formatDate(fechaRecomendada)}`
                 });
               }} 
-              className="sm:order-2"
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
             >
               Usar fecha recomendada
             </Button>
@@ -431,9 +429,12 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
               type="submit" 
               onClick={handleAplicarFecha} 
               disabled={!nuevaFecha}
-              className="sm:order-3"
+              className="w-full"
             >
               Aplicar fecha personalizada
+            </Button>
+            <Button variant="outline" onClick={() => setShowFechaDialog(false)} className="w-full">
+              Cancelar
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -449,14 +450,14 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
           <div className="flex items-center gap-2">
             {/* Botón para establecer fecha de inicio manualmente */}
             <Button 
-              variant="outline" 
+              variant="default" 
               size="sm"
               onClick={openFechaDialog}
-              className="flex items-center h-7 px-2 text-xs"
+              className="flex items-center h-7 px-2 text-xs bg-green-600 hover:bg-green-700 text-white"
               title="Establecer fecha de inicio del cronograma"
             >
               <Calendar className="h-3 w-3 mr-1" />
-              Cambiar Fecha Inicio
+              Cambiar Día de Pago
             </Button>
             
             {/* Botón para eliminar el cronograma con confirmación */}
@@ -509,7 +510,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
                   // Mostrar mensaje de confirmación
                   toast({
                     title: "Cronograma eliminado",
-                    description: "Se ha eliminado el cronograma. Utilice 'Cambiar Fecha Inicio' para crear uno nuevo.",
+                    description: "Se ha eliminado el cronograma. Utilice 'Cambiar Día de Pago' para crear uno nuevo.",
                     variant: "destructive"
                   });
                 }
