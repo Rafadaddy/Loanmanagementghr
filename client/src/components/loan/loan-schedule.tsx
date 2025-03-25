@@ -328,19 +328,80 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
             <Calendar className="h-4 w-4" />
             Cronograma de Pagos
           </CardTitle>
-          {/* Botón para cambiar la fecha inicial del cronograma */}
-          {/* Eliminamos este botón para evitar confusiones con "Cambiar Día de Pago" */}
-          {fechaInicial && (
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={resetFechaInicial}
-              className="flex items-center h-7 px-1 text-xs text-muted-foreground hover:bg-secondary"
-              title="Restaurar fecha inicial predeterminada"
-            >
-              <RefreshCw className="h-3 w-3" />
-            </Button>
-          )}
+          {/* Botones para refrescar el cronograma */}
+          <Button 
+            variant="secondary" 
+            size="sm"
+            onClick={() => {
+              // Forzar la regeneración del cronograma limpiando y recreando
+              setCronograma([]);
+              // Pequeño delay para asegurar que el estado se actualice primero
+              setTimeout(() => {
+                // Trigger del useEffect para recalcular todo el cronograma
+                const pagoSemanal = parseFloat(prestamo.pago_semanal);
+                const schedule: CuotaProgramada[] = [];
+                
+                const pagosMap = new Map();
+                pagosRealizados.forEach(pago => {
+                  pagosMap.set(pago.numero_semana, pago);
+                });
+                
+                const semanasYaPagadas = prestamo.semanas_pagadas || 0;
+                
+                let primeraFechaISO: string;
+                
+                if (fechaInicial) {
+                  primeraFechaISO = normalizeDate(fechaInicial);
+                } else if (prestamo.fecha_inicial_personalizada) {
+                  primeraFechaISO = normalizeDate(prestamo.fecha_inicial_personalizada);
+                } else if (semanasYaPagadas === 0) {
+                  primeraFechaISO = addDaysToDate(prestamo.fecha_prestamo, 7);
+                } else {
+                  primeraFechaISO = addDaysToDate(prestamo.proxima_fecha_pago, -(semanasYaPagadas * 7));
+                }
+                
+                const calcularFechaSemana = (numeroSemana: number): Date => {
+                  const fechaInicial = createConsistentDate(primeraFechaISO);
+                  const fechaSemana = new Date(fechaInicial);
+                  fechaSemana.setDate(fechaInicial.getDate() + ((numeroSemana - 1) * 7));
+                  return fechaSemana;
+                };
+                
+                for (let i = 1; i <= prestamo.numero_semanas; i++) {
+                  const fechaProgramada = calcularFechaSemana(i);
+                  
+                  const pagoRealizado = pagosMap.get(i);
+                  
+                  const cuota: CuotaProgramada = {
+                    numero: i,
+                    fechaProgramada: fechaProgramada.toISOString().split('T')[0],
+                    montoProgramado: pagoSemanal.toFixed(2),
+                    estado: "PENDIENTE"
+                  };
+                  
+                  if (pagoRealizado) {
+                    cuota.estado = pagoRealizado.es_pago_parcial === "true" ? "PARCIAL" : "PAGADO";
+                    cuota.montoPagado = pagoRealizado.monto_pagado;
+                    cuota.fechaPago = pagoRealizado.fecha_pago;
+                    cuota.resto = pagoRealizado.monto_restante;
+                    cuota.mora = pagoRealizado.monto_mora;
+                  } else if (i <= prestamo.semanas_pagadas) {
+                    cuota.estado = "PAGADO";
+                  }
+                  
+                  schedule.push(cuota);
+                }
+                
+                console.log("🔄 Cronograma regenerado manualmente:", primeraFechaISO);
+                setCronograma(schedule);
+              }, 100);
+            }}
+            className="flex items-center h-7 px-2 text-xs"
+            title="Regenerar cronograma desde cero"
+          >
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Regenerar Cronograma
+          </Button>
         </div>
         <div className="flex gap-2">
           <Button 
