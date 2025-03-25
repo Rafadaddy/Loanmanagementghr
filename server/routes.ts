@@ -947,37 +947,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
       
       // Si cambiarTodasFechas es verdadero, necesitamos calcular una fecha inicial para la primera cuota
-      let fechaInicialPrimeraCuota = null;
+      let fechaInicialPrimeraCuota = prestamo.fecha_inicial_personalizada || null;
       if (cambiarTodasFechas) {
         // Calculamos la fecha de la primera cuota basándonos en la nueva fecha
         const semanasYaPagadas = prestamo.semanas_pagadas || 0;
         
         if (semanasYaPagadas === 0) {
-          // Si no hay semanas pagadas, la primera fecha es la nueva fecha
-          // Formateamos la fecha sin crear un nuevo objeto Date para evitar problemas de zona horaria
-          fechaInicialPrimeraCuota = req.body.fecha_pago;
+          // Si no hay semanas pagadas, la primera fecha es 7 días después de la fecha del préstamo 
+          // para mantener la regla de negocio establecida
+          const fechaPrestamo = new Date(prestamo.fecha_prestamo);
+          const primeraCuota = new Date(fechaPrestamo);
+          primeraCuota.setDate(primeraCuota.getDate() + 7);
+          
+          // Ajustar el día de la semana de la primera cuota para que coincida con el día seleccionado
+          while (primeraCuota.getDay() !== nuevoDiaSemana) {
+            primeraCuota.setDate(primeraCuota.getDate() + 1);
+          }
+          
+          fechaInicialPrimeraCuota = primeraCuota.toISOString().split('T')[0];
         } else {
           // Si hay semanas pagadas, retrocedemos desde la nueva fecha para obtener la primera fecha
-          // Usamos la fecha que viene del cliente y calculamos la diferencia en días
-          const fechaBase = req.body.fecha_pago;
-          // Creamos una fecha ISO restando los días correspondientes
-          const fechaPartes = fechaBase.split('-');
-          const anio = parseInt(fechaPartes[0]);
-          const mes = parseInt(fechaPartes[1]) - 1; // Meses van de 0-11
-          const dia = parseInt(fechaPartes[2]) - (semanasYaPagadas * 7);
+          const nuevaFechaObj = new Date(nuevaFechaPago);
+          const primeraCuota = new Date(nuevaFechaObj);
+          primeraCuota.setDate(primeraCuota.getDate() - (semanasYaPagadas * 7));
           
-          // Creamos la fecha y obtenemos el formato YYYY-MM-DD
-          const tempDate = new Date(Date.UTC(anio, mes, dia));
-          fechaInicialPrimeraCuota = tempDate.toISOString().split('T')[0];
+          fechaInicialPrimeraCuota = primeraCuota.toISOString().split('T')[0];
         }
       }
       
       // Actualizar el préstamo
       const prestamoActualizado = {
         ...prestamo,
-        proxima_fecha_pago: req.body.fecha_pago, // Usar directamente la fecha que viene del cliente
+        proxima_fecha_pago: nuevaFechaPago, // Usamos la nueva fecha de pago
         // Guardamos la fecha inicial personalizada si se ha solicitado cambiar todas las fechas
-        fecha_inicial_personalizada: cambiarTodasFechas ? fechaInicialPrimeraCuota : undefined,
+        fecha_inicial_personalizada: cambiarTodasFechas ? fechaInicialPrimeraCuota : prestamo.fecha_inicial_personalizada,
         // Guardamos el día de la semana seleccionado (0-6, donde 0 es domingo)
         dia_pago: nuevoDiaSemana
       };

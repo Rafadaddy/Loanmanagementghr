@@ -180,17 +180,18 @@ export default function LoanDetails() {
         description: `El día de pago ha sido cambiado a ${data.nuevoDiaSemana}.`,
       });
       
-      // Necesitamos recargar la página para que el cronograma se actualice correctamente
-      // ya que contiene cálculos complejos basados en las fechas
-      toast({
-        title: "Actualizando cronograma",
-        description: "Se está actualizando el cronograma con las nuevas fechas...",
-      });
-      
-      // Recargar la página después de un breve retraso
+      // Esperamos un momento para asegurarnos de que los datos estén actualizados
+      // y luego recargamos la página para mostrar el cronograma actualizado
       setTimeout(() => {
+        toast({
+          title: "Actualizando cronograma",
+          description: "Recargando para mostrar las nuevas fechas...",
+        });
+        
+        // Usar window.location.reload() es la forma más segura de garantizar 
+        // que el componente del cronograma se recalcule completamente
         window.location.reload();
-      }, 1500);
+      }, 500);
     },
     onError: (error) => {
       toast({
