@@ -39,8 +39,7 @@ export default function MobileHeader() {
   // Verificar si estamos en una página donde no se debe mostrar el botón de menú
   const shouldHideMenu = (
     (location.includes("/prestamos/") && /\/prestamos\/\d+/.test(location)) || 
-    location.includes("/cobros-dia") ||
-    location === "/dashboard" || location === "/"
+    location.includes("/cobros-dia")
   );
 
   return (

@@ -8,12 +8,10 @@ export default function SidebarToggle() {
   const { isOpen, toggle } = useSidebar();
   const [location] = useLocation();
   
-  // Ocultar el botón en la página de detalles del préstamo, cobros diarios y panel de control
+  // Ocultar el botón en la página de detalles del préstamo y cobros diarios
   if (
     (location.includes("/prestamos/") && /\/prestamos\/\d+/.test(location)) ||
-    location.includes("/cobros-dia") ||
-    location === "/dashboard" ||
-    location === "/"
+    location.includes("/cobros-dia")
   ) {
     return null;
   }
