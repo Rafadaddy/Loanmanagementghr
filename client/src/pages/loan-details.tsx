@@ -157,6 +157,9 @@ export default function LoanDetails() {
   });
 
   // Mutation para cambiar el día de pago
+  // Variable para forzar la regeneración del cronograma
+  const [cronogramaKey, setCronogramaKey] = useState<number>(0);
+  
   const cambiarDiaPagoMutation = useMutation({
     mutationFn: async (nuevaFecha: string) => {
       const res = await apiRequest("POST", `/api/prestamos/${prestamoId}/cambiar-dia-pago`, { 
@@ -180,18 +183,17 @@ export default function LoanDetails() {
         description: `El día de pago ha sido cambiado a ${data.nuevoDiaSemana}.`,
       });
       
-      // Esperamos un momento para asegurarnos de que los datos estén actualizados
-      // y luego recargamos la página para mostrar el cronograma actualizado
-      setTimeout(() => {
-        toast({
-          title: "Actualizando cronograma",
-          description: "Recargando para mostrar las nuevas fechas...",
+      // Refrescar los datos del préstamo
+      queryClient.refetchQueries({ queryKey: [`/api/prestamos/${prestamoId}`] })
+        .then(() => {
+          // Forzar la regeneración del cronograma cambiando la key
+          setCronogramaKey(prevKey => prevKey + 1);
+          
+          toast({
+            title: "Cronograma actualizado",
+            description: "El cronograma ha sido actualizado con las nuevas fechas.",
+          });
         });
-        
-        // Usar window.location.reload() es la forma más segura de garantizar 
-        // que el componente del cronograma se recalcule completamente
-        window.location.reload();
-      }, 500);
     },
     onError: (error) => {
       toast({
@@ -827,6 +829,7 @@ export default function LoanDetails() {
           
           <div className="mt-6">
             <LoanSchedule 
+              key={cronogramaKey}
               prestamo={prestamo}
               pagosRealizados={pagos}
               nombreCliente={cliente.nombre}
