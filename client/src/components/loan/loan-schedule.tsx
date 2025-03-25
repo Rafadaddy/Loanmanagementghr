@@ -116,9 +116,16 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
     
     // Crear una función auxiliar para calcular la fecha de una semana específica
     const calcularFechaSemana = (numeroSemana: number): Date => {
-      // Calcular la fecha para la semana especificada usando nuestra utilidad de fechas
-      const fechaSemanaISO = addDaysToDate(primeraFechaISO, (numeroSemana - 1) * 7);
-      return createConsistentDate(fechaSemanaISO);
+      // Calcular la fecha para la semana especificada
+      // Para garantizar que no haya inconsistencias en el cálculo, usamos el método más preciso:
+      // 1. Convertir la fecha inicial a un objeto Date
+      const fechaInicial = createConsistentDate(primeraFechaISO);
+      // 2. Crear una nueva fecha para no modificar la original
+      const fechaSemana = new Date(fechaInicial);
+      // 3. Sumar exactamente el número de días: (numeroSemana - 1) * 7
+      // Es "numeroSemana - 1" porque la primera semana es la fecha inicial (no sumamos días)
+      fechaSemana.setDate(fechaInicial.getDate() + ((numeroSemana - 1) * 7));
+      return fechaSemana;
     };
     
     // Generar todas las semanas del préstamo

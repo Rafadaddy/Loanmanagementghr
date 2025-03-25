@@ -953,25 +953,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const semanasYaPagadas = prestamo.semanas_pagadas || 0;
         
         if (semanasYaPagadas === 0) {
-          // Si no hay semanas pagadas, la primera fecha es 7 días después de la fecha del préstamo 
-          // para mantener la regla de negocio establecida
-          const fechaPrestamo = new Date(prestamo.fecha_prestamo);
-          const primeraCuota = new Date(fechaPrestamo);
-          primeraCuota.setDate(primeraCuota.getDate() + 7);
+          // Si no hay semanas pagadas, la primera fecha debe ser exactamente 7 días después de la fecha del préstamo 
+          // Para evitar problemas, usamos directamente la fecha del préstamo y sumamos 7 días
+          // Y NO ajustamos al día de la semana seleccionado para la primera cuota
+          const fechaPrestamoISO = prestamo.fecha_prestamo;
+          const fechaPartes = fechaPrestamoISO.split('-');
+          const anio = parseInt(fechaPartes[0]);
+          const mes = parseInt(fechaPartes[1]) - 1; // Meses van de 0-11
+          const dia = parseInt(fechaPartes[2]) + 7; // Sumamos exactamente 7 días
           
-          // Ajustar el día de la semana de la primera cuota para que coincida con el día seleccionado
-          while (primeraCuota.getDay() !== nuevoDiaSemana) {
-            primeraCuota.setDate(primeraCuota.getDate() + 1);
-          }
-          
-          fechaInicialPrimeraCuota = primeraCuota.toISOString().split('T')[0];
+          // Creamos la fecha exacta sumando 7 días a la fecha del préstamo
+          const fechaExacta = new Date(Date.UTC(anio, mes, dia, 12, 0, 0));
+          fechaInicialPrimeraCuota = fechaExacta.toISOString().split('T')[0];
         } else {
-          // Si hay semanas pagadas, retrocedemos desde la nueva fecha para obtener la primera fecha
+          // Si hay semanas pagadas, retrocedemos exactamente desde la nueva fecha
+          // para obtener la primera fecha sin ajustes adicionales
           const nuevaFechaObj = new Date(nuevaFechaPago);
-          const primeraCuota = new Date(nuevaFechaObj);
-          primeraCuota.setDate(primeraCuota.getDate() - (semanasYaPagadas * 7));
+          // Creamos una nueva fecha para evitar modificar la original
+          const primeraCuotaObj = new Date(nuevaFechaObj);
+          // Retrocedemos exactamente el número de semanas pagadas * 7 días
+          primeraCuotaObj.setDate(primeraCuotaObj.getDate() - (semanasYaPagadas * 7));
           
-          fechaInicialPrimeraCuota = primeraCuota.toISOString().split('T')[0];
+          // Formateamos como YYYY-MM-DD
+          fechaInicialPrimeraCuota = primeraCuotaObj.toISOString().split('T')[0];
         }
       }
       
