@@ -226,9 +226,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "ID de préstamo inválido" });
       }
       
-      if (!fecha_inicial_personalizada) {
-        return res.status(400).json({ message: "Fecha inicial no proporcionada" });
-      }
+      // Permitimos explícitamente que fecha_inicial_personalizada sea null para eliminar la fecha personalizada
       
       // Verificar que el préstamo existe
       const prestamo = await storage.getPrestamo(id);
@@ -236,10 +234,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Préstamo no encontrado" });
       }
       
-      // Actualizar la fecha inicial del préstamo
+      // Actualizar la fecha inicial del préstamo - permitimos null para resetear
       const prestamoActualizado = await storage.updatePrestamo(id, { 
         fecha_inicial_personalizada 
       });
+      
+      if (fecha_inicial_personalizada === null) {
+        return res.status(200).json({
+          success: true,
+          message: "Fecha inicial personalizada eliminada correctamente"
+        });
+      }
       
       res.status(200).json({ 
         success: true,

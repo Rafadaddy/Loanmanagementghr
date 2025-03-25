@@ -58,6 +58,8 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
   // Estado para la fecha personalizada de la primera cuota
   const [fechaInicial, setFechaInicial] = useState<string | null>(null);
   const [showFechaDialog, setShowFechaDialog] = useState(false);
+  // Estado para controlar si el cronograma ha sido eliminado manualmente
+  const [cronogramaEliminado, setCronogramaEliminado] = useState<boolean>(false);
   
   // Función para abrir el diálogo de cambio de fecha inicial
   const openFechaDialog = () => setShowFechaDialog(true);
@@ -67,6 +69,11 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
     // Guardar en el estado local
     setFechaInicial(fecha);
     setShowFechaDialog(false);
+    
+    // Si el cronograma estaba eliminado, lo volvemos a activar
+    if (cronogramaEliminado) {
+      setCronogramaEliminado(false);
+    }
     
     // Guardar en el préstamo para persistencia
     try {
@@ -92,21 +99,34 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
   const resetFechaInicial = () => {
     setFechaInicial(null);
     setShowFechaDialog(false);
+    
+    // Si el cronograma estaba eliminado, lo volvemos a activar
+    if (cronogramaEliminado) {
+      setCronogramaEliminado(false);
+    }
   };
 
   // Clave para forzar la recarga del cronograma cuando cambia el día de pago
   // Este useEffect se ejecutará cada vez que el préstamo o los pagos cambien
   useEffect(() => {
-    // Resetear el estado local de fecha inicial cuando el préstamo cambia
-    // Esto asegura que se use siempre la fecha más actualizada del préstamo
-    setFechaInicial(null);
-    
-    // Incrementar el contador del cronograma para forzar su recreación
-    setForceRefreshCounter(prev => prev + 1);
-    console.log("Reseteando fecha inicial y forzando actualización del cronograma");
-  }, [prestamo.dia_pago, prestamo.fecha_inicial_personalizada, prestamo.proxima_fecha_pago]);
+    // Solo actualizamos si el cronograma no ha sido eliminado manualmente
+    if (!cronogramaEliminado) {
+      // Resetear el estado local de fecha inicial cuando el préstamo cambia
+      // Esto asegura que se use siempre la fecha más actualizada del préstamo
+      setFechaInicial(null);
+      
+      // Incrementar el contador del cronograma para forzar su recreación
+      setForceRefreshCounter(prev => prev + 1);
+      console.log("Reseteando fecha inicial y forzando actualización del cronograma");
+    }
+  }, [prestamo.dia_pago, prestamo.fecha_inicial_personalizada, prestamo.proxima_fecha_pago, cronogramaEliminado]);
     
   useEffect(() => {
+    // Si el cronograma ha sido eliminado manualmente, no lo recreamos
+    if (cronogramaEliminado) {
+      return;
+    }
+    
     // Generar el cronograma completo del préstamo
     const schedule: CuotaProgramada[] = [];
     const pagoSemanal = parseFloat(prestamo.pago_semanal);
@@ -186,7 +206,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
     }
     
     setCronograma(schedule);
-  }, [prestamo, pagosRealizados, forceRefreshCounter]);
+  }, [prestamo, pagosRealizados, forceRefreshCounter, cronogramaEliminado]);
 
   const exportToPDF = () => {
     const doc = new jsPDF();
@@ -410,8 +430,10 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
                 if (window.confirm("¿Estás seguro de eliminar el cronograma? Podrás recrearlo usando la opción 'Cambiar Fecha Inicio'.")) {
                   // Eliminar completamente el cronograma
                   setCronograma([]);
-                  // Resetear el estado
+                  // Resetear el estado local
                   setFechaInicial(null);
+                  // Marcar que el cronograma ha sido eliminado manualmente para evitar regeneración
+                  setCronogramaEliminado(true);
                   
                   // Intentar eliminar la fecha personalizada del préstamo
                   fetch(`/api/prestamos/${prestamo.id}/set-fecha-inicial`, {
@@ -425,7 +447,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
                   // Mostrar mensaje de confirmación
                   toast({
                     title: "Cronograma eliminado",
-                    description: "Se ha eliminado el cronograma. Utilice 'Establecer Fecha' para crear uno nuevo.",
+                    description: "Se ha eliminado el cronograma. Utilice 'Cambiar Fecha Inicio' para crear uno nuevo.",
                     variant: "destructive"
                   });
                 }
