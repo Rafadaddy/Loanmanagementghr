@@ -454,6 +454,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
                   setCronogramaEliminado(true);
                   
                   // Intentar eliminar la fecha personalizada del préstamo y guardar el estado de eliminación
+                  console.log("Iniciando petición para eliminar cronograma del préstamo:", prestamo.id);
                   fetch(`/api/prestamos/${prestamo.id}/set-fecha-inicial`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -461,7 +462,27 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
                       fecha_inicial_personalizada: null,
                       cronograma_eliminado: true
                     })
-                  }).catch(err => console.error("Error al resetear fecha inicial:", err));
+                  })
+                  .then(response => {
+                    if (!response.ok) {
+                      console.error("Error al eliminar cronograma. Status:", response.status);
+                      throw new Error(`Error al eliminar cronograma: ${response.status}`);
+                    }
+                    return response.json();
+                  })
+                  .then(data => {
+                    console.log("Cronograma eliminado correctamente en la base de datos:", data);
+                    // Forzar refresco del préstamo para asegurarnos de obtener el estado actualizado
+                    // Esto debería ocurrir automáticamente por la reacción de React Query, pero lo forzamos por seguridad
+                  })
+                  .catch(err => {
+                    console.error("Error al eliminar cronograma:", err);
+                    toast({
+                      title: "Error",
+                      description: "No se pudo guardar el estado de eliminación del cronograma en la base de datos.",
+                      variant: "destructive"
+                    });
+                  });
                   
                   // Mostrar mensaje de confirmación
                   toast({
