@@ -367,7 +367,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
     <Card className="mt-4 mb-6 w-full max-w-full overflow-hidden">
       {/* Diálogo para cambiar la fecha inicial */}
       <Dialog open={showFechaDialog} onOpenChange={setShowFechaDialog}>
-        <DialogContent className="w-[calc(100%-24px)] max-w-[480px] p-4 md:p-6 rounded-lg">
+        <DialogContent className="sm:max-w-md w-[calc(100%-24px)] p-4 md:p-6 rounded-lg">
           <DialogHeader className="mb-2 space-y-2">
             <DialogTitle className="text-center text-lg md:text-xl">Establecer fecha inicial</DialogTitle>
             <DialogDescription className="text-center text-xs md:text-sm">
@@ -404,7 +404,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
             </div>
           </div>
           
-          <div className="mt-4 md:mt-2 space-y-2 md:space-y-0 md:flex md:gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-4">
             <Button 
               variant="default" 
               onClick={() => {
@@ -422,7 +422,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
                   description: `Se ha establecido la fecha inicial recomendada: ${formatDate(fechaRecomendada)}`
                 });
               }} 
-              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              className="bg-green-600 hover:bg-green-700 text-white"
             >
               Usar fecha recomendada
             </Button>
@@ -430,11 +430,13 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
               type="submit" 
               onClick={handleAplicarFecha} 
               disabled={!nuevaFecha}
-              className="w-full"
             >
               Aplicar fecha personalizada
             </Button>
-            <Button variant="outline" onClick={() => setShowFechaDialog(false)} className="w-full">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowFechaDialog(false)}
+            >
               Cancelar
             </Button>
           </div>
