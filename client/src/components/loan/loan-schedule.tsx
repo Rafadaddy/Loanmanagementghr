@@ -367,14 +367,14 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
     <Card className="mt-4 mb-6 w-full max-w-full overflow-hidden">
       {/* Diálogo para cambiar la fecha inicial */}
       <Dialog open={showFechaDialog} onOpenChange={setShowFechaDialog}>
-        <DialogContent className="w-[calc(100%-24px)] max-w-[425px] p-4 md:p-6 rounded-lg">
-          <DialogHeader className="mb-2">
-            <DialogTitle className="text-center text-lg md:text-xl">Establecer fecha inicial del cronograma</DialogTitle>
-            <DialogDescription className="text-center text-sm">
+        <DialogContent className="w-[calc(100%-24px)] max-w-[480px] p-4 md:p-6 rounded-lg">
+          <DialogHeader className="mb-2 space-y-2">
+            <DialogTitle className="text-center text-lg md:text-xl">Establecer fecha inicial</DialogTitle>
+            <DialogDescription className="text-center text-xs md:text-sm">
               Esta acción establecerá la fecha de la primera cuota y recalculará todas las fechas del cronograma.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-3 space-y-4">
+          <div className="py-2 space-y-3">
             <div className="flex flex-col space-y-2">
               <Label htmlFor="fecha-inicial" className="text-sm font-medium">
                 Primera cuota:
@@ -388,9 +388,9 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
               />
             </div>
             
-            <div className="p-3 bg-muted rounded-md text-sm text-muted-foreground">
+            <div className="p-3 bg-muted rounded-md text-xs md:text-sm text-muted-foreground">
               <p className="font-semibold mb-1">Información importante:</p>
-              <ul className="list-disc list-inside space-y-1 text-xs md:text-sm">
+              <ul className="list-disc list-inside space-y-1">
                 <li>Esta fecha será utilizada como fecha de la primera cuota.</li>
                 <li>Las cuotas posteriores se programarán cada 7 días a partir de esta fecha.</li>
                 <li className="break-words">
@@ -403,7 +403,8 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
               </ul>
             </div>
           </div>
-          <DialogFooter className="mt-2 flex flex-col gap-2">
+          
+          <div className="mt-4 md:mt-2 space-y-2 md:space-y-0 md:flex md:gap-2">
             <Button 
               variant="default" 
               onClick={() => {
@@ -436,7 +437,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
             <Button variant="outline" onClick={() => setShowFechaDialog(false)} className="w-full">
               Cancelar
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
       
@@ -468,7 +469,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
               title="Eliminar cronograma"
               onClick={() => {
                 // Confirmar antes de eliminar
-                if (window.confirm("¿Estás seguro de eliminar el cronograma? Podrás recrearlo usando la opción 'Cambiar Fecha Inicio'.")) {
+                if (window.confirm("¿Estás seguro de eliminar el cronograma? Podrás recrearlo usando la opción 'Cambiar Día de Pago'.")) {
                   // Eliminar completamente el cronograma
                   setCronograma([]);
                   // Resetear el estado local
