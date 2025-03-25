@@ -10,7 +10,8 @@ import {
   insertPagoSchema, 
   insertMovimientoCajaSchema,
   insertCobradorSchema,
-  calculoPrestamoSchema 
+  calculoPrestamoSchema,
+  Prestamo
 } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 
