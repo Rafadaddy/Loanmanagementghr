@@ -220,7 +220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/prestamos/:id/set-fecha-inicial", isAuthenticated, async (req, res, next) => {
     try {
       const id = parseInt(req.params.id);
-      const { fecha_inicial_personalizada } = req.body;
+      const { fecha_inicial_personalizada, cronograma_eliminado } = req.body;
       
       if (isNaN(id)) {
         return res.status(400).json({ message: "ID de préstamo inválido" });
@@ -234,22 +234,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Préstamo no encontrado" });
       }
       
-      // Actualizar la fecha inicial del préstamo - permitimos null para resetear
-      const prestamoActualizado = await storage.updatePrestamo(id, { 
-        fecha_inicial_personalizada 
-      });
+      // Preparar el objeto para la actualización
+      const datosActualizacion: Partial<Prestamo> = {
+        fecha_inicial_personalizada
+      };
+      
+      // Si tenemos un valor para cronograma_eliminado, lo incluimos en la actualización
+      if (cronograma_eliminado !== undefined) {
+        datosActualizacion.cronograma_eliminado = cronograma_eliminado;
+      }
+      
+      // Actualizar el préstamo con todos los cambios
+      const prestamoActualizado = await storage.updatePrestamo(id, datosActualizacion);
       
       if (fecha_inicial_personalizada === null) {
         return res.status(200).json({
           success: true,
-          message: "Fecha inicial personalizada eliminada correctamente"
+          message: "Fecha inicial personalizada eliminada correctamente",
+          cronograma_eliminado: cronograma_eliminado
         });
       }
       
       res.status(200).json({ 
         success: true,
         message: "Fecha inicial personalizada guardada correctamente", 
-        fecha: fecha_inicial_personalizada
+        fecha: fecha_inicial_personalizada,
+        cronograma_eliminado: cronograma_eliminado
       });
     } catch (error) {
       console.error("Error al establecer fecha inicial personalizada:", error);
