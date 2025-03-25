@@ -9,8 +9,10 @@ export default function SidebarToggle() {
   const [location] = useLocation();
   
   // Ocultar el botón en la página de detalles del préstamo
+  // Pero mantenerlo visible en la página de cobros diarios
   if (
-    (location.includes("/prestamos/") && /\/prestamos\/\d+/.test(location))
+    (location.includes("/prestamos/") && /\/prestamos\/\d+/.test(location)) &&
+    !location.includes("/cobros-dia")
   ) {
     return null;
   }
