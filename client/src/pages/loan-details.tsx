@@ -169,6 +169,7 @@ export default function LoanDetails() {
       // Invalidar todas las consultas relevantes
       queryClient.invalidateQueries({ queryKey: [`/api/prestamos/${prestamoId}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/prestamos'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/prestamos/${prestamoId}/pagos`] });
       
       // Cerrar el diálogo de cambio de día
       setChangeDayDialogOpen(false);
@@ -179,10 +180,17 @@ export default function LoanDetails() {
         description: `El día de pago ha sido cambiado a ${data.nuevoDiaSemana}.`,
       });
       
+      // Necesitamos recargar la página para que el cronograma se actualice correctamente
+      // ya que contiene cálculos complejos basados en las fechas
+      toast({
+        title: "Actualizando cronograma",
+        description: "Se está actualizando el cronograma con las nuevas fechas...",
+      });
+      
       // Recargar la página después de un breve retraso
       setTimeout(() => {
-        queryClient.refetchQueries({ queryKey: [`/api/prestamos/${prestamoId}`] });
-      }, 500);
+        window.location.reload();
+      }, 1500);
     },
     onError: (error) => {
       toast({
