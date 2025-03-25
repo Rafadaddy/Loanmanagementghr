@@ -216,6 +216,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint para guardar la fecha inicial personalizada de un préstamo
+  app.post("/api/prestamos/:id/set-fecha-inicial", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { fecha_inicial_personalizada } = req.body;
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de préstamo inválido" });
+      }
+      
+      if (!fecha_inicial_personalizada) {
+        return res.status(400).json({ message: "Fecha inicial no proporcionada" });
+      }
+      
+      // Verificar que el préstamo existe
+      const prestamo = await storage.getPrestamo(id);
+      if (!prestamo) {
+        return res.status(404).json({ message: "Préstamo no encontrado" });
+      }
+      
+      // Actualizar la fecha inicial del préstamo
+      const prestamoActualizado = await storage.updatePrestamo(id, { 
+        fecha_inicial_personalizada 
+      });
+      
+      res.status(200).json({ 
+        success: true,
+        message: "Fecha inicial personalizada guardada correctamente", 
+        fecha: fecha_inicial_personalizada
+      });
+    } catch (error) {
+      console.error("Error al establecer fecha inicial personalizada:", error);
+      next(error);
+    }
+  });
+  
   // Ruta para obtener los pagos de un préstamo
   app.get("/api/prestamos/:id/pagos", isAuthenticated, async (req, res, next) => {
     try {

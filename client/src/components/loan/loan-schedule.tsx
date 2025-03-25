@@ -4,11 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate, addDaysToDate, normalizeDate, createConsistentDate } from "@/lib/utils";
-import { FileText, FileSpreadsheet, Calendar, RefreshCw, Edit, Clock, AlertTriangle, Trash2 } from "lucide-react";
+import { FileText, FileSpreadsheet, Calendar, Edit, Clock, AlertTriangle, Trash2 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger 
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PrestamoDisplay, PagoDisplay } from "@/types/loan";
@@ -51,10 +62,27 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
   // Función para abrir el diálogo de cambio de fecha inicial
   const openFechaDialog = () => setShowFechaDialog(true);
   
-  // Función para aplicar la nueva fecha inicial
-  const aplicarFechaInicial = (fecha: string) => {
+  // Función para aplicar la nueva fecha inicial y guardarla de forma persistente
+  const aplicarFechaInicial = async (fecha: string) => {
+    // Guardar en el estado local
     setFechaInicial(fecha);
     setShowFechaDialog(false);
+    
+    // Guardar en el préstamo para persistencia
+    try {
+      // Realizar petición para actualizar la fecha inicial del préstamo
+      await fetch(`/api/prestamos/${prestamo.id}/set-fecha-inicial`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          fecha_inicial_personalizada: fecha 
+        })
+      });
+      console.log("Fecha inicial guardada en la base de datos:", fecha);
+    } catch (error) {
+      console.error("Error al guardar la fecha inicial:", error);
+    }
+    
     // Incrementar el contador para forzar actualización
     setForceRefreshCounter(prev => prev + 1);
     console.log("Aplicando nueva fecha inicial:", fecha);
@@ -371,53 +399,40 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
               Cambiar Fecha Inicio
             </Button>
             
-            {/* Botón para eliminar el cronograma */}
+            {/* Botón para eliminar el cronograma con confirmación */}
             <Button 
               variant="destructive" 
               size="sm"
-              onClick={() => {
-                // Eliminar completamente el cronograma
-                setCronograma([]);
-                // Resetear el estado
-                setFechaInicial(null);
-                
-                // Mostrar mensaje de confirmación
-                toast({
-                  title: "Cronograma eliminado",
-                  description: "Se ha eliminado el cronograma. Utilice 'Establecer Fecha' para crear uno nuevo.",
-                  variant: "destructive"
-                });
-              }}
               className="flex items-center h-7 px-2 text-xs"
               title="Eliminar cronograma"
+              onClick={() => {
+                // Confirmar antes de eliminar
+                if (window.confirm("¿Estás seguro de eliminar el cronograma? Podrás recrearlo usando la opción 'Cambiar Fecha Inicio'.")) {
+                  // Eliminar completamente el cronograma
+                  setCronograma([]);
+                  // Resetear el estado
+                  setFechaInicial(null);
+                  
+                  // Intentar eliminar la fecha personalizada del préstamo
+                  fetch(`/api/prestamos/${prestamo.id}/set-fecha-inicial`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                      fecha_inicial_personalizada: null 
+                    })
+                  }).catch(err => console.error("Error al resetear fecha inicial:", err));
+                  
+                  // Mostrar mensaje de confirmación
+                  toast({
+                    title: "Cronograma eliminado",
+                    description: "Se ha eliminado el cronograma. Utilice 'Establecer Fecha' para crear uno nuevo.",
+                    variant: "destructive"
+                  });
+                }
+              }}
             >
               <Trash2 className="h-3 w-3 mr-1" />
               Eliminar Cronograma
-            </Button>
-            
-            {/* Botón para regenerar el cronograma */}
-            <Button 
-              variant="secondary" 
-              size="sm"
-              onClick={() => {
-                // Forzar regeneración completa
-                setForceRefreshCounter(prev => prev + 1);
-                setCronograma([]);
-                
-                toast({
-                  title: "Cronograma regenerado",
-                  description: "Se ha regenerado el cronograma de pagos."
-                });
-                
-                setTimeout(() => {
-                  window.location.reload();
-                }, 1500);
-              }}
-              className="flex items-center h-7 px-2 text-xs"
-              title="Regenerar cronograma desde cero"
-            >
-              <RefreshCw className="h-3 w-3 mr-1" />
-              Regenerar
             </Button>
           </div>
         </div>
