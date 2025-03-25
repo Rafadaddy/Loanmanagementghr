@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate, addDaysToDate, normalizeDate, createConsistentDate } from "@/lib/utils";
-import { FileText, FileSpreadsheet, Calendar, RefreshCw, Edit, Clock } from "lucide-react";
+import { FileText, FileSpreadsheet, Calendar, RefreshCw, Edit, Clock, AlertTriangle, Trash2 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PrestamoDisplay, PagoDisplay } from "@/types/loan";
+import { useToast } from "@/hooks/use-toast";
 
 interface LoanScheduleProps {
   prestamo: PrestamoDisplay;
@@ -36,6 +37,9 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
   // Garantizar que solo mostramos un número limitado de semanas en móvil para mejor rendimiento
   const MAX_MOBILE_ITEMS = 12;
   const [cronograma, setCronograma] = useState<CuotaProgramada[]>([]);
+  
+  // Hook de toast para mostrar mensajes
+  const { toast } = useToast();
   
   // Contador para forzar la actualización completa del componente
   const [forceRefreshCounter, setForceRefreshCounter] = useState<number>(0);
@@ -277,15 +281,16 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
       <Dialog open={showFechaDialog} onOpenChange={setShowFechaDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Cambiar fecha inicial del cronograma</DialogTitle>
+            <DialogTitle>Establecer fecha inicial del cronograma</DialogTitle>
             <DialogDescription>
-              Esta acción modificará la fecha de la primera cuota y recalculará todas las fechas del cronograma.
+              Esta acción establecerá la fecha de la primera cuota y recalculará todas las fechas del cronograma.
+              Se utilizará esta fecha como base para todas las cuotas.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="fecha-inicial" className="text-right">
-                Fecha
+                Primera cuota
               </Label>
               <Input
                 id="fecha-inicial"
@@ -295,13 +300,52 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
                 className="col-span-3"
               />
             </div>
+            
+            <div className="p-3 bg-muted rounded-md text-sm text-muted-foreground">
+              <p className="font-semibold mb-1">Información importante:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Esta fecha será utilizada como fecha de la primera cuota.</li>
+                <li>Las cuotas posteriores se programarán cada 7 días a partir de esta fecha.</li>
+                <li>La fecha inicial recomendada es {
+                  prestamo.semanas_pagadas === 0 
+                    ? `${formatDate(addDaysToDate(prestamo.fecha_prestamo, 7))} (7 días después del préstamo).`
+                    : `${formatDate(addDaysToDate(prestamo.proxima_fecha_pago, -(prestamo.semanas_pagadas * 7)))} (calculada desde la próxima fecha de pago).`
+                }</li>
+              </ul>
+            </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowFechaDialog(false)}>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setShowFechaDialog(false)} className="sm:order-1">
               Cancelar
             </Button>
-            <Button type="submit" onClick={handleAplicarFecha}>
-              Aplicar
+            <Button 
+              variant="default" 
+              onClick={() => {
+                // Establecer la fecha recomendada
+                let fechaRecomendada = "";
+                if (prestamo.semanas_pagadas === 0) {
+                  fechaRecomendada = addDaysToDate(prestamo.fecha_prestamo, 7);
+                } else {
+                  fechaRecomendada = addDaysToDate(prestamo.proxima_fecha_pago, -(prestamo.semanas_pagadas * 7));
+                }
+                aplicarFechaInicial(fechaRecomendada);
+                
+                toast({
+                  title: "Fecha establecida",
+                  description: `Se ha establecido la fecha inicial recomendada: ${formatDate(fechaRecomendada)}`
+                });
+              }} 
+              className="sm:order-2"
+            >
+              Usar fecha recomendada
+            </Button>
+            <Button 
+              type="submit" 
+              onClick={handleAplicarFecha} 
+              disabled={!nuevaFecha}
+              className="sm:order-3"
+            >
+              Aplicar fecha personalizada
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -313,80 +357,69 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
             <Calendar className="h-4 w-4" />
             Cronograma de Pagos
           </CardTitle>
-          {/* Botones para refrescar el cronograma */}
-          <Button 
-            variant="secondary" 
-            size="sm"
-            onClick={() => {
-              // Forzar la regeneración del cronograma limpiando y recreando
-              setCronograma([]);
-              // Pequeño delay para asegurar que el estado se actualice primero
-              setTimeout(() => {
-                // Trigger del useEffect para recalcular todo el cronograma
-                const pagoSemanal = parseFloat(prestamo.pago_semanal);
-                const schedule: CuotaProgramada[] = [];
+          
+          <div className="flex items-center gap-2">
+            {/* Botón para establecer fecha de inicio manualmente */}
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={openFechaDialog}
+              className="flex items-center h-7 px-2 text-xs"
+              title="Establecer fecha de inicio del cronograma"
+            >
+              <Calendar className="h-3 w-3 mr-1" />
+              Cambiar Fecha Inicio
+            </Button>
+            
+            {/* Botón para eliminar el cronograma */}
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={() => {
+                // Eliminar completamente el cronograma
+                setCronograma([]);
+                // Resetear el estado
+                setFechaInicial(null);
                 
-                const pagosMap = new Map();
-                pagosRealizados.forEach(pago => {
-                  pagosMap.set(pago.numero_semana, pago);
+                // Mostrar mensaje de confirmación
+                toast({
+                  title: "Cronograma eliminado",
+                  description: "Se ha eliminado el cronograma. Utilice 'Establecer Fecha' para crear uno nuevo.",
+                  variant: "destructive"
+                });
+              }}
+              className="flex items-center h-7 px-2 text-xs"
+              title="Eliminar cronograma"
+            >
+              <Trash2 className="h-3 w-3 mr-1" />
+              Eliminar Cronograma
+            </Button>
+            
+            {/* Botón para regenerar el cronograma */}
+            <Button 
+              variant="secondary" 
+              size="sm"
+              onClick={() => {
+                // Forzar regeneración completa
+                setForceRefreshCounter(prev => prev + 1);
+                setCronograma([]);
+                
+                toast({
+                  title: "Cronograma regenerado",
+                  description: "Se ha regenerado el cronograma de pagos."
                 });
                 
-                const semanasYaPagadas = prestamo.semanas_pagadas || 0;
-                
-                let primeraFechaISO: string;
-                
-                if (fechaInicial) {
-                  primeraFechaISO = normalizeDate(fechaInicial);
-                } else if (prestamo.fecha_inicial_personalizada) {
-                  primeraFechaISO = normalizeDate(prestamo.fecha_inicial_personalizada);
-                } else if (semanasYaPagadas === 0) {
-                  primeraFechaISO = addDaysToDate(prestamo.fecha_prestamo, 7);
-                } else {
-                  primeraFechaISO = addDaysToDate(prestamo.proxima_fecha_pago, -(semanasYaPagadas * 7));
-                }
-                
-                const calcularFechaSemana = (numeroSemana: number): Date => {
-                  const fechaInicial = createConsistentDate(primeraFechaISO);
-                  const fechaSemana = new Date(fechaInicial);
-                  fechaSemana.setDate(fechaInicial.getDate() + ((numeroSemana - 1) * 7));
-                  return fechaSemana;
-                };
-                
-                for (let i = 1; i <= prestamo.numero_semanas; i++) {
-                  const fechaProgramada = calcularFechaSemana(i);
-                  
-                  const pagoRealizado = pagosMap.get(i);
-                  
-                  const cuota: CuotaProgramada = {
-                    numero: i,
-                    fechaProgramada: fechaProgramada.toISOString().split('T')[0],
-                    montoProgramado: pagoSemanal.toFixed(2),
-                    estado: "PENDIENTE"
-                  };
-                  
-                  if (pagoRealizado) {
-                    cuota.estado = pagoRealizado.es_pago_parcial === "true" ? "PARCIAL" : "PAGADO";
-                    cuota.montoPagado = pagoRealizado.monto_pagado;
-                    cuota.fechaPago = pagoRealizado.fecha_pago;
-                    cuota.resto = pagoRealizado.monto_restante;
-                    cuota.mora = pagoRealizado.monto_mora;
-                  } else if (i <= prestamo.semanas_pagadas) {
-                    cuota.estado = "PAGADO";
-                  }
-                  
-                  schedule.push(cuota);
-                }
-                
-                console.log("🔄 Cronograma regenerado manualmente:", primeraFechaISO);
-                setCronograma(schedule);
-              }, 100);
-            }}
-            className="flex items-center h-7 px-2 text-xs"
-            title="Regenerar cronograma desde cero"
-          >
-            <RefreshCw className="h-3 w-3 mr-1" />
-            Regenerar Cronograma
-          </Button>
+                setTimeout(() => {
+                  window.location.reload();
+                }, 1500);
+              }}
+              className="flex items-center h-7 px-2 text-xs"
+              title="Regenerar cronograma desde cero"
+            >
+              <RefreshCw className="h-3 w-3 mr-1" />
+              Regenerar
+            </Button>
+          </div>
         </div>
         <div className="flex gap-2">
           <Button 
