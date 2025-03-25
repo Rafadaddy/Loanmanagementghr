@@ -36,6 +36,9 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
   // Garantizar que solo mostramos un número limitado de semanas en móvil para mejor rendimiento
   const MAX_MOBILE_ITEMS = 12;
   const [cronograma, setCronograma] = useState<CuotaProgramada[]>([]);
+  
+  // Contador para forzar la actualización completa del componente
+  const [forceRefreshCounter, setForceRefreshCounter] = useState<number>(0);
 
   // Estado para la fecha personalizada de la primera cuota
   const [fechaInicial, setFechaInicial] = useState<string | null>(null);
@@ -48,6 +51,9 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
   const aplicarFechaInicial = (fecha: string) => {
     setFechaInicial(fecha);
     setShowFechaDialog(false);
+    // Incrementar el contador para forzar actualización
+    setForceRefreshCounter(prev => prev + 1);
+    console.log("Aplicando nueva fecha inicial:", fecha);
   };
   
   // Función para resetear la fecha inicial a la del préstamo
@@ -62,7 +68,11 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
     // Resetear el estado local de fecha inicial cuando el préstamo cambia
     // Esto asegura que se use siempre la fecha más actualizada del préstamo
     setFechaInicial(null);
-  }, [prestamo.dia_pago, prestamo.fecha_inicial_personalizada]);
+    
+    // Incrementar el contador del cronograma para forzar su recreación
+    setForceRefreshCounter(prev => prev + 1);
+    console.log("Reseteando fecha inicial y forzando actualización del cronograma");
+  }, [prestamo.dia_pago, prestamo.fecha_inicial_personalizada, prestamo.proxima_fecha_pago]);
     
   useEffect(() => {
     // Generar el cronograma completo del préstamo
@@ -144,7 +154,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
     }
     
     setCronograma(schedule);
-  }, [prestamo, pagosRealizados]);
+  }, [prestamo, pagosRealizados, forceRefreshCounter]);
 
   const exportToPDF = () => {
     const doc = new jsPDF();
