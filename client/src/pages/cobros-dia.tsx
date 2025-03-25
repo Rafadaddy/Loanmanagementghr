@@ -38,6 +38,7 @@ export default function CobrosDia() {
   const todayDate = new Date();
   const [filterDate, setFilterDate] = useState(todayDate.toISOString().split('T')[0]);
   const [sortBy, setSortBy] = useState("direccion");
+  const [filterByCobrador, setFilterByCobrador] = useState<number | "todos">("todos");
 
   // Cargar la lista de préstamos
   const { data: prestamos = [], isLoading: loadingPrestamos } = useQuery<Prestamo[]>({
@@ -47,6 +48,11 @@ export default function CobrosDia() {
   // Cargar la lista de clientes
   const { data: clientes = [], isLoading: loadingClientes } = useQuery<Cliente[]>({
     queryKey: ['/api/clientes'],
+  });
+  
+  // Cargar la lista de cobradores
+  const { data: cobradores = [], isLoading: loadingCobradores } = useQuery<Cobrador[]>({
+    queryKey: ['/api/cobradores'],
   });
 
   // Filtrar préstamos que tienen pago programado para la fecha seleccionada
@@ -75,13 +81,20 @@ export default function CobrosDia() {
       const clienteTelefono = prestamo.cliente?.telefono || '';
       
       // Filtrar por término de búsqueda
-      return (
+      const matchesSearch = (
         clienteNombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
         clienteDireccion.toLowerCase().includes(searchTerm.toLowerCase()) ||
         clienteTelefono.includes(searchTerm) ||
         prestamo.monto_prestado.toString().includes(searchTerm) ||
         prestamo.pago_semanal.toString().includes(searchTerm)
       );
+      
+      // Filtrar por cobrador
+      const matchesCobrador = 
+        filterByCobrador === "todos" || 
+        (prestamo.cliente?.cobrador_id === filterByCobrador);
+      
+      return matchesSearch && matchesCobrador;
     });
 
   // Ordenar por criterios específicos
@@ -329,7 +342,7 @@ export default function CobrosDia() {
     return total + parseFloat(prestamo.pago_semanal);
   }, 0);
 
-  const isLoading = loadingPrestamos || loadingClientes;
+  const isLoading = loadingPrestamos || loadingClientes || loadingCobradores;
 
   const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     // Usar la fecha seleccionada directamente sin modificarla
@@ -452,6 +465,26 @@ export default function CobrosDia() {
             <SelectItem value="direccion">Por dirección</SelectItem>
             <SelectItem value="nombre">Por nombre</SelectItem>
             <SelectItem value="monto">Por monto</SelectItem>
+          </SelectContent>
+        </Select>
+        
+        <Select 
+          defaultValue="todos" 
+          onValueChange={(value) => setFilterByCobrador(value === "todos" ? "todos" : parseInt(value))}
+        >
+          <SelectTrigger className="w-full md:w-48 text-sm h-9">
+            <div className="flex items-center">
+              <UserCircle2 className="h-4 w-4 mr-1 text-muted-foreground" />
+              <SelectValue placeholder="Filtrar por cobrador" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos los cobradores</SelectItem>
+            {cobradores.map((cobrador) => (
+              <SelectItem key={cobrador.id} value={cobrador.id.toString()}>
+                {cobrador.nombre}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
