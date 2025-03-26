@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import BackupRestoreSection from "@/components/reports/backup-restore";
 
 // Componente de tabla responsiva con scroll horizontal
 const ResponsiveTable = ({ children }: { children: React.ReactNode }) => (
@@ -674,6 +675,7 @@ export default function Reports() {
               <SelectItem value="proyeccion">Proyección</SelectItem>
               <SelectItem value="cumplimiento">Cumplimiento</SelectItem>
               <SelectItem value="intereses">Intereses por Préstamo</SelectItem>
+              <SelectItem value="sistema">Sistema</SelectItem>
             </SelectContent>
           </Select>
           

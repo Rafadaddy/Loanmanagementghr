@@ -210,7 +210,7 @@ export function BackupRestoreSection() {
             </Alert>
           )}
 
-          <Alert variant="warning" className="mt-4 bg-amber-50 border-amber-200 text-amber-800">
+          <Alert className="mt-4 bg-amber-50 border-amber-200 text-amber-800">
             <AlertTriangle className="h-4 w-4 text-amber-500" />
             <AlertTitle>Recomendación</AlertTitle>
             <AlertDescription>
