@@ -1041,6 +1041,14 @@ export class MemStorage implements IStorage {
       tipo: "TEXTO",
       categoria: "GENERAL"
     });
+    
+    await this.saveConfiguracion({
+      clave: "PREFIJO_DOCUMENTO",
+      valor: "ID-",
+      descripcion: "Prefijo para documentos de identidad generados automáticamente",
+      tipo: "TEXTO",
+      categoria: "SISTEMA"
+    });
 
     // Configuraciones de préstamos
     await this.saveConfiguracion({

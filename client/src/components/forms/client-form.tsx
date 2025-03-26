@@ -50,6 +50,13 @@ export default function ClientForm({ open, onOpenChange, cliente, onSuccess }: C
     queryKey: ["/api/cobradores"],
     enabled: open // Solo hacer la consulta cuando el modal está abierto
   });
+  
+  // Consulta para obtener el siguiente documento de identidad (solo al crear nuevo cliente)
+  const { data: documentoData, isLoading: isLoadingDocumento } = useQuery<{ documento: string }>({
+    queryKey: ["/api/siguiente-documento-identidad"],
+    enabled: open && !isEditing, // Solo consultar cuando se está creando un nuevo cliente
+    staleTime: 0 // Siempre obtener el valor más actualizado
+  });
 
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientFormSchema),
@@ -74,6 +81,13 @@ export default function ClientForm({ open, onOpenChange, cliente, onSuccess }: C
       });
     }
   }, [cliente, form]);
+  
+  // Establecer automáticamente el documento de identidad generado
+  useEffect(() => {
+    if (!isEditing && documentoData?.documento && open) {
+      form.setValue("documento_identidad", documentoData.documento);
+    }
+  }, [documentoData, isEditing, open, form]);
 
   const mutation = useMutation({
     mutationFn: async (values: ClientFormValues) => {
@@ -185,10 +199,22 @@ export default function ClientForm({ open, onOpenChange, cliente, onSuccess }: C
               name="documento_identidad"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Documento de Identidad</FormLabel>
+                  <FormLabel>
+                    Documento de Identidad
+                    {!isEditing && <span className="ml-1 text-sm text-muted-foreground">(Autogenerado)</span>}
+                  </FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input 
+                      {...field} 
+                      disabled={isLoadingDocumento} 
+                      className={!isEditing ? "bg-muted" : ""}
+                    />
                   </FormControl>
+                  {!isEditing && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      El documento se genera automáticamente. Puedes modificarlo si es necesario.
+                    </p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

@@ -1133,6 +1133,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
+  
+  // Obtener el siguiente documento de identidad autogenerado
+  app.get("/api/siguiente-documento-identidad", isAuthenticated, async (req, res, next) => {
+    try {
+      const documento = await storage.getSiguienteDocumentoIdentidad();
+      res.json({ documento });
+    } catch (error) {
+      console.error("Error al obtener siguiente documento de identidad:", error);
+      next(error);
+    }
+  });
 
   // Obtener configuraciones por categoría
   app.get("/api/configuraciones/categoria/:categoria", async (req, res, next) => {
