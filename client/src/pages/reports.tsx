@@ -664,6 +664,7 @@ export default function Reports() {
               <SelectItem value="cobradores">Por Cobrador</SelectItem>
               <SelectItem value="proyeccion">Proyección</SelectItem>
               <SelectItem value="cumplimiento">Cumplimiento</SelectItem>
+              <SelectItem value="intereses">Intereses por Préstamo</SelectItem>
             </SelectContent>
           </Select>
           
@@ -1239,6 +1240,130 @@ export default function Reports() {
                         <TableCell>{formatCurrency(item.neto)}</TableCell>
                       </TableRow>
                     ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+      
+      {/* VISTA INTERESES POR PRÉSTAMO */}
+      {vista === "intereses" && (
+        <div className="grid grid-cols-1 gap-4 mb-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Intereses por Préstamo</CardTitle>
+              <CardDescription>Desglose detallado de intereses ganados en cada préstamo</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                  <Card className="bg-muted/40">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col">
+                        <p className="text-sm font-medium">Total préstamos</p>
+                        <p className="text-2xl font-bold">{prestamos.length}</p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          {prestamos.filter(p => p.estado === "ACTIVO" || p.estado === "ATRASADO").length} activos
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-muted/40">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col">
+                        <p className="text-sm font-medium">Total intereses</p>
+                        <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                          {formatCurrency(prestamos.reduce((sum, p) => {
+                            const interes = Number(p.monto_total_pagar) - Number(p.monto_prestado);
+                            return sum + interes;
+                          }, 0))}
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Calculado según tasas de interés
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-muted/40">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col">
+                        <p className="text-sm font-medium">Intereses ya cobrados</p>
+                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                          {formatCurrency(pagos.reduce((sum, pago) => {
+                            const prestamo = prestamos.find(p => p.id === pago.prestamo_id);
+                            if (!prestamo) return sum;
+                            
+                            const tasaInteres = Number(prestamo.tasa_interes) / 100;
+                            const montoPagado = Number(pago.monto_pagado);
+                            const interesPago = montoPagado * tasaInteres / (1 + tasaInteres);
+                            
+                            return sum + interesPago;
+                          }, 0))}
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          {Math.round(pagos.length / prestamos.length * 100)}% de pagos completados
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Préstamo</TableHead>
+                      <TableHead>Monto</TableHead>
+                      <TableHead>Interés Total</TableHead>
+                      <TableHead>Interés Pagado</TableHead>
+                      <TableHead>Interés Pendiente</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead>% Completado</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {datosInteresesPorPrestamo(prestamos, clientes, pagos).length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center">No hay datos de préstamos</TableCell>
+                      </TableRow>
+                    ) : (
+                      datosInteresesPorPrestamo(prestamos, clientes, pagos).map((item) => {
+                        const { label, className } = getLoanStatus(item.estado);
+                        
+                        return (
+                          <TableRow key={item.id}>
+                            <TableCell className="font-medium">{item.cliente}</TableCell>
+                            <TableCell>{item.id}</TableCell>
+                            <TableCell>{formatCurrency(item.montoPrestado)}</TableCell>
+                            <TableCell className="text-green-600 dark:text-green-400 font-medium">
+                              {formatCurrency(item.interesTotal)}
+                            </TableCell>
+                            <TableCell>{formatCurrency(item.interesYaPagado)}</TableCell>
+                            <TableCell className="text-red-600 dark:text-red-400">
+                              {formatCurrency(item.interesRestante)}
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={className}>{label}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
+                                <div
+                                  className="bg-primary h-2.5"
+                                  style={{ width: `${Math.min(100, item.porcentajeCompletado)}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-xs font-medium">{item.porcentajeCompletado.toFixed(1)}%</span>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
                   </TableBody>
                 </Table>
               </div>
