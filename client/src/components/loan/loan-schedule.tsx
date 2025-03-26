@@ -422,20 +422,22 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
                   description: `Se ha establecido la fecha inicial recomendada: ${formatDate(fechaRecomendada)}`
                 });
               }} 
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-green-600 hover:bg-green-700 text-white text-xs md:text-sm h-10 py-1"
             >
-              Usar fecha recomendada
+              Usar recomendada
             </Button>
             <Button 
               type="submit" 
               onClick={handleAplicarFecha} 
               disabled={!nuevaFecha}
+              className="text-xs md:text-sm h-10 py-1"
             >
-              Aplicar fecha personalizada
+              Aplicar personalizada
             </Button>
             <Button 
               variant="outline" 
               onClick={() => setShowFechaDialog(false)}
+              className="text-xs md:text-sm h-10 py-1"
             >
               Cancelar
             </Button>
