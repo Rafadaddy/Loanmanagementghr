@@ -15,7 +15,8 @@ declare global {
 
 const scryptAsync = promisify(scrypt);
 
-async function hashPassword(password: string) {
+// Función para generar hash de contraseña (exportada para su uso en rutas de actualización)
+export async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
   const hashedResult = `${buf.toString("hex")}.${salt}`;
@@ -30,7 +31,8 @@ async function generateTestPassword() {
   return hash;
 }
 
-async function comparePasswords(supplied: string, stored: string) {
+// Función para comparar contraseñas (exportada para su uso en rutas de actualización)
+export async function comparePasswords(supplied: string, stored: string) {
   if (!stored || !stored.includes(".")) {
     console.error("Error de formato en la contraseña almacenada:", stored);
     return false;
