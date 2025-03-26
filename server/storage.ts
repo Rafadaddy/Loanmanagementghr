@@ -881,6 +881,97 @@ export class MemStorage implements IStorage {
       (cliente) => cliente.cobrador_id === cobradorId
     );
   }
+
+  // Métodos para exportar e importar datos
+  async exportarDatos(): Promise<{
+    users: User[];
+    clientes: Cliente[];
+    prestamos: Prestamo[];
+    pagos: Pago[];
+    cobradores: Cobrador[];
+    movimientosCaja: MovimientoCaja[];
+  }> {
+    return {
+      users: Array.from(this.users.values()),
+      clientes: Array.from(this.clientes.values()),
+      prestamos: Array.from(this.prestamos.values()),
+      pagos: Array.from(this.pagos.values()),
+      cobradores: Array.from(this.cobradores.values()),
+      movimientosCaja: Array.from(this.movimientosCaja.values())
+    };
+  }
+
+  async importarDatos(datos: {
+    users: User[];
+    clientes: Cliente[];
+    prestamos: Prestamo[];
+    pagos: Pago[];
+    cobradores: Cobrador[];
+    movimientosCaja: MovimientoCaja[];
+  }): Promise<boolean> {
+    try {
+      // Limpiar los datos existentes
+      this.users.clear();
+      this.clientes.clear();
+      this.prestamos.clear();
+      this.pagos.clear();
+      this.cobradores.clear();
+      this.movimientosCaja.clear();
+
+      // Importar los usuarios
+      let maxUserId = 0;
+      datos.users.forEach(user => {
+        this.users.set(user.id, user);
+        if (user.id > maxUserId) maxUserId = user.id;
+      });
+      this.currentUserId = maxUserId + 1;
+
+      // Importar los clientes
+      let maxClienteId = 0;
+      datos.clientes.forEach(cliente => {
+        this.clientes.set(cliente.id, cliente);
+        if (cliente.id > maxClienteId) maxClienteId = cliente.id;
+      });
+      this.currentClienteId = maxClienteId + 1;
+
+      // Importar los préstamos
+      let maxPrestamoId = 0;
+      datos.prestamos.forEach(prestamo => {
+        this.prestamos.set(prestamo.id, prestamo);
+        if (prestamo.id > maxPrestamoId) maxPrestamoId = prestamo.id;
+      });
+      this.currentPrestamoId = maxPrestamoId + 1;
+
+      // Importar los pagos
+      let maxPagoId = 0;
+      datos.pagos.forEach(pago => {
+        this.pagos.set(pago.id, pago);
+        if (pago.id > maxPagoId) maxPagoId = pago.id;
+      });
+      this.currentPagoId = maxPagoId + 1;
+
+      // Importar los cobradores
+      let maxCobradorId = 0;
+      datos.cobradores.forEach(cobrador => {
+        this.cobradores.set(cobrador.id, cobrador);
+        if (cobrador.id > maxCobradorId) maxCobradorId = cobrador.id;
+      });
+      this.currentCobradorId = maxCobradorId + 1;
+
+      // Importar los movimientos de caja
+      let maxMovimientoId = 0;
+      datos.movimientosCaja.forEach(movimiento => {
+        this.movimientosCaja.set(movimiento.id, movimiento);
+        if (movimiento.id > maxMovimientoId) maxMovimientoId = movimiento.id;
+      });
+      this.currentMovimientoCajaId = maxMovimientoId + 1;
+
+      return true;
+    } catch (error) {
+      console.error("Error al importar datos:", error);
+      return false;
+    }
+  }
 }
 
 export const storage = new MemStorage();

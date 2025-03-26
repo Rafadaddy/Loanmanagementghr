@@ -1061,6 +1061,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para exportar datos (backup)
+  app.get("/api/sistema/exportar", isAuthenticated, async (req, res, next) => {
+    try {
+      // Verificar que el usuario sea administrador
+      if (req.user?.rol !== "ADMIN") {
+        return res.status(403).json({ message: "No tienes permiso para exportar datos" });
+      }
+
+      const datos = await storage.exportarDatos();
+      
+      // Crear un nombre de archivo para la descarga
+      const fechaActual = new Date().toISOString().split('T')[0];
+      const nombreArchivo = `backup_sistema_${fechaActual}.json`;
+      
+      // Configurar cabeceras para descarga
+      res.setHeader('Content-Disposition', `attachment; filename="${nombreArchivo}"`);
+      res.setHeader('Content-Type', 'application/json');
+      
+      // Enviar los datos
+      res.json(datos);
+    } catch (error) {
+      console.error("Error al exportar datos:", error);
+      next(error);
+    }
+  });
+
+  // Endpoint para importar datos (restaurar)
+  app.post("/api/sistema/importar", isAuthenticated, async (req, res, next) => {
+    try {
+      // Verificar que el usuario sea administrador
+      if (req.user?.rol !== "ADMIN") {
+        return res.status(403).json({ message: "No tienes permiso para importar datos" });
+      }
+
+      // Validar que el cuerpo de la solicitud contiene todos los datos necesarios
+      const requiredCollections = ['users', 'clientes', 'prestamos', 'pagos', 'cobradores', 'movimientosCaja'];
+      const missingCollections = requiredCollections.filter(collection => !req.body[collection]);
+      
+      if (missingCollections.length > 0) {
+        return res.status(400).json({ 
+          message: "Archivo de respaldo incompleto", 
+          missing: missingCollections 
+        });
+      }
+
+      // Importar los datos
+      const resultado = await storage.importarDatos(req.body);
+      
+      if (resultado) {
+        res.status(200).json({ message: "Datos importados correctamente" });
+      } else {
+        res.status(500).json({ message: "Error al importar datos" });
+      }
+    } catch (error) {
+      console.error("Error al importar datos:", error);
+      next(error);
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
