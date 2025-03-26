@@ -27,6 +27,24 @@ export interface IStorage {
   updateCliente(id: number, cliente: InsertCliente): Promise<Cliente | undefined>;
   deleteCliente(id: number): Promise<boolean>;
   
+  // Exportar/Importar datos
+  exportarDatos(): Promise<{
+    users: User[];
+    clientes: Cliente[];
+    prestamos: Prestamo[];
+    pagos: Pago[];
+    cobradores: Cobrador[];
+    movimientosCaja: MovimientoCaja[];
+  }>;
+  importarDatos(datos: {
+    users: User[];
+    clientes: Cliente[];
+    prestamos: Prestamo[];
+    pagos: Pago[];
+    cobradores: Cobrador[];
+    movimientosCaja: MovimientoCaja[];
+  }): Promise<boolean>;
+  
   // Préstamos
   getAllPrestamos(): Promise<Prestamo[]>;
   getPrestamosByClienteId(clienteId: number): Promise<Prestamo[]>;
