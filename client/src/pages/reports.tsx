@@ -862,7 +862,8 @@ export default function Reports() {
                 
                 <TabsContent value="tabla">
                   <div className="overflow-x-auto">
-                    <Table>
+                    <div className="min-w-[800px] md:w-full">
+                      <Table>
                       <TableHeader>
                         <TableRow>
                           {reportType === "prestamos" ? (
@@ -939,6 +940,7 @@ export default function Reports() {
                         )}
                       </TableBody>
                     </Table>
+                    </div>
                   </div>
                 </TabsContent>
               </Tabs>
