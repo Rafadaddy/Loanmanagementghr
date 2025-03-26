@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { formatCurrency, formatDate, getLoanStatus, getPaymentStatus } from "@/lib/utils";
 import MainLayout from "@/components/layout/main-layout";
-import { Prestamo, Cliente, Pago } from "@shared/schema";
+import { Prestamo, Cliente, Pago, Cobrador } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -34,12 +34,42 @@ import {
   PieChart,
   Pie,
   Cell,
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
 } from "recharts";
-import { Download } from "lucide-react";
+import { 
+  Download, 
+  TrendingUp, 
+  DollarSign, 
+  Calendar, 
+  FileText,
+  Users,
+  CreditCard,
+  BarChart3,
+  PieChart as PieChartIcon,
+  LineChart as LineChartIcon,
+  Activity
+} from "lucide-react";
+
+interface Estadisticas {
+  prestamosActivos: number;
+  totalPrestado: number;
+  totalIntereses: number;
+  interesesPorCobrar: number;
+  montosPagosHoy: number;
+  prestamosAtrasados: number;
+  totalMoras: number;
+  ultimosPrestamos: Prestamo[];
+  ultimosPagos: Pago[];
+  ultimosClientes: Cliente[];
+}
 
 export default function Reports() {
   const [reportType, setReportType] = useState("prestamos");
   const [periodoTiempo, setPeriodoTiempo] = useState("todo");
+  const [vista, setVista] = useState("general");
 
   // Cargar datos
   const { data: prestamos = [] } = useQuery<Prestamo[]>({
