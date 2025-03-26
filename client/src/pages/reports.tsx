@@ -1314,20 +1314,21 @@ export default function Reports() {
               </div>
               
               <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Préstamo</TableHead>
-                      <TableHead>Monto</TableHead>
-                      <TableHead>Interés Total</TableHead>
-                      <TableHead>Interés Pagado</TableHead>
-                      <TableHead>Interés Pendiente</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead>% Completado</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <div className="min-w-[800px] md:w-full">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead>Préstamo</TableHead>
+                        <TableHead>Monto</TableHead>
+                        <TableHead>Interés Total</TableHead>
+                        <TableHead>Interés Pagado</TableHead>
+                        <TableHead>Interés Pendiente</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead>% Completado</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                     {datosInteresesPorPrestamo(prestamos, clientes, pagos).length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={8} className="text-center">No hay datos de préstamos</TableCell>
@@ -1366,6 +1367,7 @@ export default function Reports() {
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </div>
             </CardContent>
           </Card>
