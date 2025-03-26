@@ -54,7 +54,14 @@ import {
 } from "lucide-react";
 import { utils, writeFile } from "xlsx";
 import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
+import 'jspdf-autotable';
+
+// Extender el tipo de jsPDF para incluir autoTable
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+  }
+}
 
 interface Estadisticas {
   prestamosActivos: number;
@@ -487,7 +494,7 @@ export default function Reports() {
           ];
         });
         
-        autoTable(doc, {
+        doc.autoTable({
           head: [["ID", "Cliente", "Monto", "Interés", "Fecha", "Semanas", "Estado"]],
           body: data,
           startY: 40,
@@ -508,7 +515,7 @@ export default function Reports() {
           ];
         });
         
-        autoTable(doc, {
+        doc.autoTable({
           head: [["ID", "Cliente", "Préstamo ID", "Monto", "Fecha", "Semana", "Estado"]],
           body: data,
           startY: 40,
@@ -524,7 +531,7 @@ export default function Reports() {
         item.interes > 0 ? `${((item.interes / item.total) * 100).toFixed(2)}%` : "0%"
       ]);
       
-      autoTable(doc, {
+      doc.autoTable({
         head: [["Mes", "Interés", "Capital", "Total", "% Interés"]],
         body: data,
         startY: 40,
@@ -540,7 +547,7 @@ export default function Reports() {
         `${item.eficiencia.toFixed(2)}%`
       ]);
       
-      autoTable(doc, {
+      doc.autoTable({
         head: [["Cobrador", "Clientes", "Préstamos", "Prestado", "Recaudado", "Eficiencia"]],
         body: data,
         startY: 40,
@@ -554,7 +561,7 @@ export default function Reports() {
         formatCurrency(item.neto)
       ]);
       
-      autoTable(doc, {
+      doc.autoTable({
         head: [["Mes", "Entradas", "Salidas", "Flujo Neto"]],
         body: data,
         startY: 40,
@@ -575,7 +582,7 @@ export default function Reports() {
         datos.totalPrestamos > 0 ? `${((item.valor / datos.totalPrestamos) * 100).toFixed(2)}%` : "0%"
       ]);
       
-      autoTable(doc, {
+      doc.autoTable({
         head: [["Categoría", "Cantidad", "Porcentaje"]],
         body: data,
         startY: 65,
@@ -599,7 +606,6 @@ export default function Reports() {
           <Select 
             value={vista}
             onValueChange={setVista}
-            className="w-40"
           >
             <SelectTrigger>
               <SelectValue placeholder="Tipo de Análisis" />
@@ -918,9 +924,10 @@ export default function Reports() {
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          label={({ name, percent }) => (
-                            `${name}: ${(percent * 100).toFixed(0)}%`
-                          )}
+                          label={({ name, percent }) => {
+                            const p = percent as number;
+                            return `${name}: ${(p * 100).toFixed(0)}%`;
+                          }}
                           outerRadius={60}
                           fill="#8884d8"
                           dataKey="value"
@@ -1225,9 +1232,10 @@ export default function Reports() {
                       cx="50%"
                       cy="50%"
                       labelLine={true}
-                      label={({ name, percent }) => (
-                        `${name}: ${(percent * 100).toFixed(0)}%`
-                      )}
+                      label={({ name, percent }) => {
+                        const p = percent as number;
+                        return `${name}: ${(p * 100).toFixed(0)}%`;
+                      }}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="valor"
