@@ -175,3 +175,20 @@ export const insertMovimientoCajaSchema = baseMovimientoCajaSchema.extend({
 
 export type InsertMovimientoCaja = z.infer<typeof insertMovimientoCajaSchema>;
 export type MovimientoCaja = typeof movimientosCaja.$inferSelect;
+
+// Configuraciones del sistema
+export const configuraciones = pgTable("configuraciones", {
+  id: serial("id").primaryKey(),
+  clave: text("clave").notNull().unique(),
+  valor: text("valor").notNull(),
+  descripcion: text("descripcion"),
+  tipo: text("tipo").notNull().$type<'TEXTO' | 'NUMERO' | 'BOOLEANO' | 'FECHA'>(),
+  categoria: text("categoria").notNull(), // GENERAL, PRESTAMOS, PAGOS, SISTEMA
+});
+
+export const insertConfiguracionSchema = createInsertSchema(configuraciones).omit({
+  id: true,
+});
+
+export type InsertConfiguracion = z.infer<typeof insertConfiguracionSchema>;
+export type Configuracion = typeof configuraciones.$inferSelect;

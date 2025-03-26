@@ -35,6 +35,7 @@ export interface IStorage {
     pagos: Pago[];
     cobradores: Cobrador[];
     movimientosCaja: MovimientoCaja[];
+    configuraciones: Configuracion[];
   }>;
   importarDatos(datos: {
     users: User[];
@@ -43,6 +44,7 @@ export interface IStorage {
     pagos: Pago[];
     cobradores: Cobrador[];
     movimientosCaja: MovimientoCaja[];
+    configuraciones?: Configuracion[];
   }): Promise<boolean>;
   
   // Préstamos
@@ -84,6 +86,15 @@ export interface IStorage {
   updateCobrador(id: number, cobrador: Partial<Cobrador>): Promise<Cobrador | undefined>;
   deleteCobrador(id: number): Promise<boolean>;
   getClientesByCobrador(cobradorId: number): Promise<Cliente[]>;
+  
+  // Configuraciones
+  getAllConfiguraciones(): Promise<Configuracion[]>;
+  getConfiguracionesPorCategoria(categoria: string): Promise<Configuracion[]>;
+  getConfiguracion(clave: string): Promise<Configuracion | undefined>;
+  getValorConfiguracion(clave: string, valorPorDefecto?: string): Promise<string>;
+  saveConfiguracion(configuracion: InsertConfiguracion): Promise<Configuracion>;
+  updateConfiguracion(id: number, configuracion: Partial<Configuracion>): Promise<Configuracion | undefined>;
+  deleteConfiguracion(id: number): Promise<boolean>;
   
   // Sesión
   sessionStore: any; // Tipo simplificado para la store de sesión
