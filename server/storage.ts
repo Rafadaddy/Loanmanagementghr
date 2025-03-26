@@ -851,6 +851,33 @@ export class MemStorage implements IStorage {
     const config = await this.getConfiguracion(clave);
     return config ? config.valor : valorPorDefecto;
   }
+  
+  // Obtener el siguiente número de documento de identidad autogenerado
+  async getSiguienteDocumentoIdentidad(): Promise<string> {
+    // Obtener el prefijo de la configuración (por defecto "ID-")
+    const prefijo = await this.getValorConfiguracion("PREFIJO_DOCUMENTO", "ID-");
+    
+    // Buscar el número más alto actual
+    const clientes = await this.getAllClientes();
+    let maxNumero = 0;
+    
+    for (const cliente of clientes) {
+      // Solo procesar documentos que coincidan con el formato prefijo + número
+      if (cliente.documento_identidad.startsWith(prefijo)) {
+        const numeroStr = cliente.documento_identidad.substring(prefijo.length);
+        const numero = parseInt(numeroStr);
+        if (!isNaN(numero) && numero > maxNumero) {
+          maxNumero = numero;
+        }
+      }
+    }
+    
+    // Incrementar en uno y formatear con ceros a la izquierda (6 dígitos)
+    const siguienteNumero = maxNumero + 1;
+    const numeroFormateado = siguienteNumero.toString().padStart(6, '0');
+    
+    return `${prefijo}${numeroFormateado}`;
+  }
 
   async saveConfiguracion(configuracion: InsertConfiguracion): Promise<Configuracion> {
     // Verificar si ya existe una configuración con esta clave
