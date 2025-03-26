@@ -1266,6 +1266,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Ruta para actualizar credenciales de usuario
+  app.post("/api/cambiar-credenciales", isAuthenticated, async (req, res, next) => {
+    try {
+      const { username, password, passwordActual, nombre } = req.body;
+      const userId = req.user!.id;
+      
+      // Verificar que el usuario existe
+      const usuario = await storage.getUser(userId);
+      if (!usuario) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      // Verificar que la contraseña actual es correcta
+      const passwordValida = await comparePasswords(passwordActual, usuario.password);
+      if (!passwordValida) {
+        return res.status(400).json({ message: "La contraseña actual es incorrecta" });
+      }
+      
+      // Preparar objeto con datos a actualizar
+      const datosActualizacion: Partial<Express.User> = {};
+      
+      // Solo actualizar campos que se hayan proporcionado
+      if (nombre) datosActualizacion.nombre = nombre;
+      if (username) {
+        // Verificar que el nombre de usuario no existe ya (excepto si es el mismo)
+        const usuarioExistente = await storage.getUserByUsername(username);
+        if (usuarioExistente && usuarioExistente.id !== userId) {
+          return res.status(400).json({ message: "El nombre de usuario ya está en uso" });
+        }
+        datosActualizacion.username = username;
+      }
+      
+      // Si se proporciona nueva contraseña, hashearla
+      if (password) {
+        datosActualizacion.password = await hashPassword(password);
+      }
+      
+      // Actualizar usuario
+      const usuarioActualizado = await storage.updateUser(userId, datosActualizacion);
+      
+      // Eliminar la contraseña de la respuesta por seguridad
+      if (usuarioActualizado) {
+        const { password, ...usuarioSinPassword } = usuarioActualizado;
+        res.status(200).json({ 
+          message: "Credenciales actualizadas correctamente",
+          user: usuarioSinPassword
+        });
+      } else {
+        res.status(500).json({ message: "Error al actualizar las credenciales" });
+      }
+    } catch (error) {
+      console.error("Error al cambiar credenciales:", error);
+      next(error);
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

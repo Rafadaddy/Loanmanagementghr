@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import BackupRestoreSection from "@/components/reports/backup-restore";
 import SystemConfigSection from "@/components/reports/system-config";
+import UserCredentialsSection from "@/components/reports/user-credentials";
 
 // Componente de tabla responsiva con scroll horizontal
 const ResponsiveTable = ({ children }: { children: React.ReactNode }) => (
@@ -1544,9 +1545,10 @@ export default function Reports() {
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="backup" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsList className="grid w-full grid-cols-3 mb-6">
                   <TabsTrigger value="backup">Copias de Seguridad</TabsTrigger>
                   <TabsTrigger value="config">Configuración</TabsTrigger>
+                  <TabsTrigger value="user">Usuario</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="backup">
@@ -1555,6 +1557,10 @@ export default function Reports() {
                 
                 <TabsContent value="config">
                   <SystemConfigSection />
+                </TabsContent>
+
+                <TabsContent value="user">
+                  <UserCredentialsSection />
                 </TabsContent>
               </Tabs>
             </CardContent>
