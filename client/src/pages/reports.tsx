@@ -795,9 +795,9 @@ export default function Reports() {
                         <Tooltip 
                           formatter={(value: any, name: string | undefined): [string | number, string] => {
                             if (typeof value === 'number') {
-                              return formatCurrency(value);
+                              return [formatCurrency(value), name || ""];
                             }
-                            return value;
+                            return [String(value), name || ""];
                           }}
                           contentStyle={{ 
                             backgroundColor: 'var(--background)', 
