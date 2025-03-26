@@ -1,28 +1,19 @@
 import { 
-  User, 
-  Prestamo, 
-  Cliente, 
-  Pago, 
-  InsertUser, 
-  InsertPrestamo, 
-  InsertCliente, 
-  InsertPago, 
-  Cobrador, 
-  InsertCobrador,
-  CalculoPrestamo,
-  ResultadoCalculoPrestamo,
-  Configuracion,
-  InsertConfiguracion,
-  MovimientoCaja,
-  InsertMovimientoCaja
+  Cliente, InsertCliente, 
+  Prestamo, InsertPrestamo, 
+  Pago, InsertPago, 
+  User, InsertUser, 
+  Cobrador, InsertCobrador,
+  MovimientoCaja, InsertMovimientoCaja,
+  ResultadoCalculoPrestamo, CalculoPrestamo 
 } from "@shared/schema";
-import { addDays, differenceInDays, format } from "date-fns";
-import createMemoryStore from "memorystore";
 import session from "express-session";
+import createMemoryStore from "memorystore";
+import { addDays, format, differenceInDays } from "date-fns";
 
 const MemoryStore = createMemoryStore(session);
 
-// Interfaz para el almacenamiento de datos
+// Interfaz de almacenamiento
 export interface IStorage {
   // Autenticación
   getUser(id: number): Promise<User | undefined>;
@@ -109,7 +100,6 @@ export interface IStorage {
   sessionStore: any; // Tipo simplificado para la store de sesión
 }
 
-// Implementación de almacenamiento en memoria
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private clientes: Map<number, Cliente>;
@@ -125,10 +115,6 @@ export class MemStorage implements IStorage {
 
   private movimientosCaja: Map<number, MovimientoCaja> = new Map();
   private currentMovimientoCajaId: number = 1;
-  
-  // Configuraciones
-  private configuraciones: Map<number, Configuracion> = new Map();
-  private currentConfiguracionId: number = 1;
 
   constructor() {
     this.users = new Map();
@@ -310,10 +296,7 @@ export class MemStorage implements IStorage {
       semanas_pagadas: 0,
       proxima_fecha_pago: format(proximaFechaPago, 'yyyy-MM-dd'),
       dias_atraso: 0,
-      monto_mora_acumulada: "0",
-      fecha_inicial_personalizada: null,
-      dia_pago: null,
-      cronograma_eliminado: false
+      monto_mora_acumulada: "0"
     };
     
     this.prestamos.set(id, nuevoPrestamo);
@@ -585,77 +568,103 @@ export class MemStorage implements IStorage {
     // Obtener el préstamo asociado al pago
     const prestamo = await this.getPrestamo(pago.prestamo_id);
     if (!prestamo) {
-      console.log("DEBUG - Préstamo no encontrado:", pago.prestamo_id);
+      console.log("DEBUG - Préstamo asociado no encontrado:", pago.prestamo_id);
       return false;
     }
     
-    // Si es un pago parcial, no afecta el estado ni las semanas pagadas
-    // del préstamo, solo eliminamos el pago
-    if (pago.es_pago_parcial === "true") {
-      console.log("DEBUG - Eliminando pago parcial");
-      const eliminado = this.pagos.delete(id);
-      return eliminado;
-    }
-    
-    // Para pagos completos:
-    // 1. Decrementar las semanas pagadas
-    let nuevasSemanaPagadas = prestamo.semanas_pagadas;
-    if (nuevasSemanaPagadas > 0) {
-      nuevasSemanaPagadas -= 1;
-    }
-    
-    // 2. Ajustar la próxima fecha de pago (retroceder 7 días)
-    const fechaActual = new Date(prestamo.proxima_fecha_pago);
-    const nuevaFecha = addDays(fechaActual, -7);
-    
-    // 3. Recalcular estado del préstamo
-    // Siempre vuelve a ACTIVO a menos que no tenga semanas pagadas
-    const nuevoEstado = "ACTIVO";
-    
-    // 4. Actualizar el préstamo con los nuevos valores
-    await this.updatePrestamo(prestamo.id, {
-      semanas_pagadas: nuevasSemanaPagadas,
-      proxima_fecha_pago: format(nuevaFecha, 'yyyy-MM-dd'),
-      estado: nuevoEstado
-    });
-    
-    console.log("DEBUG - Préstamo actualizado tras eliminar pago:", {
-      semanas_pagadas: nuevasSemanaPagadas,
-      proxima_fecha_pago: format(nuevaFecha, 'yyyy-MM-dd'),
-      estado: nuevoEstado
-    });
-    
-    // 5. Finalmente, eliminar el pago
-    const eliminado = this.pagos.delete(id);
-    console.log("DEBUG - Resultado de eliminación:", eliminado);
-    return eliminado;
-  }
+    console.log("DEBUG - Préstamo asociado encontrado:", prestamo);
 
-  async deletePrestamo(id: number): Promise<boolean> {
-    const prestamoExistente = this.prestamos.get(id);
-    if (!prestamoExistente) {
-      return false;
+    // Revertir los efectos del pago en el préstamo
+    const prestamoActualizado: Partial<Prestamo> = {};
+
+    // Si no fue un pago parcial, decrementar semanas pagadas
+    if (pago.es_pago_parcial !== "true") {
+      const semanasActualizadas = Math.max(0, prestamo.semanas_pagadas - 1);
+      prestamoActualizado.semanas_pagadas = semanasActualizadas;
+      
+      console.log("DEBUG - Actualizando semanas pagadas de", prestamo.semanas_pagadas, "a", semanasActualizadas);
     }
-    
-    // Verificar si existen pagos asociados al préstamo
-    const pagosPrestamo = await this.getPagosByPrestamoId(id);
-    if (pagosPrestamo.length > 0) {
-      // Eliminar todos los pagos asociados al préstamo
-      for (const pago of pagosPrestamo) {
-        await this.deletePago(pago.id);
+      
+    // Comprobar el estado del préstamo tras eliminar este pago
+    if (prestamo.estado === "PAGADO") {
+      // Verificar el monto total pagado después de eliminar este pago
+      const pagosPrestamo = await this.getPagosByPrestamoId(prestamo.id);
+      // Filtrar para excluir el pago que se va a eliminar
+      const pagosRestantes = pagosPrestamo.filter(p => p.id !== id);
+      
+      // Calcular el total pagado después de quitar este pago
+      const totalPagado = pagosRestantes.reduce((sum, p) => sum + Number(p.monto_pagado), 0);
+      const montoTotalPagar = Number(prestamo.monto_total_pagar);
+      
+      console.log("DEBUG - Total pagado después de eliminar pago:", totalPagado);
+      console.log("DEBUG - Monto total a pagar del préstamo:", montoTotalPagar);
+      
+      // Si después de eliminar el pago, ya no cubre el monto total, volver a ACTIVO
+      if (totalPagado < montoTotalPagar) {
+        prestamoActualizado.estado = "ACTIVO";
+        console.log("DEBUG - Cambiando estado de préstamo de PAGADO a ACTIVO (por monto insuficiente)");
       }
     }
-    
-    return this.prestamos.delete(id);
+
+    // Actualizar la fecha de próximo pago si corresponde
+    if (prestamo.semanas_pagadas > 0) {
+      const nuevaFechaPago = new Date(prestamo.proxima_fecha_pago);
+      nuevaFechaPago.setDate(nuevaFechaPago.getDate() - 7);
+      prestamoActualizado.proxima_fecha_pago = format(nuevaFechaPago, 'yyyy-MM-dd');
+      console.log("DEBUG - Actualizando próxima fecha de pago a:", prestamoActualizado.proxima_fecha_pago);
+    }
+
+    // Restar la mora acumulada que se haya agregado con este pago
+    const montoMoraDelPago = parseFloat(pago.monto_mora || "0");
+    if (montoMoraDelPago > 0) {
+      const moraActual = parseFloat(prestamo.monto_mora_acumulada || "0");
+      const nuevaMora = Math.max(0, moraActual - montoMoraDelPago);
+      prestamoActualizado.monto_mora_acumulada = nuevaMora.toString();
+      console.log("DEBUG - Actualizando mora acumulada de", moraActual, "a", nuevaMora);
+    }
+
+    // Actualizar el préstamo
+    await this.updatePrestamo(pago.prestamo_id, prestamoActualizado);
+    console.log("DEBUG - Préstamo actualizado después de revertir pago");
+
+    // Eliminar el pago
+    const resultado = this.pagos.delete(id);
+    console.log("DEBUG - Resultado de eliminar pago:", resultado);
+    return resultado;
   }
 
+  // Método para eliminar un préstamo (solo si está pagado)
+  async deletePrestamo(id: number): Promise<boolean> {
+    console.log("DEBUG - Iniciando eliminación de préstamo:", id);
+    
+    const prestamo = await this.getPrestamo(id);
+    if (!prestamo) {
+      console.log("DEBUG - Préstamo no encontrado:", id);
+      return false;
+    }
+    
+    console.log("DEBUG - Préstamo encontrado:", prestamo);
+
+    // Solo permitir eliminar préstamos pagados
+    if (prestamo.estado !== "PAGADO") {
+      console.log("DEBUG - No se puede eliminar préstamo no pagado. Estado actual:", prestamo.estado);
+      throw new Error("Solo se pueden eliminar préstamos pagados");
+    }
+
+    // Eliminar el préstamo
+    const resultado = this.prestamos.delete(id);
+    console.log("DEBUG - Resultado de eliminar préstamo:", resultado);
+    return resultado;
+  }
+
+  // Cálculos de préstamos
   calcularPrestamo(datos: CalculoPrestamo): ResultadoCalculoPrestamo {
     const { monto_prestado, tasa_interes, numero_semanas } = datos;
     
-    // Calcular interés total
+    // Calcular interés total (monto * tasa / 100)
     const interes = monto_prestado * (tasa_interes / 100);
     
-    // Monto total a pagar
+    // Monto total a pagar (principal + interés)
     const monto_total_pagar = monto_prestado + interes;
     
     // Pago semanal
@@ -667,7 +676,8 @@ export class MemStorage implements IStorage {
     };
   }
 
-  // Métodos para movimientos de caja
+
+
   async getAllMovimientosCaja(): Promise<MovimientoCaja[]> {
     return Array.from(this.movimientosCaja.values());
   }
@@ -677,25 +687,64 @@ export class MemStorage implements IStorage {
   }
 
   async createMovimientoCaja(movimiento: InsertMovimientoCaja): Promise<MovimientoCaja> {
-    const id = this.currentMovimientoCajaId++;
+    console.log("DEBUG - Creando movimiento con datos:", JSON.stringify(movimiento, null, 2));
     
-    // Asegurarse de que la fecha sea un objeto Date
-    let fecha;
-    if (movimiento.fecha instanceof Date) {
-      fecha = movimiento.fecha;
-    } else {
-      fecha = new Date(movimiento.fecha.toString());
+    try {
+      // Asegurar que tipo sea INGRESO o EGRESO
+      const tipo = (movimiento.tipo === "INGRESO" || movimiento.tipo === "EGRESO") 
+        ? movimiento.tipo 
+        : "INGRESO"; // Valor por defecto
+      
+      // Validamos que los campos numéricos sean correctos
+      // y aseguramos que los opcionales sean null si no están definidos
+      const cliente_id = movimiento.cliente_id === undefined ? null : movimiento.cliente_id;
+      const prestamo_id = movimiento.prestamo_id === undefined ? null : movimiento.prestamo_id;
+      const descripcion = movimiento.descripcion === undefined ? null : movimiento.descripcion;
+      
+      // Aseguramos que el monto sea válido como string
+      let monto = movimiento.monto;
+      if (typeof monto === 'number') {
+        monto = monto.toString();
+      } else if (monto === undefined || monto === null) {
+        monto = '0';
+      }
+      
+      // Creamos un ID único para el movimiento
+      const id = this.currentMovimientoCajaId++;
+      
+      // Creamos el nuevo objeto de movimiento con estructura correcta
+      const nuevoMovimiento: MovimientoCaja = {
+        id,
+        tipo: tipo as 'INGRESO' | 'EGRESO',
+        categoria: movimiento.categoria,
+        monto,
+        cliente_id,
+        prestamo_id,
+        descripcion,
+        fecha: movimiento.fecha instanceof Date 
+          ? movimiento.fecha 
+          : typeof movimiento.fecha === 'string' 
+            ? new Date(movimiento.fecha) 
+            : new Date(),
+        creado_por: movimiento.creado_por
+      };
+      
+      console.log("DEBUG - Nuevo movimiento estructurado:", JSON.stringify(nuevoMovimiento, null, 2));
+      
+      // Guardamos en el mapa (memoria)
+      this.movimientosCaja.set(id, nuevoMovimiento);
+      console.log("DEBUG - Movimiento guardado con ID:", id);
+      
+      // Verificar todos los movimientos guardados
+      console.log("DEBUG - Total de movimientos en memoria:", this.movimientosCaja.size);
+      console.log("DEBUG - Movimientos actuales:", 
+        Array.from(this.movimientosCaja.values()).map(m => ({ id: m.id, tipo: m.tipo, monto: m.monto })));
+      
+      return nuevoMovimiento;
+    } catch (error) {
+      console.error("ERROR al crear movimiento de caja:", error);
+      throw error;
     }
-    
-    // Crear movimiento
-    const nuevoMovimiento: MovimientoCaja = {
-      ...movimiento,
-      id,
-      fecha
-    };
-    
-    this.movimientosCaja.set(id, nuevoMovimiento);
-    return nuevoMovimiento;
   }
 
   async deleteMovimientoCaja(id: number): Promise<boolean> {
@@ -703,79 +752,73 @@ export class MemStorage implements IStorage {
   }
 
   async getResumenCaja(): Promise<{ 
-    saldo_actual: number;
-    total_ingresos: number;
+    saldo_actual: number; 
+    total_ingresos: number; 
     total_egresos: number;
-    movimientos_por_dia: { fecha: string; ingreso: number; egreso: number }[]
+    movimientos_por_dia: { fecha: string; ingreso: number; egreso: number }[] 
   }> {
-    const movimientos = Array.from(this.movimientosCaja.values());
+    const movimientos = await this.getAllMovimientosCaja();
+    
+    // Calcular totales
     let totalIngresos = 0;
     let totalEgresos = 0;
     
-    // Calcular totales
+    // Agrupar movimientos por día para el gráfico
+    const movimientosPorDia = new Map<string, { ingreso: number; egreso: number }>();
+    
     for (const movimiento of movimientos) {
-      const monto = Number(movimiento.monto);
-      if (movimiento.tipo === "INGRESO") {
+      const monto = parseFloat(movimiento.monto);
+      
+      if (movimiento.tipo === 'INGRESO') {
         totalIngresos += monto;
       } else {
         totalEgresos += monto;
       }
-    }
-    
-    // Saldo actual
-    const saldoActual = totalIngresos - totalEgresos;
-    
-    // Agrupar movimientos por día para gráficos
-    const movimientosPorDia = new Map<string, { ingreso: number; egreso: number }>();
-    
-    for (const movimiento of movimientos) {
-      const fecha = format(new Date(movimiento.fecha), 'yyyy-MM-dd');
-      const monto = Number(movimiento.monto);
       
-      if (!movimientosPorDia.has(fecha)) {
-        movimientosPorDia.set(fecha, { ingreso: 0, egreso: 0 });
-      }
+      // Agrupar por día para el gráfico
+      const fechaStr = format(new Date(movimiento.fecha), 'yyyy-MM-dd');
+      const datosDelDia = movimientosPorDia.get(fechaStr) || { ingreso: 0, egreso: 0 };
       
-      const datos = movimientosPorDia.get(fecha)!;
-      
-      if (movimiento.tipo === "INGRESO") {
-        datos.ingreso += monto;
+      if (movimiento.tipo === 'INGRESO') {
+        datosDelDia.ingreso += monto;
       } else {
-        datos.egreso += monto;
+        datosDelDia.egreso += monto;
       }
       
-      movimientosPorDia.set(fecha, datos);
+      movimientosPorDia.set(fechaStr, datosDelDia);
     }
     
-    // Convertir Map a Array para el resultado
-    const movimientosPorDiaArray = Array.from(movimientosPorDia.entries()).map(
-      ([fecha, datos]) => ({
+    // Convertir el mapa a un array para facilitar el uso en gráficos
+    const arrayMovimientosPorDia = Array.from(movimientosPorDia.entries())
+      .map(([fecha, datos]) => ({
         fecha,
         ingreso: datos.ingreso,
         egreso: datos.egreso
-      })
-    );
+      }))
+      .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime()); // Ordenar por fecha
     
-    // Ordenar por fecha
-    movimientosPorDiaArray.sort((a, b) => {
-      return new Date(a.fecha).getTime() - new Date(b.fecha).getTime();
-    });
+    const saldoActual = totalIngresos - totalEgresos;
     
     return {
       saldo_actual: saldoActual,
       total_ingresos: totalIngresos,
       total_egresos: totalEgresos,
-      movimientos_por_dia: movimientosPorDiaArray
+      movimientos_por_dia: arrayMovimientosPorDia
     };
   }
-  
+
   async getMovimientosCajaPorFecha(fechaInicio: string, fechaFin: string): Promise<MovimientoCaja[]> {
-    const fechaInicioObj = new Date(fechaInicio);
-    const fechaFinObj = new Date(fechaFin);
+    const movimientos = await this.getAllMovimientosCaja();
     
-    return Array.from(this.movimientosCaja.values()).filter(movimiento => {
+    const fechaInicioDate = new Date(fechaInicio);
+    const fechaFinDate = new Date(fechaFin);
+    
+    // Ajustar fecha fin para incluir todo el día
+    fechaFinDate.setHours(23, 59, 59, 999);
+    
+    return movimientos.filter(movimiento => {
       const fechaMovimiento = new Date(movimiento.fecha);
-      return fechaMovimiento >= fechaInicioObj && fechaMovimiento <= fechaFinObj;
+      return fechaMovimiento >= fechaInicioDate && fechaMovimiento <= fechaFinDate;
     });
   }
 
@@ -796,9 +839,27 @@ export class MemStorage implements IStorage {
 
   async createCobrador(cobrador: InsertCobrador): Promise<Cobrador> {
     const id = this.currentCobradorId++;
+    
+    // Si no se proporciona nombre o teléfono, pero se proporciona user_id,
+    // intentamos obtener esta información del usuario asociado
+    let nombre = cobrador.nombre;
+    let telefono = cobrador.telefono;
+    
+    if ((!nombre || !telefono) && cobrador.user_id) {
+      const usuario = await this.getUser(cobrador.user_id);
+      if (usuario) {
+        nombre = nombre || usuario.nombre;
+        // Si no hay teléfono, usamos un valor predeterminado
+        telefono = telefono || "Sin teléfono";
+      }
+    }
+    
     const nuevoCobrador: Cobrador = { 
       ...cobrador, 
-      id 
+      id,
+      nombre: nombre || "Sin nombre", // Asegurarnos de tener un valor predeterminado
+      telefono: telefono || "Sin teléfono", // Asegurarnos de tener un valor predeterminado
+      activo: cobrador.activo ?? true // Si no se especifica, por defecto es activo
     };
     
     this.cobradores.set(id, nuevoCobrador);
@@ -819,8 +880,15 @@ export class MemStorage implements IStorage {
     this.cobradores.set(id, cobradorActualizado);
     return cobradorActualizado;
   }
-
+  
   async deleteCobrador(id: number): Promise<boolean> {
+    // Verificar si existen clientes asociados al cobrador
+    const clientesAsociados = await this.getClientesByCobrador(id);
+    if (clientesAsociados.length > 0) {
+      // No permitir eliminar cobradores con clientes asignados
+      return false;
+    }
+    
     return this.cobradores.delete(id);
   }
 
@@ -829,6 +897,101 @@ export class MemStorage implements IStorage {
       (cliente) => cliente.cobrador_id === cobradorId
     );
   }
+
+  // Métodos para exportar e importar datos
+  async exportarDatos(): Promise<{
+    users: User[];
+    clientes: Cliente[];
+    prestamos: Prestamo[];
+    pagos: Pago[];
+    cobradores: Cobrador[];
+    movimientosCaja: MovimientoCaja[];
+  }> {
+    return {
+      users: Array.from(this.users.values()),
+      clientes: Array.from(this.clientes.values()),
+      prestamos: Array.from(this.prestamos.values()),
+      pagos: Array.from(this.pagos.values()),
+      cobradores: Array.from(this.cobradores.values()),
+      movimientosCaja: Array.from(this.movimientosCaja.values())
+    };
+  }
+
+  async importarDatos(datos: {
+    users: User[];
+    clientes: Cliente[];
+    prestamos: Prestamo[];
+    pagos: Pago[];
+    cobradores: Cobrador[];
+    movimientosCaja: MovimientoCaja[];
+  }): Promise<boolean> {
+    try {
+      // Limpiar los datos existentes
+      this.users.clear();
+      this.clientes.clear();
+      this.prestamos.clear();
+      this.pagos.clear();
+      this.cobradores.clear();
+      this.movimientosCaja.clear();
+
+      // Importar los usuarios
+      let maxUserId = 0;
+      datos.users.forEach(user => {
+        this.users.set(user.id, user);
+        if (user.id > maxUserId) maxUserId = user.id;
+      });
+      this.currentUserId = maxUserId + 1;
+
+      // Importar los clientes
+      let maxClienteId = 0;
+      datos.clientes.forEach(cliente => {
+        this.clientes.set(cliente.id, cliente);
+        if (cliente.id > maxClienteId) maxClienteId = cliente.id;
+      });
+      this.currentClienteId = maxClienteId + 1;
+
+      // Importar los préstamos
+      let maxPrestamoId = 0;
+      datos.prestamos.forEach(prestamo => {
+        this.prestamos.set(prestamo.id, prestamo);
+        if (prestamo.id > maxPrestamoId) maxPrestamoId = prestamo.id;
+      });
+      this.currentPrestamoId = maxPrestamoId + 1;
+
+      // Importar los pagos
+      let maxPagoId = 0;
+      datos.pagos.forEach(pago => {
+        this.pagos.set(pago.id, pago);
+        if (pago.id > maxPagoId) maxPagoId = pago.id;
+      });
+      this.currentPagoId = maxPagoId + 1;
+
+      // Importar los cobradores
+      let maxCobradorId = 0;
+      datos.cobradores.forEach(cobrador => {
+        this.cobradores.set(cobrador.id, cobrador);
+        if (cobrador.id > maxCobradorId) maxCobradorId = cobrador.id;
+      });
+      this.currentCobradorId = maxCobradorId + 1;
+
+      // Importar los movimientos de caja
+      let maxMovimientoId = 0;
+      datos.movimientosCaja.forEach(movimiento => {
+        this.movimientosCaja.set(movimiento.id, movimiento);
+        if (movimiento.id > maxMovimientoId) maxMovimientoId = movimiento.id;
+      });
+      this.currentMovimientoCajaId = maxMovimientoId + 1;
+
+      return true;
+    } catch (error) {
+      console.error("Error al importar datos:", error);
+      return false;
+    }
+  }
+
+  // Configuraciones
+  private configuraciones: Map<number, Configuracion> = new Map();
+  private currentConfiguracionId: number = 1;
 
   // Métodos para configuraciones
   async getAllConfiguraciones(): Promise<Configuracion[]> {
@@ -891,7 +1054,7 @@ export class MemStorage implements IStorage {
     return this.configuraciones.delete(id);
   }
 
-  // Métodos para exportar e importar datos
+  // Actualizar métodos de exportar/importar para incluir configuraciones
   async exportarDatos(): Promise<{
     users: User[];
     clientes: Cliente[];
@@ -1073,6 +1236,34 @@ export class MemStorage implements IStorage {
       tipo: "NUMERO",
       categoria: "SISTEMA"
     });
+  }
+
+  constructor() {
+    this.users = new Map();
+    this.clientes = new Map();
+    this.prestamos = new Map();
+    this.pagos = new Map();
+    this.cobradores = new Map();
+    this.movimientosCaja = new Map();
+    this.configuraciones = new Map();
+    this.currentUserId = 1;
+    this.currentClienteId = 1;
+    this.currentPrestamoId = 1;
+    this.currentPagoId = 1;
+    this.currentCobradorId = 1;
+    this.currentMovimientoCajaId = 1;
+    this.currentConfiguracionId = 1;
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 7 * 86400000, // 7 días
+      stale: false, // Impedir que las sesiones se vuelvan obsoletas
+      ttl: 7 * 86400000 // 7 días de tiempo de vida
+    });
+    
+    // Inicializar datos de ejemplo
+    this.initializeSampleData();
+    
+    // Inicializar configuraciones predeterminadas
+    this.initConfiguracionesPredeterminadas();
   }
 }
 

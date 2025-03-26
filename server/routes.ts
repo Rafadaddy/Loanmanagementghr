@@ -10,6 +10,7 @@ import {
   insertPagoSchema, 
   insertMovimientoCajaSchema,
   insertCobradorSchema,
+  insertConfiguracionSchema,
   calculoPrestamoSchema,
   Prestamo
 } from "@shared/schema";
@@ -1116,6 +1117,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("Error al importar datos:", error);
+      next(error);
+    }
+  });
+
+  // ===== Rutas para configuraciones =====
+  
+  // Obtener todas las configuraciones
+  app.get("/api/configuraciones", async (req, res, next) => {
+    try {
+      const configuraciones = await storage.getAllConfiguraciones();
+      res.json(configuraciones);
+    } catch (error) {
+      console.error("Error al obtener configuraciones:", error);
+      next(error);
+    }
+  });
+
+  // Obtener configuraciones por categoría
+  app.get("/api/configuraciones/categoria/:categoria", async (req, res, next) => {
+    try {
+      const categoria = req.params.categoria;
+      const configuraciones = await storage.getConfiguracionesPorCategoria(categoria);
+      res.json(configuraciones);
+    } catch (error) {
+      console.error("Error al obtener configuraciones por categoría:", error);
+      next(error);
+    }
+  });
+
+  // Obtener una configuración específica por clave
+  app.get("/api/configuraciones/clave/:clave", async (req, res, next) => {
+    try {
+      const clave = req.params.clave;
+      const configuracion = await storage.getConfiguracion(clave);
+      
+      if (!configuracion) {
+        return res.status(404).json({ message: "Configuración no encontrada" });
+      }
+      
+      res.json(configuracion);
+    } catch (error) {
+      console.error("Error al obtener configuración:", error);
+      next(error);
+    }
+  });
+
+  // Guardar o actualizar una configuración
+  app.post("/api/configuraciones", isAuthenticated, async (req, res, next) => {
+    try {
+      // Verificar que el usuario sea administrador
+      if (req.user?.rol !== "ADMIN") {
+        return res.status(403).json({ message: "No tienes permiso para modificar configuraciones" });
+      }
+
+      // Validar los datos de la configuración
+      try {
+        insertConfiguracionSchema.parse(req.body);
+      } catch (error) {
+        return res.status(400).json({ message: "Datos de configuración inválidos", error });
+      }
+
+      // Guardar la configuración
+      const configuracion = await storage.saveConfiguracion(req.body);
+      res.status(201).json(configuracion);
+    } catch (error) {
+      console.error("Error al guardar configuración:", error);
+      next(error);
+    }
+  });
+
+  // Actualizar una configuración existente
+  app.put("/api/configuraciones/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      // Verificar que el usuario sea administrador
+      if (req.user?.rol !== "ADMIN") {
+        return res.status(403).json({ message: "No tienes permiso para modificar configuraciones" });
+      }
+
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de configuración inválido" });
+      }
+
+      // Verificar que exista la configuración
+      const configuraciones = await storage.getAllConfiguraciones();
+      const configuracion = configuraciones.find(c => c.id === id);
+      if (!configuracion) {
+        return res.status(404).json({ message: "Configuración no encontrada" });
+      }
+
+      // Actualizar la configuración
+      const configuracionActualizada = await storage.updateConfiguracion(id, req.body);
+      
+      if (configuracionActualizada) {
+        res.json(configuracionActualizada);
+      } else {
+        res.status(500).json({ message: "Error al actualizar la configuración" });
+      }
+    } catch (error) {
+      console.error("Error al actualizar configuración:", error);
+      next(error);
+    }
+  });
+
+  // Eliminar una configuración
+  app.delete("/api/configuraciones/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      // Verificar que el usuario sea administrador
+      if (req.user?.rol !== "ADMIN") {
+        return res.status(403).json({ message: "No tienes permiso para eliminar configuraciones" });
+      }
+
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de configuración inválido" });
+      }
+
+      // Verificar que exista la configuración
+      const configuraciones = await storage.getAllConfiguraciones();
+      const configuracion = configuraciones.find(c => c.id === id);
+      if (!configuracion) {
+        return res.status(404).json({ message: "Configuración no encontrada" });
+      }
+
+      // Eliminar la configuración
+      const resultado = await storage.deleteConfiguracion(id);
+      
+      if (resultado) {
+        res.status(200).json({ message: "Configuración eliminada correctamente" });
+      } else {
+        res.status(500).json({ message: "Error al eliminar la configuración" });
+      }
+    } catch (error) {
+      console.error("Error al eliminar configuración:", error);
       next(error);
     }
   });
