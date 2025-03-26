@@ -1532,6 +1532,41 @@ export default function Reports() {
           </Card>
         </div>
       )}
+
+      {/* VISTA SISTEMA */}
+      {vista === "sistema" && (
+        <div className="grid grid-cols-1 gap-4 mb-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Administración del Sistema</CardTitle>
+              <CardDescription>Gestione copias de seguridad y configuraciones del sistema</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="backup" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-6">
+                  <TabsTrigger value="backup">Copias de Seguridad</TabsTrigger>
+                  <TabsTrigger value="config">Configuración</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="backup">
+                  <BackupRestoreSection />
+                </TabsContent>
+                
+                <TabsContent value="config">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Configuración del Sistema</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Esta sección está en desarrollo. Próximamente podrá configurar parámetros globales 
+                      del sistema como tasas de interés predeterminadas, días de gracia, configuración 
+                      de notificaciones, y más.
+                    </p>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </MainLayout>
   );
 }
