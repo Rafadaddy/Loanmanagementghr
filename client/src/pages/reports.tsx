@@ -15,6 +15,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import BackupRestoreSection from "@/components/reports/backup-restore";
+import SystemConfigSection from "@/components/reports/system-config";
 
 // Componente de tabla responsiva con scroll horizontal
 const ResponsiveTable = ({ children }: { children: React.ReactNode }) => (
@@ -1553,14 +1554,7 @@ export default function Reports() {
                 </TabsContent>
                 
                 <TabsContent value="config">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Configuración del Sistema</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Esta sección está en desarrollo. Próximamente podrá configurar parámetros globales 
-                      del sistema como tasas de interés predeterminadas, días de gracia, configuración 
-                      de notificaciones, y más.
-                    </p>
-                  </div>
+                  <SystemConfigSection />
                 </TabsContent>
               </Tabs>
             </CardContent>
