@@ -63,6 +63,9 @@ declare module 'jspdf' {
   }
 }
 
+// Tipo personalizado para los formateadores de tooltips de recharts
+type TooltipFormatter = (value: any, name?: string, props?: any) => [string | number, string];
+
 interface Estadisticas {
   prestamosActivos: number;
   totalPrestado: number;
@@ -790,7 +793,7 @@ export default function Reports() {
                         <XAxis dataKey="mes" stroke="currentColor" />
                         <YAxis stroke="currentColor" />
                         <Tooltip 
-                          formatter={(value: any) => {
+                          formatter={(value: any, name: string | undefined): [string | number, string] => {
                             if (typeof value === 'number') {
                               return formatCurrency(value);
                             }
@@ -942,7 +945,7 @@ export default function Reports() {
                           ))}
                         </Pie>
                         <Tooltip 
-                          formatter={(value) => `${value} préstamos`}
+                          formatter={(value): [string | number, string] => [`${value} préstamos`, ""]}
                           contentStyle={{ 
                             backgroundColor: 'var(--background)', 
                             borderColor: 'var(--border)',
