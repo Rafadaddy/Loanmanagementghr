@@ -790,7 +790,12 @@ export default function Reports() {
                         <XAxis dataKey="mes" stroke="currentColor" />
                         <YAxis stroke="currentColor" />
                         <Tooltip 
-                          formatter={(value) => formatCurrency(value as number)}
+                          formatter={(value: any) => {
+                            if (typeof value === 'number') {
+                              return formatCurrency(value);
+                            }
+                            return value;
+                          }}
                           contentStyle={{ 
                             backgroundColor: 'var(--background)', 
                             borderColor: 'var(--border)',
@@ -1109,9 +1114,12 @@ export default function Reports() {
                     <XAxis dataKey="nombre" stroke="currentColor" />
                     <YAxis stroke="currentColor" />
                     <Tooltip 
-                      formatter={(value, name) => {
-                        if (name === "eficiencia") return `${value.toFixed(2)}%`;
-                        return formatCurrency(value as number);
+                      formatter={(value: any) => {
+                        // Usamos any para evitar problemas de tipo en esta función específica
+                        if (typeof value === 'number') {
+                          return formatCurrency(value);
+                        }
+                        return value;
                       }}
                       contentStyle={{ 
                         backgroundColor: 'var(--background)', 
