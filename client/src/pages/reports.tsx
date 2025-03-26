@@ -66,6 +66,14 @@ declare module 'jspdf' {
 // Tipo personalizado para los formateadores de tooltips de recharts
 type TooltipFormatter = (value: any, name?: string, props?: any) => [string | number, string];
 
+// Función auxiliar para formatear valores en tooltips
+const tooltipFormatter: TooltipFormatter = (value, name) => {
+  if (typeof value === 'number') {
+    return [formatCurrency(value), name || ""];
+  }
+  return [String(value), name || ""];
+};
+
 interface Estadisticas {
   prestamosActivos: number;
   totalPrestado: number;
@@ -78,6 +86,43 @@ interface Estadisticas {
   ultimosPagos: Pago[];
   ultimosClientes: Cliente[];
 }
+
+// Función para calcular datos de intereses por préstamo
+const datosInteresesPorPrestamo = (prestamos: Prestamo[], clientes: Cliente[], pagos: Pago[]) => {
+  return prestamos.map(prestamo => {
+    const cliente = clientes.find(c => c.id === prestamo.cliente_id);
+    const pagosPrestamo = pagos.filter(p => p.prestamo_id === prestamo.id);
+    
+    const montoPrestado = Number(prestamo.monto_prestado);
+    const montoTotal = Number(prestamo.monto_total_pagar);
+    const interesTotal = montoTotal - montoPrestado;
+    
+    // Calcular interés ya pagado
+    const montoPagado = pagosPrestamo.reduce((sum, p) => sum + Number(p.monto_pagado), 0);
+    const tasaInteres = Number(prestamo.tasa_interes) / 100;
+    const interesYaPagado = pagosPrestamo.reduce((sum, p) => {
+      const montoPagoActual = Number(p.monto_pagado);
+      // Cálculo simplificado: en cada pago, una porción es interés
+      const interesPago = montoPagoActual * tasaInteres / (1 + tasaInteres);
+      return sum + interesPago;
+    }, 0);
+    
+    const interesRestante = Math.max(0, interesTotal - interesYaPagado);
+    const porcentajeCompletado = montoPrestado > 0 ? (montoPagado / montoTotal) * 100 : 0;
+    
+    return {
+      id: prestamo.id,
+      cliente: cliente?.nombre || "Desconocido",
+      fecha: prestamo.fecha_prestamo,
+      montoPrestado: montoPrestado,
+      interesTotal: interesTotal,
+      interesYaPagado: interesYaPagado,
+      interesRestante: interesRestante,
+      porcentajeCompletado: porcentajeCompletado,
+      estado: prestamo.estado
+    };
+  });
+};
 
 export default function Reports() {
   const [reportType, setReportType] = useState("prestamos");
