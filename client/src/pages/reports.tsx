@@ -233,39 +233,157 @@ export default function Reports() {
           <p className="text-sm text-muted-foreground">Análisis y estadísticas del sistema</p>
         </div>
         
-        <Button 
-          className="mt-4 md:mt-0 bg-primary hover:bg-blue-600"
-          onClick={exportarCSV}
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Exportar Reporte
-        </Button>
+        <div className="flex gap-2 mt-4 md:mt-0">
+          <Select 
+            value={vista}
+            onValueChange={setVista}
+            className="w-40"
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Tipo de Análisis" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="general">General</SelectItem>
+              <SelectItem value="rentabilidad">Rentabilidad</SelectItem>
+              <SelectItem value="cobradores">Por Cobrador</SelectItem>
+              <SelectItem value="proyeccion">Proyección</SelectItem>
+              <SelectItem value="cumplimiento">Cumplimiento</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Button 
+            className="bg-primary hover:bg-blue-600"
+            onClick={exportarCSV}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
+          </Button>
+        </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card className="md:col-span-3">
-          <CardHeader className="pb-1">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <CardTitle>Reporte de {reportType === "prestamos" ? "Préstamos" : "Pagos"}</CardTitle>
+      {/* Indicadores clave */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <Card className="overflow-hidden">
+          <CardContent className="p-0">
+            <div className="flex items-center">
+              <div className="p-4 sm:p-6">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-blue-500" />
+                  <p className="text-sm font-medium">Capital prestado</p>
+                </div>
+                <div className="text-2xl font-bold mt-2">
+                  {formatCurrency(prestamos.reduce((sum, p) => sum + Number(p.monto_prestado), 0))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {prestamos.length} préstamos totales
+                </p>
+              </div>
               
-              <div className="flex items-center gap-2 mt-3 md:mt-0">
-                <Select 
-                  defaultValue="todo" 
-                  onValueChange={setPeriodoTiempo}
-                >
-                  <SelectTrigger className="w-full md:w-40">
-                    <SelectValue placeholder="Periodo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="semana">Última semana</SelectItem>
-                    <SelectItem value="mes">Último mes</SelectItem>
-                    <SelectItem value="trimestre">Último trimestre</SelectItem>
-                    <SelectItem value="todo">Todo el tiempo</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="bg-blue-50 dark:bg-blue-950 p-4 sm:p-6 flex items-center justify-center h-full">
+                <TrendingUp className="h-10 w-10 text-blue-500" />
               </div>
             </div>
-          </CardHeader>
+          </CardContent>
+        </Card>
+        
+        <Card className="overflow-hidden">
+          <CardContent className="p-0">
+            <div className="flex items-center">
+              <div className="p-4 sm:p-6">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-green-500" />
+                  <p className="text-sm font-medium">Intereses generados</p>
+                </div>
+                <div className="text-2xl font-bold mt-2">
+                  {formatCurrency(prestamos.reduce((sum, p) => {
+                    const interes = Number(p.monto_total_pagar) - Number(p.monto_prestado);
+                    return sum + interes;
+                  }, 0))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {formatCurrency(pagos.reduce((sum, p) => sum + Number(p.monto_pagado), 0))} cobrado
+                </p>
+              </div>
+              
+              <div className="bg-green-50 dark:bg-green-950 p-4 sm:p-6 flex items-center justify-center h-full">
+                <CreditCard className="h-10 w-10 text-green-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="overflow-hidden">
+          <CardContent className="p-0">
+            <div className="flex items-center">
+              <div className="p-4 sm:p-6">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-orange-500" />
+                  <p className="text-sm font-medium">Préstamos activos</p>
+                </div>
+                <div className="text-2xl font-bold mt-2">
+                  {prestamos.filter(p => p.estado === "ACTIVO").length}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {prestamos.filter(p => p.estado === "ATRASADO").length} atrasados
+                </p>
+              </div>
+              
+              <div className="bg-orange-50 dark:bg-orange-950 p-4 sm:p-6 flex items-center justify-center h-full">
+                <FileText className="h-10 w-10 text-orange-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="overflow-hidden">
+          <CardContent className="p-0">
+            <div className="flex items-center">
+              <div className="p-4 sm:p-6">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-purple-500" />
+                  <p className="text-sm font-medium">Clientes activos</p>
+                </div>
+                <div className="text-2xl font-bold mt-2">
+                  {new Set(prestamos.filter(p => p.estado === "ACTIVO" || p.estado === "ATRASADO").map(p => p.cliente_id)).size}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  De {clientes.length} clientes totales
+                </p>
+              </div>
+              
+              <div className="bg-purple-50 dark:bg-purple-950 p-4 sm:p-6 flex items-center justify-center h-full">
+                <BarChart3 className="h-10 w-10 text-purple-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {vista === "general" && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card className="md:col-span-3">
+            <CardHeader className="pb-1">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                <CardTitle>Reporte de {reportType === "prestamos" ? "Préstamos" : "Pagos"}</CardTitle>
+                
+                <div className="flex items-center gap-2 mt-3 md:mt-0">
+                  <Select 
+                    defaultValue="todo" 
+                    onValueChange={setPeriodoTiempo}
+                  >
+                    <SelectTrigger className="w-full md:w-40">
+                      <SelectValue placeholder="Periodo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="semana">Última semana</SelectItem>
+                      <SelectItem value="mes">Último mes</SelectItem>
+                      <SelectItem value="trimestre">Último trimestre</SelectItem>
+                      <SelectItem value="todo">Todo el tiempo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardHeader>
           <CardContent>
             <Tabs defaultValue="grafica" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
