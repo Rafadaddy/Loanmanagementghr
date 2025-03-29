@@ -27,8 +27,10 @@ export interface IStorage {
   // Autenticación
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getAllUsers(): Promise<Map<number, User>>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
   
   // Clientes
   getAllClientes(): Promise<Cliente[]>;
@@ -187,6 +189,21 @@ export class MemStorage implements IStorage {
 
   async getAllUsers(): Promise<Map<number, User>> {
     return this.users;
+  }
+  
+  async deleteUser(id: number): Promise<boolean> {
+    // No permitir eliminar el usuario administrador inicial
+    if (id === 1) {
+      return false;
+    }
+    
+    // Verificar si existe
+    if (!this.users.has(id)) {
+      return false;
+    }
+    
+    // Eliminar el usuario
+    return this.users.delete(id);
   }
 
   async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {

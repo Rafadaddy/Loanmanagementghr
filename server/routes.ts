@@ -1321,6 +1321,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
+  
+  // Rutas para gestión de usuarios
+  
+  // Obtener todos los usuarios
+  app.get("/api/users", isAuthenticated, async (req, res, next) => {
+    try {
+      // Solo administradores pueden ver todos los usuarios
+      if (req.user?.rol !== "ADMIN") {
+        return res.status(403).json({ message: "No tienes permisos para ver la lista de usuarios" });
+      }
+      
+      const users = await storage.getAllUsers();
+      
+      // Eliminar las contraseñas de la respuesta por seguridad
+      const usersSinPassword = Array.from(users.values()).map(user => {
+        const { password, ...userSinPassword } = user;
+        return userSinPassword;
+      });
+      
+      res.json(usersSinPassword);
+    } catch (error) {
+      console.error("Error al obtener usuarios:", error);
+      next(error);
+    }
+  });
+  
+  // Crear usuario
+  app.post("/api/users", isAuthenticated, async (req, res, next) => {
+    try {
+      // Solo administradores pueden crear usuarios
+      if (req.user?.rol !== "ADMIN") {
+        return res.status(403).json({ message: "No tienes permisos para crear usuarios" });
+      }
+      
+      const { nombre, username, password, rol } = req.body;
+      
+      // Verificar que el nombre de usuario no existe
+      const usuarioExistente = await storage.getUserByUsername(username);
+      if (usuarioExistente) {
+        return res.status(400).json({ message: "El nombre de usuario ya está en uso" });
+      }
+      
+      // Hashear la contraseña
+      const hashedPassword = await hashPassword(password);
+      
+      // Crear el usuario
+      const nuevoUsuario = await storage.createUser({
+        nombre,
+        username,
+        password: hashedPassword,
+        rol: rol || "OPERADOR", // Por defecto, rol de operador
+      });
+      
+      // Eliminar la contraseña de la respuesta por seguridad
+      const { password: _, ...usuarioSinPassword } = nuevoUsuario;
+      
+      res.status(201).json(usuarioSinPassword);
+    } catch (error) {
+      console.error("Error al crear usuario:", error);
+      next(error);
+    }
+  });
+  
+  // Eliminar usuario
+  app.delete("/api/users/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      // Solo administradores pueden eliminar usuarios
+      if (req.user?.rol !== "ADMIN") {
+        return res.status(403).json({ message: "No tienes permisos para eliminar usuarios" });
+      }
+      
+      const userId = parseInt(req.params.id);
+      
+      // No permitir eliminar el propio usuario
+      if (userId === req.user.id) {
+        return res.status(400).json({ message: "No puedes eliminar tu propio usuario" });
+      }
+      
+      // Verificar que el usuario existe
+      const usuario = await storage.getUser(userId);
+      if (!usuario) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      // Eliminar el usuario
+      const resultado = await storage.deleteUser(userId);
+      
+      if (resultado) {
+        res.status(200).json({ message: "Usuario eliminado correctamente" });
+      } else {
+        res.status(500).json({ message: "Error al eliminar el usuario" });
+      }
+    } catch (error) {
+      console.error("Error al eliminar usuario:", error);
+      next(error);
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

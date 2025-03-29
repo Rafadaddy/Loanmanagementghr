@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import BackupRestoreSection from "@/components/reports/backup-restore";
 import SystemConfigSection from "@/components/reports/system-config";
-import UserCredentialsSection from "@/components/reports/user-credentials";
+import UserManagementSection from "@/components/reports/user-management";
 
 // Componente de tabla responsiva con scroll horizontal
 const ResponsiveTable = ({ children }: { children: React.ReactNode }) => (
@@ -1560,7 +1560,7 @@ export default function Reports() {
                 </TabsContent>
 
                 <TabsContent value="user" className="max-h-[70vh] overflow-y-auto">
-                  <UserCredentialsSection />
+                  <UserManagementSection />
                 </TabsContent>
               </Tabs>
             </CardContent>
