@@ -1551,15 +1551,15 @@ export default function Reports() {
                   <TabsTrigger value="user">Usuario</TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="backup">
+                <TabsContent value="backup" className="max-h-[70vh] overflow-y-auto">
                   <BackupRestoreSection />
                 </TabsContent>
                 
-                <TabsContent value="config">
+                <TabsContent value="config" className="max-h-[70vh] overflow-y-auto">
                   <SystemConfigSection />
                 </TabsContent>
 
-                <TabsContent value="user">
+                <TabsContent value="user" className="max-h-[70vh] overflow-y-auto">
                   <UserCredentialsSection />
                 </TabsContent>
               </Tabs>
