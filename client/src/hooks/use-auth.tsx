@@ -8,6 +8,7 @@ import { insertUserSchema, User as SelectUser, InsertUser } from "@shared/schema
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { useLoading } from "@/hooks/use-loading";
 
 type AuthContextType = {
   user: SelectUser | null;
@@ -111,8 +112,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  // Importar el hook de carga global
+  const { startLoading, stopLoading } = useLoading();
+
   const logoutMutation = useMutation({
     mutationFn: async () => {
+      // Iniciar indicador de carga global
+      startLoading("Cerrando sesión...");
       await apiRequest("POST", "/api/logout");
     },
     onSuccess: () => {
@@ -125,10 +131,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: "Has cerrado sesión correctamente",
       });
       
+      // Detener indicador de carga
+      stopLoading();
+      
       // Redirigir a la página de autenticación
       navigate("/auth");
     },
     onError: (error: Error) => {
+      // Detener indicador de carga en caso de error
+      stopLoading();
+      
       toast({
         title: "Error al cerrar sesión",
         description: error.message,

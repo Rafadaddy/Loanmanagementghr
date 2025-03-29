@@ -22,13 +22,13 @@ import SidebarToggle from "@/components/navigation/sidebar-toggle";
 function App() {
   return (
     <ThemeProvider defaultTheme="light">
-      <AuthProvider>
-        <LoadingProvider>
+      <LoadingProvider>
+        <AuthProvider>
           <SidebarProvider>
             <AppContent />
           </SidebarProvider>
-        </LoadingProvider>
-      </AuthProvider>
+        </AuthProvider>
+      </LoadingProvider>
     </ThemeProvider>
   );
 }
