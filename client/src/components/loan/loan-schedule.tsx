@@ -47,7 +47,7 @@ export default function LoanSchedule({ prestamo, pagosRealizados, nombreCliente 
   console.log("Componente LoanSchedule recreado con fechas:", prestamo.fecha_prestamo, prestamo.fecha_inicial_personalizada, prestamo.proxima_fecha_pago);
   console.log("Estado de eliminación del cronograma:", prestamo.cronograma_eliminado);
   // Garantizar que solo mostramos un número limitado de semanas en móvil para mejor rendimiento
-  const MAX_MOBILE_ITEMS = 12;
+  const MAX_MOBILE_ITEMS = 16;
   const [cronograma, setCronograma] = useState<CuotaProgramada[]>([]);
   
   // Hook de toast para mostrar mensajes

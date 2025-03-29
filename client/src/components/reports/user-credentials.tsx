@@ -145,7 +145,7 @@ export default function UserCredentialsSection() {
             <DialogTrigger asChild>
               <Button variant="outline">Cambiar Credenciales</Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Cambiar Credenciales</DialogTitle>
                 <DialogDescription>
