@@ -112,6 +112,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  // Esta función ya no se usa directamente, pero se mantiene para compatibilidad
+  // con los componentes que aún no han sido actualizados
   const logoutMutation = useMutation({
     mutationFn: async () => {
       await apiRequest("POST", "/api/logout");
@@ -119,12 +121,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: () => {
       // Limpiar la caché
       queryClient.setQueryData(["/api/user"], null);
-      
-      // Eliminar elementos de notificación si existen
-      const toastElements = document.querySelectorAll('.fixed.inset-0.z-\\[9999\\]');
-      toastElements.forEach(element => {
-        document.body.removeChild(element);
-      });
       
       // Mostrar notificación
       toast({
@@ -136,12 +132,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       navigate("/auth");
     },
     onError: (error: Error) => {
-      // Eliminar elementos de notificación si existen
-      const toastElements = document.querySelectorAll('.fixed.inset-0.z-\\[9999\\]');
-      toastElements.forEach(element => {
-        document.body.removeChild(element);
-      });
-      
       toast({
         title: "Error al cerrar sesión",
         description: error.message,

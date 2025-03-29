@@ -101,32 +101,20 @@ export default function MobileHeader() {
                   <Button
                     variant="destructive"
                     className="w-full flex items-center justify-center"
-                    onClick={() => {
-                      // Mostrar notificación antes de cerrar sesión
-                      const toast = document.createElement('div');
-                      toast.className = 'fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center';
-                      toast.innerHTML = `
-                        <div class="bg-white/10 backdrop-blur-md rounded-lg p-8 shadow-2xl border border-white/20 animate-pulse">
-                          <div class="flex flex-col items-center justify-center py-6">
-                            <div class="h-8 w-8 animate-spin text-primary mb-2">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-loader-2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-                            </div>
-                            <p class="mt-2 text-muted-foreground animate-pulse text-base">Cerrando sesión...</p>
-                          </div>
-                        </div>
-                      `;
-                      document.body.appendChild(toast);
-
-                      // Cerrar el menú móvil
+                    onClick={async () => {
+                      // Cerrar el menú móvil primero
                       setOpen(false);
                       
-                      // Llamar a la función para cerrar sesión
-                      logoutMutation.mutate();
+                      // Primero llamamos al endpoint de cierre de sesión
+                      await fetch("/api/logout", { method: "POST" });
+                      
+                      // Luego recargamos la página para que se redirija al login
+                      window.location.href = "/auth";
                     }}
                     disabled={logoutMutation.isPending}
                   >
                     <LogOut className="h-4 w-4 mr-2" />
-                    <span>{logoutMutation.isPending ? "Cerrando..." : "Cerrar Sesión"}</span>
+                    <span>Cerrar Sesión</span>
                   </Button>
                 </div>
               </SheetContent>
