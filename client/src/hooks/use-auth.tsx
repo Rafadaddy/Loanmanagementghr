@@ -112,18 +112,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  // Importar el hook de carga global
-  const { startLoading, stopLoading } = useLoading();
-
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      // Iniciar indicador de carga global
-      startLoading("Cerrando sesión...");
       await apiRequest("POST", "/api/logout");
     },
     onSuccess: () => {
       // Limpiar la caché
       queryClient.setQueryData(["/api/user"], null);
+      
+      // Eliminar elementos de notificación si existen
+      const toastElements = document.querySelectorAll('.fixed.inset-0.z-\\[9999\\]');
+      toastElements.forEach(element => {
+        document.body.removeChild(element);
+      });
       
       // Mostrar notificación
       toast({
@@ -131,15 +132,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: "Has cerrado sesión correctamente",
       });
       
-      // Detener indicador de carga
-      stopLoading();
-      
       // Redirigir a la página de autenticación
       navigate("/auth");
     },
     onError: (error: Error) => {
-      // Detener indicador de carga en caso de error
-      stopLoading();
+      // Eliminar elementos de notificación si existen
+      const toastElements = document.querySelectorAll('.fixed.inset-0.z-\\[9999\\]');
+      toastElements.forEach(element => {
+        document.body.removeChild(element);
+      });
       
       toast({
         title: "Error al cerrar sesión",
