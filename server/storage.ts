@@ -14,13 +14,25 @@ import {
   Configuracion,
   InsertConfiguracion,
   MovimientoCaja,
-  InsertMovimientoCaja
+  InsertMovimientoCaja,
+  // Tablas para drizzle
+  users,
+  prestamos,
+  clientes,
+  pagos,
+  cobradores,
+  movimientosCaja,
+  configuraciones
 } from "@shared/schema";
 import { addDays, differenceInDays, format } from "date-fns";
 import createMemoryStore from "memorystore";
 import session from "express-session";
+import connectPg from "connect-pg-simple";
+import { db, pool } from "./db";
+import { and, eq, gte, lte, desc, asc, sql, like, between, isNull, or } from "drizzle-orm";
 
 const MemoryStore = createMemoryStore(session);
+const PostgresStore = connectPg(session);
 
 // Interfaz para el almacenamiento de datos
 export interface IStorage {
@@ -1129,4 +1141,896 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Implementación de almacenamiento en base de datos PostgreSQL
+export class DatabaseStorage implements IStorage {
+  sessionStore: any;
+
+  constructor() {
+    // Inicializar el store de sesión PostgreSQL
+    this.sessionStore = new PostgresStore({
+      pool,
+      createTableIfMissing: true,
+      tableName: 'session'
+    });
+
+    // Inicializar datos y configuraciones por defecto
+    this.initializeData();
+  }
+
+  private async initializeData() {
+    try {
+      // Verificar si existe usuario administrador
+      const adminUser = await this.getUserByUsername("super_rafaga@hotmail.com");
+      if (!adminUser) {
+        // Crear usuario administrador por defecto
+        await this.createUser({
+          nombre: "Administrador",
+          username: "super_rafaga@hotmail.com",
+          password: "cc2e80a13700cb1ffb71aaaeac476d08e7d6ad2550c83693ae1262755568dd3718870a36fc454bc996af1bb03fa8055714a7331ff88adf8cfa1e5810d258b05c.efe8323317c7831521c66267d8888877", // Contraseña: admin123 (hasheada con scrypt)
+          rol: "ADMIN"
+        });
+        console.log("Usuario administrador creado en la base de datos");
+      }
+
+      // Inicializar configuraciones predeterminadas
+      await this.initConfiguracionesPredeterminadas();
+
+    } catch (error) {
+      console.error("Error al inicializar datos en la base de datos:", error);
+    }
+  }
+
+  // IMPLEMENTACIÓN DE MÉTODOS CON LA BASE DE DATOS
+
+  // USUARIOS
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async getAllUsers(): Promise<Map<number, User>> {
+    const results = await db.select().from(users);
+    const userMap = new Map<number, User>();
+    results.forEach(user => {
+      userMap.set(user.id, user);
+    });
+    return userMap;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values({
+      ...insertUser,
+      rol: insertUser.rol || "USUARIO"
+    }).returning();
+    return user;
+  }
+
+  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
+    const [updatedUser] = await db.update(users)
+      .set(userData)
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
+
+  async deleteUser(id: number): Promise<boolean> {
+    // No permitir eliminar el usuario administrador inicial
+    if (id === 1) {
+      return false;
+    }
+    
+    try {
+      await db.delete(users).where(eq(users.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error al eliminar usuario:", error);
+      return false;
+    }
+  }
+
+  // CLIENTES
+  async getAllClientes(): Promise<Cliente[]> {
+    return db.select().from(clientes);
+  }
+
+  async getCliente(id: number): Promise<Cliente | undefined> {
+    const [cliente] = await db.select().from(clientes).where(eq(clientes.id, id));
+    return cliente;
+  }
+
+  async createCliente(cliente: InsertCliente): Promise<Cliente> {
+    const [newCliente] = await db.insert(clientes).values({
+      ...cliente,
+      fecha_registro: new Date()
+    }).returning();
+    return newCliente;
+  }
+
+  async updateCliente(id: number, clienteData: InsertCliente): Promise<Cliente | undefined> {
+    const [updatedCliente] = await db.update(clientes)
+      .set(clienteData)
+      .where(eq(clientes.id, id))
+      .returning();
+    return updatedCliente;
+  }
+
+  async deleteCliente(id: number): Promise<boolean> {
+    // Verificar si existen préstamos asociados al cliente
+    const prestamosCliente = await this.getPrestamosByClienteId(id);
+    if (prestamosCliente.length > 0) {
+      // No permitir eliminar clientes con préstamos
+      return false;
+    }
+    
+    try {
+      await db.delete(clientes).where(eq(clientes.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error al eliminar cliente:", error);
+      return false;
+    }
+  }
+
+  // PRÉSTAMOS
+  async getAllPrestamos(): Promise<Prestamo[]> {
+    return db.select().from(prestamos);
+  }
+
+  async getPrestamosByClienteId(clienteId: number): Promise<Prestamo[]> {
+    return db.select()
+      .from(prestamos)
+      .where(eq(prestamos.cliente_id, clienteId));
+  }
+
+  async getPrestamo(id: number): Promise<Prestamo | undefined> {
+    const [prestamo] = await db.select().from(prestamos).where(eq(prestamos.id, id));
+    return prestamo;
+  }
+
+  async createPrestamo(prestamo: InsertPrestamo): Promise<Prestamo> {
+    const fechaPrestamo = new Date(prestamo.fecha_prestamo);
+    
+    // Usar fecha de pago proporcionada o calcular la próxima fecha de pago (7 días después de la fecha del préstamo)
+    let proximaFechaPago;
+    if (prestamo.proxima_fecha_pago) {
+      proximaFechaPago = new Date(prestamo.proxima_fecha_pago);
+    } else {
+      proximaFechaPago = addDays(fechaPrestamo, 7);
+    }
+    
+    const [newPrestamo] = await db.insert(prestamos).values({
+      cliente_id: prestamo.cliente_id,
+      monto_prestado: prestamo.monto_prestado,
+      tasa_interes: prestamo.tasa_interes,
+      tasa_mora: prestamo.tasa_mora || "5", // Tasa de mora predeterminada del 5%
+      fecha_prestamo: prestamo.fecha_prestamo,
+      frecuencia_pago: prestamo.frecuencia_pago || "SEMANAL",
+      numero_semanas: prestamo.numero_semanas || 4,
+      pago_semanal: prestamo.pago_semanal || "0",
+      monto_total_pagar: prestamo.monto_total_pagar || "0",
+      estado: "ACTIVO",
+      semanas_pagadas: 0,
+      proxima_fecha_pago: format(proximaFechaPago, 'yyyy-MM-dd'),
+      dias_atraso: 0,
+      monto_mora_acumulada: "0",
+      fecha_inicial_personalizada: null,
+      dia_pago: null,
+      cronograma_eliminado: false
+    }).returning();
+    
+    return newPrestamo;
+  }
+
+  async updatePrestamo(id: number, prestamoData: Partial<Prestamo>): Promise<Prestamo | undefined> {
+    const [updatedPrestamo] = await db.update(prestamos)
+      .set(prestamoData)
+      .where(eq(prestamos.id, id))
+      .returning();
+    return updatedPrestamo;
+  }
+
+  async deletePrestamo(id: number): Promise<boolean> {
+    // Verificar si hay pagos asociados al préstamo
+    const pagosPrestamo = await this.getPagosByPrestamoId(id);
+    if (pagosPrestamo.length > 0) {
+      // Si hay pagos, primero eliminar los pagos
+      for (const pago of pagosPrestamo) {
+        await this.deletePago(pago.id);
+      }
+    }
+    
+    try {
+      await db.delete(prestamos).where(eq(prestamos.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error al eliminar préstamo:", error);
+      return false;
+    }
+  }
+
+  // PAGOS
+  async getAllPagos(): Promise<Pago[]> {
+    return db.select().from(pagos);
+  }
+
+  async getPagosByPrestamoId(prestamoId: number): Promise<Pago[]> {
+    return db.select()
+      .from(pagos)
+      .where(eq(pagos.prestamo_id, prestamoId));
+  }
+
+  async getTotalPagadoByPrestamoId(prestamoId: number): Promise<number> {
+    const pagosPrestamo = await this.getPagosByPrestamoId(prestamoId);
+    return pagosPrestamo.reduce((total, pago) => total + Number(pago.monto_pagado), 0);
+  }
+
+  async getTotalPagadoByClienteId(clienteId: number): Promise<number> {
+    const prestamosCliente = await this.getPrestamosByClienteId(clienteId);
+    let totalPagado = 0;
+    
+    for (const prestamo of prestamosCliente) {
+      totalPagado += await this.getTotalPagadoByPrestamoId(prestamo.id);
+    }
+    
+    return totalPagado;
+  }
+
+  async createPago(pago: InsertPago): Promise<Pago> {
+    console.log("DEBUG - Iniciando creación de pago:", pago);
+    
+    const prestamo = await this.getPrestamo(pago.prestamo_id);
+    if (!prestamo) {
+      console.error("ERROR - Préstamo no encontrado:", pago.prestamo_id);
+      throw new Error("El préstamo no existe");
+    }
+    
+    console.log("DEBUG - Préstamo encontrado:", prestamo);
+    
+    // Determinar si el pago está atrasado comparando con la fecha proxima_fecha_pago
+    const hoy = new Date();
+    const fechaProximoPago = new Date(prestamo.proxima_fecha_pago);
+    const estado = hoy > fechaProximoPago ? "ATRASADO" : "A_TIEMPO";
+    console.log("DEBUG - Estado del pago:", estado);
+    
+    // Calcular días de atraso para moras
+    let diasAtraso = 0;
+    let montoMora = 0;
+    
+    if (estado === "ATRASADO") {
+      // Calcular días de diferencia entre la fecha de pago programada y hoy
+      diasAtraso = differenceInDays(hoy, fechaProximoPago);
+      if (diasAtraso < 0) diasAtraso = 0; // Por si acaso
+      
+      // Calcular monto de mora basado en la tasa de mora y los días de atraso
+      const tasaMora = Number(prestamo.tasa_mora || 5); // Default 5% si no está definido
+      const montoPrestado = Number(prestamo.monto_prestado);
+      montoMora = (montoPrestado * tasaMora / 100) * (diasAtraso / 30);
+      
+      console.log("DEBUG - Días de atraso:", diasAtraso);
+      console.log("DEBUG - Tasa de mora (%):", tasaMora);
+      console.log("DEBUG - Monto de mora calculado:", montoMora);
+    }
+    
+    // Verificar si es un pago parcial (menos que el monto semanal)
+    const montoPagado = Number(pago.monto_pagado);
+    const montoSemanal = Number(prestamo.pago_semanal);
+    const esPagoParcial = montoPagado < montoSemanal;
+    const montoRestante = esPagoParcial ? (montoSemanal - montoPagado) : 0;
+    
+    console.log("DEBUG - Monto pagado:", montoPagado);
+    console.log("DEBUG - Monto semanal requerido:", montoSemanal);
+    console.log("DEBUG - ¿Es pago parcial?:", esPagoParcial);
+    console.log("DEBUG - Monto restante:", montoRestante);
+    
+    // Solo incrementamos semanas pagadas si el pago es completo o supera el monto semanal
+    let semanasActualizadas = prestamo.semanas_pagadas;
+    let nuevaProximaFechaPago = fechaProximoPago;
+    
+    if (!esPagoParcial) {
+      semanasActualizadas += 1;
+      nuevaProximaFechaPago = addDays(fechaProximoPago, 7);
+      console.log("DEBUG - Incrementando semanas pagadas a:", semanasActualizadas);
+      console.log("DEBUG - Nueva fecha de próximo pago:", format(nuevaProximaFechaPago, 'yyyy-MM-dd'));
+    } else {
+      console.log("DEBUG - No se incrementan semanas pagadas por ser pago parcial");
+    }
+    
+    // Actualizar estado del préstamo
+    let estadoPrestamo = prestamo.estado;
+    
+    // Obtener todos los pagos del préstamo
+    const pagosPrestamo = await this.getPagosByPrestamoId(prestamo.id);
+    
+    // Calcular el total pagado hasta ahora, incluyendo el pago actual
+    const totalPagado = pagosPrestamo.reduce((sum, p) => sum + Number(p.monto_pagado), 0) + montoPagado;
+    
+    // Monto total a pagar del préstamo
+    const montoTotalPagar = Number(prestamo.monto_total_pagar);
+    
+    console.log("DEBUG - Total pagado acumulado:", totalPagado);
+    console.log("DEBUG - Monto total a pagar:", montoTotalPagar);
+    
+    // Verificar si se ha pagado el monto total
+    if (totalPagado >= montoTotalPagar) {
+      estadoPrestamo = "PAGADO";
+      console.log("DEBUG - Préstamo PAGADO por monto total cubierto");
+    }
+    // Verificar si se han completado todas las semanas pero falta monto
+    else if (semanasActualizadas >= prestamo.numero_semanas && totalPagado < montoTotalPagar) {
+      estadoPrestamo = "MORA";
+      console.log("DEBUG - Préstamo en MORA: semanas completas pero monto no cubierto");
+    }
+    // Si está activo pero presenta atraso
+    else if (diasAtraso > 0) {
+      estadoPrestamo = "ATRASO";
+      console.log("DEBUG - Préstamo con ATRASO");
+    }
+    // Normal
+    else {
+      estadoPrestamo = "ACTIVO";
+      console.log("DEBUG - Préstamo ACTIVO");
+    }
+    
+    // Actualizar el préstamo con la nueva información
+    await this.updatePrestamo(prestamo.id, {
+      estado: estadoPrestamo,
+      semanas_pagadas: semanasActualizadas,
+      dias_atraso: diasAtraso,
+      proxima_fecha_pago: format(nuevaProximaFechaPago, 'yyyy-MM-dd'),
+      monto_mora_acumulada: String(Number(prestamo.monto_mora_acumulada) + montoMora)
+    });
+    
+    // Crear el pago registrando toda la información
+    const [newPago] = await db.insert(pagos).values({
+      prestamo_id: pago.prestamo_id,
+      cliente_id: prestamo.cliente_id,
+      fecha_pago: pago.fecha_pago,
+      monto_pagado: pago.monto_pagado,
+      monto_mora: String(montoMora),
+      estado: estado,
+      es_pago_parcial: esPagoParcial,
+      monto_restante: String(montoRestante),
+      comentario: pago.comentario || null,
+      creado_por: pago.creado_por
+    }).returning();
+    
+    return newPago;
+  }
+
+  async updatePago(id: number, pagoData: Partial<Pago>): Promise<Pago | undefined> {
+    const [updatedPago] = await db.update(pagos)
+      .set(pagoData)
+      .where(eq(pagos.id, id))
+      .returning();
+    return updatedPago;
+  }
+
+  async deletePago(id: number): Promise<boolean> {
+    try {
+      // Obtener el pago antes de eliminarlo
+      const pago = await db.select().from(pagos).where(eq(pagos.id, id)).then(res => res[0]);
+      if (!pago) return false;
+      
+      // Eliminar el pago
+      await db.delete(pagos).where(eq(pagos.id, id));
+      
+      // Actualizar el estado del préstamo
+      const prestamo = await this.getPrestamo(pago.prestamo_id);
+      if (prestamo) {
+        // Recuperar todos los pagos del préstamo (que ahora ya no incluye el eliminado)
+        const pagosPrestamo = await this.getPagosByPrestamoId(prestamo.id);
+        
+        // Calcular semanas pagadas (número de pagos completos)
+        const pagosCompletos = pagosPrestamo.filter(p => !p.es_pago_parcial).length;
+        
+        // Calcular total pagado
+        const totalPagado = pagosPrestamo.reduce((sum, p) => sum + Number(p.monto_pagado), 0);
+        
+        // Determinar nuevo estado
+        let nuevoEstado = prestamo.estado;
+        if (totalPagado >= Number(prestamo.monto_total_pagar)) {
+          nuevoEstado = "PAGADO";
+        } else if (pagosCompletos >= prestamo.numero_semanas) {
+          nuevoEstado = "MORA";
+        } else if (prestamo.dias_atraso > 0) {
+          nuevoEstado = "ATRASO";
+        } else {
+          nuevoEstado = "ACTIVO";
+        }
+        
+        // Actualizar préstamo
+        await this.updatePrestamo(prestamo.id, {
+          semanas_pagadas: pagosCompletos,
+          estado: nuevoEstado
+        });
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error al eliminar pago:", error);
+      return false;
+    }
+  }
+
+  // CÁLCULOS
+  calcularPrestamo(datos: CalculoPrestamo): ResultadoCalculoPrestamo {
+    // Convertir a números para asegurar cálculos correctos
+    const montoPrestado = Number(datos.monto_prestado);
+    const tasaInteres = Number(datos.tasa_interes);
+    const numeroSemanas = Number(datos.numero_semanas);
+
+    // Calcular el monto total de interés
+    const interes = montoPrestado * (tasaInteres / 100);
+    
+    // Calcular el monto total a pagar (principal + interés)
+    const montoTotalPagar = montoPrestado + interes;
+    
+    // Calcular el pago semanal (monto total dividido entre el número de semanas)
+    const pagoSemanal = montoTotalPagar / numeroSemanas;
+    
+    return {
+      monto_total_pagar: montoTotalPagar,
+      pago_semanal: pagoSemanal
+    };
+  }
+
+  // COBRADORES
+  async getAllCobradores(): Promise<Cobrador[]> {
+    return db.select().from(cobradores);
+  }
+
+  async getCobrador(id: number): Promise<Cobrador | undefined> {
+    const [cobrador] = await db.select().from(cobradores).where(eq(cobradores.id, id));
+    return cobrador;
+  }
+
+  async getCobradorByUserId(userId: number): Promise<Cobrador | undefined> {
+    const [cobrador] = await db.select().from(cobradores).where(eq(cobradores.user_id, userId));
+    return cobrador;
+  }
+
+  async createCobrador(cobrador: InsertCobrador): Promise<Cobrador> {
+    const [newCobrador] = await db.insert(cobradores).values({
+      ...cobrador,
+      activo: true
+    }).returning();
+    return newCobrador;
+  }
+
+  async updateCobrador(id: number, cobradorData: Partial<Cobrador>): Promise<Cobrador | undefined> {
+    const [updatedCobrador] = await db.update(cobradores)
+      .set(cobradorData)
+      .where(eq(cobradores.id, id))
+      .returning();
+    return updatedCobrador;
+  }
+
+  async deleteCobrador(id: number): Promise<boolean> {
+    try {
+      // Verificar si hay clientes asignados a este cobrador
+      const clientesCobrador = await this.getClientesByCobrador(id);
+      if (clientesCobrador.length > 0) {
+        // Desasignar este cobrador de los clientes
+        for (const cliente of clientesCobrador) {
+          await this.updateCliente(cliente.id, {
+            ...cliente,
+            cobrador_id: null
+          });
+        }
+      }
+      
+      await db.delete(cobradores).where(eq(cobradores.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error al eliminar cobrador:", error);
+      return false;
+    }
+  }
+
+  async getClientesByCobrador(cobradorId: number): Promise<Cliente[]> {
+    return db.select()
+      .from(clientes)
+      .where(eq(clientes.cobrador_id, cobradorId));
+  }
+
+  // CAJA (MOVIMIENTOS)
+  async getAllMovimientosCaja(): Promise<MovimientoCaja[]> {
+    return db.select().from(movimientosCaja).orderBy(desc(movimientosCaja.fecha));
+  }
+
+  async getMovimientoCaja(id: number): Promise<MovimientoCaja | undefined> {
+    const [movimiento] = await db.select().from(movimientosCaja).where(eq(movimientosCaja.id, id));
+    return movimiento;
+  }
+
+  async createMovimientoCaja(movimiento: InsertMovimientoCaja): Promise<MovimientoCaja> {
+    const [newMovimiento] = await db.insert(movimientosCaja).values({
+      ...movimiento,
+      descripcion: movimiento.descripcion || null,
+      cliente_id: movimiento.cliente_id || null,
+      prestamo_id: movimiento.prestamo_id || null,
+      fecha: new Date(movimiento.fecha)
+    }).returning();
+    return newMovimiento;
+  }
+
+  async deleteMovimientoCaja(id: number): Promise<boolean> {
+    try {
+      await db.delete(movimientosCaja).where(eq(movimientosCaja.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error al eliminar movimiento de caja:", error);
+      return false;
+    }
+  }
+
+  async getResumenCaja(): Promise<{ 
+    saldo_actual: number; 
+    total_ingresos: number; 
+    total_egresos: number;
+    movimientos_por_dia: { fecha: string; ingreso: number; egreso: number }[] 
+  }> {
+    // Obtener todos los movimientos
+    const allMovimientos = await this.getAllMovimientosCaja();
+    
+    // Calcular totales
+    let totalIngresos = 0;
+    let totalEgresos = 0;
+    
+    allMovimientos.forEach(movimiento => {
+      if (movimiento.tipo === "INGRESO") {
+        totalIngresos += Number(movimiento.monto);
+      } else {
+        totalEgresos += Number(movimiento.monto);
+      }
+    });
+    
+    const saldoActual = totalIngresos - totalEgresos;
+    
+    // Agrupar movimientos por día
+    const movimientosPorDia: { [key: string]: { ingreso: number; egreso: number } } = {};
+    
+    allMovimientos.forEach(movimiento => {
+      const fecha = format(new Date(movimiento.fecha), 'yyyy-MM-dd');
+      
+      if (!movimientosPorDia[fecha]) {
+        movimientosPorDia[fecha] = { ingreso: 0, egreso: 0 };
+      }
+      
+      if (movimiento.tipo === "INGRESO") {
+        movimientosPorDia[fecha].ingreso += Number(movimiento.monto);
+      } else {
+        movimientosPorDia[fecha].egreso += Number(movimiento.monto);
+      }
+    });
+    
+    // Convertir a array
+    const movimientosPorDiaArray = Object.keys(movimientosPorDia).map(fecha => ({
+      fecha,
+      ingreso: movimientosPorDia[fecha].ingreso,
+      egreso: movimientosPorDia[fecha].egreso
+    }));
+    
+    // Ordenar por fecha (más reciente primero)
+    movimientosPorDiaArray.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+    
+    return {
+      saldo_actual: saldoActual,
+      total_ingresos: totalIngresos,
+      total_egresos: totalEgresos,
+      movimientos_por_dia: movimientosPorDiaArray
+    };
+  }
+
+  async getMovimientosCajaPorFecha(fechaInicio: string, fechaFin: string): Promise<MovimientoCaja[]> {
+    return db.select()
+      .from(movimientosCaja)
+      .where(
+        and(
+          gte(movimientosCaja.fecha, new Date(fechaInicio)),
+          lte(movimientosCaja.fecha, new Date(fechaFin))
+        )
+      )
+      .orderBy(desc(movimientosCaja.fecha));
+  }
+
+  // CONFIGURACIONES
+  async getAllConfiguraciones(): Promise<Configuracion[]> {
+    return db.select().from(configuraciones);
+  }
+
+  async getConfiguracionesPorCategoria(categoria: string): Promise<Configuracion[]> {
+    return db.select()
+      .from(configuraciones)
+      .where(eq(configuraciones.categoria, categoria));
+  }
+
+  async getConfiguracion(clave: string): Promise<Configuracion | undefined> {
+    const [config] = await db.select()
+      .from(configuraciones)
+      .where(eq(configuraciones.clave, clave));
+    return config;
+  }
+
+  async getValorConfiguracion(clave: string, valorPorDefecto: string = ""): Promise<string> {
+    const config = await this.getConfiguracion(clave);
+    return config ? config.valor : valorPorDefecto;
+  }
+
+  async saveConfiguracion(configuracion: InsertConfiguracion): Promise<Configuracion> {
+    // Verificar si ya existe la configuración
+    const configExistente = await this.getConfiguracion(configuracion.clave);
+    
+    if (configExistente) {
+      // Actualizar en lugar de insertar
+      const [updatedConfig] = await db.update(configuraciones)
+        .set({ 
+          valor: configuracion.valor,
+          descripcion: configuracion.descripcion || null
+        })
+        .where(eq(configuraciones.id, configExistente.id))
+        .returning();
+      return updatedConfig;
+    } else {
+      // Insertar nueva configuración
+      const [newConfig] = await db.insert(configuraciones)
+        .values({
+          clave: configuracion.clave,
+          valor: configuracion.valor,
+          tipo: configuracion.tipo,
+          categoria: configuracion.categoria,
+          descripcion: configuracion.descripcion || null
+        })
+        .returning();
+      return newConfig;
+    }
+  }
+
+  async updateConfiguracion(id: number, configuracion: Partial<Configuracion>): Promise<Configuracion | undefined> {
+    const [updatedConfig] = await db.update(configuraciones)
+      .set(configuracion)
+      .where(eq(configuraciones.id, id))
+      .returning();
+    return updatedConfig;
+  }
+
+  async deleteConfiguracion(id: number): Promise<boolean> {
+    try {
+      await db.delete(configuraciones).where(eq(configuraciones.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error al eliminar configuración:", error);
+      return false;
+    }
+  }
+
+  // Exportación/Importación de datos
+  async exportarDatos(): Promise<{
+    users: User[];
+    clientes: Cliente[];
+    prestamos: Prestamo[];
+    pagos: Pago[];
+    cobradores: Cobrador[];
+    movimientosCaja: MovimientoCaja[];
+    configuraciones: Configuracion[];
+  }> {
+    // Obtener todos los datos de cada tabla
+    const [usersData, clientesData, prestamosData, pagosData, cobradoresData, movimientosData, configsData] = await Promise.all([
+      db.select().from(users),
+      db.select().from(clientes),
+      db.select().from(prestamos),
+      db.select().from(pagos),
+      db.select().from(cobradores),
+      db.select().from(movimientosCaja),
+      db.select().from(configuraciones)
+    ]);
+    
+    return {
+      users: usersData,
+      clientes: clientesData,
+      prestamos: prestamosData,
+      pagos: pagosData,
+      cobradores: cobradoresData,
+      movimientosCaja: movimientosData,
+      configuraciones: configsData
+    };
+  }
+
+  async importarDatos(datos: {
+    users: User[];
+    clientes: Cliente[];
+    prestamos: Prestamo[];
+    pagos: Pago[];
+    cobradores: Cobrador[];
+    movimientosCaja: MovimientoCaja[];
+    configuraciones?: Configuracion[];
+  }): Promise<boolean> {
+    try {
+      // Limpiar todas las tablas (en orden inverso para respetar las restricciones de integridad)
+      await db.delete(pagos);
+      await db.delete(prestamos);
+      await db.delete(movimientosCaja);
+      await db.delete(clientes);
+      await db.delete(cobradores);
+      await db.delete(configuraciones);
+      // No eliminamos los usuarios para mantener el administrador
+      
+      // Importar configuraciones
+      if (datos.configuraciones && datos.configuraciones.length > 0) {
+        await db.insert(configuraciones).values(datos.configuraciones);
+      }
+      
+      // Importar cobradores
+      if (datos.cobradores.length > 0) {
+        await db.insert(cobradores).values(datos.cobradores);
+      }
+      
+      // Importar clientes
+      if (datos.clientes.length > 0) {
+        await db.insert(clientes).values(datos.clientes);
+      }
+      
+      // Importar movimientos de caja
+      if (datos.movimientosCaja.length > 0) {
+        await db.insert(movimientosCaja).values(datos.movimientosCaja);
+      }
+      
+      // Importar préstamos
+      if (datos.prestamos.length > 0) {
+        await db.insert(prestamos).values(datos.prestamos);
+      }
+      
+      // Importar pagos
+      if (datos.pagos.length > 0) {
+        await db.insert(pagos).values(datos.pagos);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error al importar datos:", error);
+      return false;
+    }
+  }
+
+  // Configuraciones predeterminadas
+  private async initConfiguracionesPredeterminadas() {
+    // Verificar si ya existen configuraciones
+    const configsExistentes = await this.getAllConfiguraciones();
+    if (configsExistentes.length > 0) {
+      console.log("Configuraciones ya inicializadas, saltando creación de valores predeterminados");
+      return;
+    }
+
+    // Configuraciones generales
+    await this.saveConfiguracion({
+      clave: "NOMBRE_EMPRESA",
+      valor: "Mi Empresa de Préstamos",
+      descripcion: "Nombre de la empresa",
+      tipo: "TEXTO",
+      categoria: "GENERAL"
+    });
+
+    await this.saveConfiguracion({
+      clave: "DIRECCION_EMPRESA",
+      valor: "Calle Principal 123",
+      descripcion: "Dirección de la empresa",
+      tipo: "TEXTO",
+      categoria: "GENERAL"
+    });
+
+    await this.saveConfiguracion({
+      clave: "TELEFONO_EMPRESA",
+      valor: "+1234567890",
+      descripcion: "Teléfono de contacto",
+      tipo: "TEXTO",
+      categoria: "GENERAL"
+    });
+
+    await this.saveConfiguracion({
+      clave: "EMAIL_EMPRESA",
+      valor: "contacto@empresaprestamos.com",
+      descripcion: "Email de contacto",
+      tipo: "TEXTO",
+      categoria: "GENERAL"
+    });
+
+    await this.saveConfiguracion({
+      clave: "MONEDA",
+      valor: "$",
+      descripcion: "Símbolo de moneda",
+      tipo: "TEXTO",
+      categoria: "GENERAL"
+    });
+    
+    await this.saveConfiguracion({
+      clave: "PREFIJO_DOCUMENTO",
+      valor: "ID-",
+      descripcion: "Prefijo para documentos de identidad",
+      tipo: "TEXTO",
+      categoria: "GENERAL"
+    });
+    
+    await this.saveConfiguracion({
+      clave: "ULTIMO_DOCUMENTO",
+      valor: "0",
+      descripcion: "Último número de documento generado",
+      tipo: "NUMERO",
+      categoria: "GENERAL"
+    });
+
+    // Configuraciones de préstamos
+    await this.saveConfiguracion({
+      clave: "TASA_INTERES_DEFECTO",
+      valor: "20",
+      descripcion: "Tasa de interés por defecto",
+      tipo: "NUMERO",
+      categoria: "PRESTAMOS"
+    });
+
+    await this.saveConfiguracion({
+      clave: "TASA_MORA_DEFECTO",
+      valor: "5",
+      descripcion: "Tasa de mora por defecto",
+      tipo: "NUMERO",
+      categoria: "PRESTAMOS"
+    });
+
+    await this.saveConfiguracion({
+      clave: "SEMANAS_PRESTAMO_DEFECTO",
+      valor: "4",
+      descripcion: "Número de semanas por defecto para préstamos",
+      tipo: "NUMERO",
+      categoria: "PRESTAMOS"
+    });
+
+    await this.saveConfiguracion({
+      clave: "FRECUENCIA_PAGO_DEFECTO",
+      valor: "SEMANAL",
+      descripcion: "Frecuencia de pago por defecto",
+      tipo: "TEXTO",
+      categoria: "PRESTAMOS"
+    });
+
+    // Configuraciones de pagos
+    await this.saveConfiguracion({
+      clave: "DIAS_GRACIA",
+      valor: "3",
+      descripcion: "Días de gracia antes de aplicar mora",
+      tipo: "NUMERO",
+      categoria: "PAGOS"
+    });
+
+    await this.saveConfiguracion({
+      clave: "PERMITIR_PAGOS_PARCIALES",
+      valor: "true",
+      descripcion: "Permitir pagos parciales",
+      tipo: "BOOLEANO",
+      categoria: "PAGOS"
+    });
+
+    // Configuraciones del sistema
+    await this.saveConfiguracion({
+      clave: "RESPALDO_AUTOMATICO",
+      valor: "false",
+      descripcion: "Realizar respaldos automáticos",
+      tipo: "BOOLEANO",
+      categoria: "SISTEMA"
+    });
+
+    await this.saveConfiguracion({
+      clave: "INTERVALO_RESPALDO",
+      valor: "7",
+      descripcion: "Intervalo de respaldos automáticos en días",
+      tipo: "NUMERO",
+      categoria: "SISTEMA"
+    });
+  }
+}
+
+// Cambiamos a la implementación de base de datos para persistencia
+export const storage = new DatabaseStorage();
