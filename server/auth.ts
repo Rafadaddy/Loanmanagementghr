@@ -107,21 +107,59 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
+      console.log("DEBUG - Intento de registro con:", {
+        username: req.body.username,
+        passwordProvided: !!req.body.password,
+        requestBody: req.body
+      });
+      
+      if (!req.body.username || !req.body.password || !req.body.nombre) {
+        return res.status(400).json({
+          error: "Datos incompletos. Se requiere nombre de usuario, contraseña y nombre completo."
+        });
+      }
+      
+      // Verificar si el usuario ya existe
       const existingUser = await storage.getUserByUsername(req.body.username);
       if (existingUser) {
-        return res.status(400).send("El nombre de usuario ya existe");
+        console.log("DEBUG - Usuario ya existe:", req.body.username);
+        return res.status(400).json({
+          error: "El nombre de usuario ya existe"
+        });
       }
-
-      const user = await storage.createUser({
-        ...req.body,
+      
+      // Crear el usuario con los datos necesarios
+      const userData = {
+        username: req.body.username,
         password: await hashPassword(req.body.password),
+        nombre: req.body.nombre,
+        rol: req.body.rol || "USUARIO",  // Rol por defecto si no se proporciona
+        email: req.body.email || req.body.username,  // Email por defecto igual al username
+        activo: true  // Usuarios nuevos están activos por defecto
+      };
+      
+      console.log("DEBUG - Creando usuario con los datos:", {
+        username: userData.username,
+        nombre: userData.nombre,
+        rol: userData.rol,
+        email: userData.email,
+        activo: userData.activo
       });
-
+      
+      const user = await storage.createUser(userData);
+      console.log("DEBUG - Usuario creado con ID:", user.id);
+      
+      // Iniciar sesión automáticamente
       req.login(user, (err) => {
-        if (err) return next(err);
+        if (err) {
+          console.error("DEBUG - Error en login automático:", err);
+          return next(err);
+        }
+        console.log("DEBUG - Registro exitoso, sesión creada para:", user.username);
         res.status(201).json(user);
       });
     } catch (error) {
+      console.error("ERROR en registro:", error);
       next(error);
     }
   });
