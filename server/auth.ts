@@ -51,10 +51,10 @@ export async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
-  // Generar una nueva contraseña hasheada para el usuario administrador
-  generateTestPassword().then(hash => {
-    console.log("HASH PARA ADMIN:", hash);
-  });
+  // Eliminar la generación automática de contraseña que causa problemas
+  // Solo mostrar el hash fijo para fines informativos
+  console.log("HASH FIJO PARA ADMIN: cc2e80a13700cb1ffb71aaaeac476d08e7d6ad2550c83693ae1262755568dd3718870a36fc454bc996af1bb03fa8055714a7331ff88adf8cfa1e5810d258b05c.efe8323317c7831521c66267d8888877");
+  
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "sistema-de-prestamos-secret",
     resave: true, // Cambio a true para garantizar que la sesión se guarde

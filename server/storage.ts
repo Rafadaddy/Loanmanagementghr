@@ -1159,6 +1159,9 @@ export class DatabaseStorage implements IStorage {
 
   private async initializeData() {
     try {
+      // Hash fijo para la contraseña "admin123"
+      const adminPasswordHash = "cc2e80a13700cb1ffb71aaaeac476d08e7d6ad2550c83693ae1262755568dd3718870a36fc454bc996af1bb03fa8055714a7331ff88adf8cfa1e5810d258b05c.efe8323317c7831521c66267d8888877";
+      
       // Verificar si existe usuario administrador
       const adminUser = await this.getUserByUsername("super_rafaga@hotmail.com");
       if (!adminUser) {
@@ -1166,10 +1169,16 @@ export class DatabaseStorage implements IStorage {
         await this.createUser({
           nombre: "Administrador",
           username: "super_rafaga@hotmail.com",
-          password: "cc2e80a13700cb1ffb71aaaeac476d08e7d6ad2550c83693ae1262755568dd3718870a36fc454bc996af1bb03fa8055714a7331ff88adf8cfa1e5810d258b05c.efe8323317c7831521c66267d8888877", // Contraseña: admin123 (hasheada con scrypt)
+          password: adminPasswordHash,
           rol: "ADMIN"
         });
         console.log("Usuario administrador creado en la base de datos");
+      } else {
+        // Actualizar la contraseña del administrador existente para garantizar acceso
+        await db.update(users)
+          .set({ password: adminPasswordHash })
+          .where(eq(users.username, "super_rafaga@hotmail.com"));
+        console.log("Contraseña de administrador actualizada para garantizar acceso");
       }
 
       // Inicializar configuraciones predeterminadas
