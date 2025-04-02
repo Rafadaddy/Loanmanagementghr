@@ -1451,6 +1451,120 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rutas de debug para administración de usuarios
+  app.get("/api/debug/ensure-admin", async (req, res) => {
+    try {
+      const adminUsername = "admin@sistema.com";
+      const adminPassword = "admin123";
+      
+      // Verificar si existe el usuario administrador
+      let adminUser = await storage.getUserByUsername(adminUsername);
+      
+      if (!adminUser) {
+        // Crear el usuario administrador si no existe
+        const adminHashPassword = await hashPassword(adminPassword);
+        
+        adminUser = await storage.createUser({
+          username: adminUsername,
+          password: adminHashPassword,
+          nombre: "Administrador",
+          email: adminUsername,
+          rol: "ADMIN",
+          activo: true
+        });
+        
+        console.log("Usuario administrador creado con ID:", adminUser.id);
+        return res.json({ 
+          success: true, 
+          message: "Usuario administrador creado correctamente",
+          action: "created" 
+        });
+      } 
+      
+      // Actualizar la contraseña para garantizar acceso
+      const adminHashPassword = await hashPassword(adminPassword);
+      await storage.updateUserPassword(adminUser.id, adminHashPassword);
+      console.log("Contraseña de administrador actualizada para garantizar acceso");
+      
+      return res.json({ 
+        success: true, 
+        message: "Contraseña de administrador actualizada correctamente",
+        action: "updated" 
+      });
+    } catch (error) {
+      console.error("Error al verificar usuario administrador:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Error al verificar usuario administrador", 
+        error: String(error) 
+      });
+    }
+  });
+
+  app.get("/api/debug/reset-password/:username", async (req, res) => {
+    try {
+      const username = req.params.username;
+      if (!username) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Nombre de usuario no proporcionado" 
+        });
+      }
+      
+      // Verificar si el usuario existe
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Usuario no encontrado" 
+        });
+      }
+      
+      // Restablecer la contraseña a un valor predeterminado
+      const defaultPassword = "123456";
+      const hashedPassword = await hashPassword(defaultPassword);
+      await storage.updateUserPassword(user.id, hashedPassword);
+      
+      console.log(`Contraseña restablecida para el usuario ${username}`);
+      
+      return res.json({ 
+        success: true, 
+        message: `Contraseña restablecida para el usuario ${username}` 
+      });
+    } catch (error) {
+      console.error("Error al restablecer contraseña:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Error al restablecer contraseña", 
+        error: String(error) 
+      });
+    }
+  });
+
+  // Ruta para obtener información de depuración sobre el estado de autenticación
+  app.get("/api/debug/auth-status", (req, res) => {
+    console.log("DEBUG - GET /api/debug/auth-status - Estado de autenticación:", {
+      session: !!req.session,
+      sessionID: req.sessionID,
+      isAuthenticated: req.isAuthenticated(),
+      hasUser: !!req.user,
+      userID: req.user?.id
+    });
+    
+    return res.json({
+      session: !!req.session,
+      sessionID: req.sessionID,
+      isAuthenticated: req.isAuthenticated(),
+      hasUser: !!req.user,
+      user: req.user ? {
+        id: req.user.id,
+        username: req.user.username,
+        role: req.user.rol,
+        nombre: req.user.nombre
+      } : null
+    });
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
