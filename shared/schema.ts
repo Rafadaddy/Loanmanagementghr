@@ -8,14 +8,18 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   nombre: text("nombre").notNull(),
+  email: text("email"),
   rol: text("rol").default("USUARIO").notNull(), // Roles: ADMIN, USUARIO, COBRADOR
+  activo: boolean("activo").default(true).notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
   nombre: true,
+  email: true,
   rol: true,
+  activo: true,
 });
 
 // Tabla de cobradores (usuarios con rol de cobrador)

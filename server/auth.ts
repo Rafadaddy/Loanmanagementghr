@@ -55,16 +55,23 @@ export function setupAuth(app: Express) {
   // Solo mostrar el hash fijo para fines informativos
   console.log("HASH FIJO PARA ADMIN: cc2e80a13700cb1ffb71aaaeac476d08e7d6ad2550c83693ae1262755568dd3718870a36fc454bc996af1bb03fa8055714a7331ff88adf8cfa1e5810d258b05c.efe8323317c7831521c66267d8888877");
   
+  // Detectar si estamos en producción o desarrollo
+  const isProduction = process.env.NODE_ENV === 'production' || 
+                      process.env.REPL_SLUG || 
+                      process.env.REPL_OWNER;
+  
+  console.log("AMBIENTE:", isProduction ? "PRODUCCIÓN" : "DESARROLLO");
+  
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "sistema-de-prestamos-secret",
-    resave: true, // Cambio a true para garantizar que la sesión se guarde
-    saveUninitialized: true, // Cambio a true para crear sesiones aunque no estén inicializadas
+    resave: true, 
+    saveUninitialized: true,
     store: storage.sessionStore,
     cookie: {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días para mayor persistencia
       httpOnly: true,
-      secure: false, // Cambiar a true en producción con HTTPS
-      sameSite: 'lax' // Importante para que las cookies funcionen en desarrollo
+      secure: false, // false tanto en desarrollo como en producción para este entorno
+      sameSite: 'lax', // lax es más compatible para este entorno
     }
   };
 
@@ -122,7 +129,10 @@ export function setupAuth(app: Express) {
   app.post("/api/login", async (req, res, next) => {
     console.log("DEBUG - Intento de login con:", {
       username: req.body.username,
-      passwordProvided: !!req.body.password
+      passwordProvided: !!req.body.password,
+      headers: req.headers['user-agent'],
+      cookies: req.headers.cookie,
+      referrer: req.headers.referer
     });
     
     // Buscar el usuario manualmente primero
@@ -155,10 +165,36 @@ export function setupAuth(app: Express) {
           user: { id: user.id, username: user.username },
           session: !!req.session,
           sessionID: req.sessionID,
-          authenticated: req.isAuthenticated()
+          authenticated: req.isAuthenticated(),
+          cookies: 'Verificando cookies'
         });
         
-        return res.status(200).json(user);
+        // Simplificamos la configuración de cookies para mayor compatibilidad
+        // y evitar problemas en el entorno Replit
+        if (req.session) {
+          req.session.cookie.secure = false;
+          req.session.cookie.sameSite = 'lax';
+          req.session.cookie.maxAge = 7 * 24 * 60 * 60 * 1000; // 7 días
+          
+          try {
+            // Guardar la sesión sin regenerar para mantenerla simple
+            req.session.save((err) => {
+              if (err) {
+                console.error("Error al guardar la sesión:", err);
+              }
+              
+              // Enviamos la respuesta después de guardar
+              return res.status(200).json(user);
+            });
+          } catch (error) {
+            console.error("Error en gestión de sesión:", error);
+            // Si falla el guardado, aún respondemos
+            return res.status(200).json(user);
+          }
+        } else {
+          // Si por alguna razón no hay sesión, aún devolvemos el usuario
+          return res.status(200).json(user);
+        }
       });
     } catch (error) {
       console.error("DEBUG - Error en proceso de login:", error);
@@ -195,5 +231,79 @@ export function setupAuth(app: Express) {
     res.json(req.user);
   });
   
-  // Eliminada la ruta debug de creación de usuarios
+  // Ruta para debugging de sesión y cookies
+  app.get("/api/debug/session", (req, res) => {
+    res.json({
+      sessionID: req.sessionID,
+      isAuthenticated: req.isAuthenticated(),
+      user: req.user ? { id: req.user.id, username: req.user.username } : null,
+      sessionExists: !!req.session,
+      cookie: req.session ? {
+        maxAge: req.session.cookie.maxAge,
+        expires: req.session.cookie.expires,
+        httpOnly: req.session.cookie.httpOnly,
+        path: req.session.cookie.path,
+        domain: req.session.cookie.domain,
+        secure: req.session.cookie.secure,
+        sameSite: req.session.cookie.sameSite
+      } : null,
+      headers: {
+        cookie: req.headers.cookie,
+        userAgent: req.headers['user-agent'],
+        referer: req.headers.referer
+      }
+    });
+  });
+  
+  // Ruta para testing de inicio de sesión del administrador
+  app.get("/api/debug/admin-login-test", async (req, res) => {
+    try {
+      // Credenciales del administrador
+      const adminUsername = "admin@sistema.com";
+      const adminPassword = "admin123";
+      
+      // Verificar si existe el usuario
+      let adminUser = await storage.getUserByUsername(adminUsername);
+      
+      // Si no existe, crear el usuario administrador
+      if (!adminUser) {
+        console.log("DEBUG - Creando usuario administrador");
+        
+        const adminHashPassword = await hashPassword(adminPassword);
+        
+        adminUser = await storage.createUser({
+          username: adminUsername,
+          password: adminHashPassword,
+          nombre: "Administrador",
+          email: adminUsername,
+          rol: "ADMIN",
+          activo: true
+        });
+        
+        console.log("DEBUG - Usuario administrador creado:", adminUser.id);
+      }
+      
+      // Verificar la contraseña manualmente
+      const passwordValid = await comparePasswords(adminPassword, adminUser.password);
+      
+      // Mostrar información de depuración
+      res.json({
+        adminExists: true,
+        passwordValid,
+        adminUser: {
+          id: adminUser.id,
+          username: adminUser.username,
+          rol: adminUser.rol
+        },
+        passwordHash: adminUser.password,
+        passwordInfo: {
+          hasHash: !!adminUser.password,
+          hashLength: adminUser.password?.length || 0,
+          hasSalt: adminUser.password?.includes('.') || false
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
+  });
 }
