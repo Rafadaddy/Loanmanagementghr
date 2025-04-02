@@ -28,7 +28,7 @@ import { addDays, differenceInDays, format } from "date-fns";
 import createMemoryStore from "memorystore";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
-import { db, pool } from "./db";
+import { db, pool, usingRealDatabase } from "./db";
 import { and, eq, gte, lte, desc, asc, sql, like, between, isNull, or } from "drizzle-orm";
 
 const MemoryStore = createMemoryStore(session);
@@ -2032,5 +2032,7 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Cambiamos a la implementación de base de datos para persistencia
-export const storage = new DatabaseStorage();
+// Elegir la implementación adecuada según el entorno
+export const storage = usingRealDatabase 
+  ? new DatabaseStorage()  // En desarrollo con base de datos real
+  : new MemStorage();      // En despliegue sin base de datos

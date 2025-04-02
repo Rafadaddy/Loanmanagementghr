@@ -5,11 +5,28 @@ import * as schema from "@shared/schema";
 
 neonConfig.webSocketConstructor = ws;
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+// Variable para rastrear si estamos usando una base de datos real o no
+export const usingRealDatabase = !!process.env.DATABASE_URL;
+
+let pool;
+let db;
+
+if (process.env.DATABASE_URL) {
+  // Configuración para entorno de desarrollo con base de datos PostgreSQL
+  console.log("Usando base de datos PostgreSQL");
+  pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  db = drizzle({ client: pool, schema });
+} else {
+  // Configuración para despliegue sin base de datos PostgreSQL
+  console.log("DATABASE_URL no encontrada, configurando para modo de despliegue");
+  // Creamos objetos mock que serán reemplazados en storage.ts
+  pool = {};
+  db = {
+    select: () => ({ from: () => [] }),
+    insert: () => ({ values: () => ({ returning: () => [] }) }),
+    update: () => ({ set: () => ({ where: () => ({ returning: () => [] }) }) }),
+    delete: () => ({ where: () => [] })
+  };
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle({ client: pool, schema });
+export { pool, db };

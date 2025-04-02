@@ -69,7 +69,7 @@ export default function LoanForm({ open, onOpenChange, onSuccess }: LoanFormProp
       cliente_id: "",
       monto_prestado: "",
       tasa_interes: "40",
-      tasa_mora: "5", // Valor predeterminado del 5%
+      tasa_mora: "0", // Valor predeterminado del 0%
       fecha_prestamo: new Date().toISOString().split('T')[0],
       numero_semanas: "16",
       frecuencia_pago: "SEMANAL",

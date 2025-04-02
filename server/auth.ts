@@ -5,6 +5,7 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
+import { usingRealDatabase } from "./db";
 import { User as SelectUser } from "@shared/schema";
 
 declare global {
