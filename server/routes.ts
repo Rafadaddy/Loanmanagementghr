@@ -19,6 +19,38 @@ import { fromZodError } from "zod-validation-error";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
   setupAuth(app);
+  
+  // Garantizar que el usuario administrador existe y tiene la contraseña correcta
+  try {
+    const adminUsername = "admin@sistema.com";
+    const adminPassword = "admin123";
+    
+    // Verificar si existe el usuario administrador
+    let adminUser = await storage.getUserByUsername(adminUsername);
+    
+    if (!adminUser) {
+      // Crear el usuario administrador si no existe
+      const adminHashPassword = await hashPassword(adminPassword);
+      
+      adminUser = await storage.createUser({
+        username: adminUsername,
+        password: adminHashPassword,
+        nombre: "Administrador",
+        email: adminUsername,
+        rol: "ADMIN",
+        activo: true
+      });
+      
+      console.log("Usuario administrador creado con ID:", adminUser.id);
+    } else {
+      // Actualizar la contraseña para garantizar acceso
+      const adminHashPassword = await hashPassword(adminPassword);
+      await storage.updateUserPassword(adminUser.id, adminHashPassword);
+      console.log("Contraseña de administrador actualizada para garantizar acceso");
+    }
+  } catch (error) {
+    console.error("Error al verificar usuario administrador:", error);
+  }
 
   // Auth middleware
   const isAuthenticated = (req: Request, res: Response, next: Function) => {

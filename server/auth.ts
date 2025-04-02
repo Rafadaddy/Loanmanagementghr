@@ -336,4 +336,45 @@ export function setupAuth(app: Express) {
       res.status(500).json({ error: String(error) });
     }
   });
+  
+  // Ruta para garantizar que exista el usuario administrador
+  app.get("/api/debug/ensure-admin", async (req, res) => {
+    try {
+      const adminUsername = "admin@sistema.com";
+      const adminPassword = "admin123";
+      
+      // Verificar si existe el usuario administrador
+      let adminUser = await storage.getUserByUsername(adminUsername);
+      
+      if (!adminUser) {
+        // Crear el usuario administrador si no existe
+        const adminHashPassword = await hashPassword(adminPassword);
+        
+        adminUser = await storage.createUser({
+          username: adminUsername,
+          password: adminHashPassword,
+          nombre: "Administrador",
+          email: adminUsername,
+          rol: "ADMIN",
+          activo: true
+        });
+        
+        console.log("Admin user created:", adminUser.id);
+      } else {
+        // Actualizar la contraseña para garantizar acceso
+        const adminHashPassword = await hashPassword(adminPassword);
+        await storage.updateUserPassword(adminUser.id, adminHashPassword);
+        console.log("Admin password updated for user:", adminUser.id);
+      }
+      
+      res.json({
+        success: true,
+        message: "Usuario administrador verificado y actualizado",
+        userId: adminUser.id
+      });
+    } catch (error) {
+      console.error("Error ensuring admin user:", error);
+      res.status(500).json({ error: String(error) });
+    }
+  });
 }
