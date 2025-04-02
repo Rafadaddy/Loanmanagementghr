@@ -42,6 +42,7 @@ export interface IStorage {
   getAllUsers(): Promise<Map<number, User>>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
+  updateUserPassword(id: number, newPassword: string): Promise<boolean>;
   deleteUser(id: number): Promise<boolean>;
   
   // Clientes
@@ -201,6 +202,18 @@ export class MemStorage implements IStorage {
 
   async getAllUsers(): Promise<Map<number, User>> {
     return this.users;
+  }
+  
+  async updateUserPassword(id: number, newPassword: string): Promise<boolean> {
+    const user = this.users.get(id);
+    if (!user) {
+      return false;
+    }
+    
+    // Actualizar la contraseña
+    user.password = newPassword;
+    this.users.set(id, user);
+    return true;
   }
   
   async deleteUser(id: number): Promise<boolean> {
@@ -1227,6 +1240,18 @@ export class DatabaseStorage implements IStorage {
     return updatedUser;
   }
 
+  async updateUserPassword(id: number, newPassword: string): Promise<boolean> {
+    try {
+      await db.update(users)
+        .set({ password: newPassword })
+        .where(eq(users.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error al actualizar contraseña del usuario:", error);
+      return false;
+    }
+  }
+  
   async deleteUser(id: number): Promise<boolean> {
     // No permitir eliminar el usuario administrador inicial
     if (id === 1) {

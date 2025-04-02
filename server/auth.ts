@@ -306,4 +306,34 @@ export function setupAuth(app: Express) {
       res.status(500).json({ error: String(error) });
     }
   });
+  
+  // Ruta para restablecer la contraseña de un usuario específico (solo desarrollo)
+  app.get("/api/debug/reset-password/:username", async (req, res) => {
+    try {
+      const username = req.params.username;
+      const defaultPassword = "123456";
+      
+      // Verificar si existe el usuario
+      let user = await storage.getUserByUsername(username);
+      
+      if (!user) {
+        return res.status(404).json({ error: "Usuario no encontrado" });
+      }
+      
+      // Hashear la nueva contraseña
+      const hashedPassword = await hashPassword(defaultPassword);
+      
+      // Actualizar en la base de datos
+      await storage.updateUserPassword(user.id, hashedPassword);
+      
+      res.json({
+        success: true,
+        message: `Contraseña de ${username} restablecida a "${defaultPassword}"`,
+        username: user.username,
+        userId: user.id
+      });
+    } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
+  });
 }
