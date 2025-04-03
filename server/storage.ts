@@ -1161,7 +1161,7 @@ export class DatabaseStorage implements IStorage {
   constructor() {
     // Inicializar el store de sesión PostgreSQL
     this.sessionStore = new PostgresStore({
-      pool,
+      pool: pool as any,
       createTableIfMissing: true,
       tableName: 'session'
     });
@@ -2069,5 +2069,7 @@ export class DatabaseStorage implements IStorage {
 // Importamos la nueva JsonStorage
 import { JsonStorage } from './json-storage';
 
-// Usamos JsonStorage como almacenamiento principal
-export const storage = new JsonStorage();
+// Para desarrollo usamos MemStorage con datos preconfigurados de prueba
+// Para producción usamos DatabaseStorage que usa PostgreSQL
+// Para este entorno específico, usamos JsonStorage que almacena en disco pero es liviano
+export const storage = new MemStorage();

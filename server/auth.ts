@@ -5,8 +5,11 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { usingRealDatabase } from "./db";
+import { usingRealDatabase, pool } from "./db";
 import { User as SelectUser } from "@shared/schema";
+import connectPgSimple from "connect-pg-simple";
+import pg from 'pg';
+import createMemoryStore from 'memorystore';
 
 declare global {
   namespace Express {
@@ -62,11 +65,44 @@ export function setupAuth(app: Express) {
   
   console.log("AMBIENTE:", isProduction ? "PRODUCCIÓN" : "DESARROLLO");
   
+  // Configurar session store dependiendo del entorno
+  let sessionStore;
+  
+  if (usingRealDatabase && process.env.DATABASE_URL) {
+    try {
+      // En producción, usamos PostgreSQL para las sesiones
+      const PostgreSQLStore = connectPgSimple(session);
+      
+      // Creamos un pool específico para el session store usando node-postgres
+      const sessionPool = new pg.Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false }
+      });
+      
+      sessionStore = new PostgreSQLStore({
+        pool: sessionPool,
+        tableName: 'sessions', 
+        createTableIfMissing: true
+      });
+      console.log("Usando PostgreSQL para el almacenamiento de sesiones");
+    } catch (error) {
+      console.error("Error al configurar PostgreSQL para sesiones:", error);
+      // Caer al MemoryStore como respaldo
+      const MemoryStore = createMemoryStore(session);
+      sessionStore = new MemoryStore({ checkPeriod: 86400000 });
+      console.log("FALLBACK: Usando almacenamiento en memoria para sesiones");
+    }
+  } else {
+    // En desarrollo, usamos el session store proporcionado por el storage
+    sessionStore = storage.sessionStore;
+    console.log("Usando almacenamiento en memoria para sesiones");
+  }
+
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "sistema-de-prestamos-secret",
     resave: true, 
     saveUninitialized: true,
-    store: storage.sessionStore,
+    store: sessionStore,
     cookie: {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días para mayor persistencia
       httpOnly: true,
@@ -257,37 +293,7 @@ export function setupAuth(app: Express) {
       cookie_direct_access: req.cookies?.direct_admin_access
     });
     
-    // Verificar acceso directo desde LocalStorage
-    // Esta es la nueva funcionalidad de acceso directo como administrador
-    if (req.headers['x-direct-admin-access'] === 'true' || req.cookies?.direct_admin_access === 'true') {
-      console.log("DEBUG - ACCESO DIRECTO ADMIN ACTIVADO EN /api/user");
-      const adminUser = { 
-        id: 1, 
-        username: 'admin@sistema.com',
-        rol: 'ADMIN',
-        nombre: 'Administrador Directo',
-        email: 'admin@sistema.com',
-        activo: true,
-        password: '**********' // No enviar la contraseña real
-      };
-      return res.json(adminUser);
-    }
-    
-    // MODO BYPASS: Permitir acceso sin autenticación
-    // Este es un bypass temporal para resolver problemas de acceso
-    if (req.query.bypass === "true" || req.headers['x-auth-bypass'] === "true" || process.env.AUTH_BYPASS === "true") {
-      console.log("DEBUG - BYPASS DE AUTENTICACIÓN ACTIVADO EN /api/user");
-      const adminUser = { 
-        id: 1, 
-        username: 'admin@sistema.com',
-        rol: 'ADMIN',
-        nombre: 'Administrador Temporal',
-        email: 'admin@sistema.com',
-        activo: true,
-        password: '**********' // No enviar la contraseña real
-      };
-      return res.json(adminUser);
-    }
+    // NOTA: Se han eliminado los mecanismos de bypass de autenticación
     
     if (!req.isAuthenticated()) {
       console.log("DEBUG - Usuario no autenticado, devolviendo 401");
