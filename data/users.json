@@ -2,13 +2,13 @@
   {
     "id": 1,
     "username": "admin@sistema.com",
-    "password": "c83bedb614e140d5db8d5387cc1a7d02f7fbeff37584a62bcc8a8128ad6cb5d5222165beb7c6e0fae3f53c23252c7ccb304e4309e132b3df55336855c4f450f0.649ecc1b16597ab1f7950f1a26a09435",
+    "password": "f740e0eaeca3f5ed5136380cd10878db3a53a0623d78842e8eac47c1f8cd0226c21af8f52e8c86759eb3a27b84e12ad360e496c41e4ee9ecdafbab3385e089b2.a1fbfd877b401a805a7873ce44b5c3c8",
     "nombre": "Administrador",
     "email": "admin@sistema.com",
     "rol": "ADMIN",
     "activo": true,
     "created_at": "2025-04-03T03:52:58.581Z",
-    "updated_at": "2025-04-03T03:52:58.581Z"
+    "updated_at": "2025-04-03T04:04:07.735Z"
   },
   {
     "id": 2,

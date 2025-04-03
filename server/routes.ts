@@ -65,48 +65,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       username: req.user?.username
     });
     
-    // Verificar acceso directo desde el cliente
-    // Esta es la nueva funcionalidad de acceso directo como administrador
-    if (req.headers['x-direct-admin-access'] === 'true' || req.cookies?.direct_admin_access === 'true') {
-      console.log("DEBUG - ACCESO DIRECTO ADMIN ACTIVADO");
-      req.user = { 
-        id: 1, 
-        username: 'admin@sistema.com',
-        rol: 'ADMIN',
-        nombre: 'Administrador Directo',
-        email: 'admin@sistema.com'
-      } as Express.User;
-      return next();
-    }
-    
-    // MODO BYPASS: Permitir acceso sin autenticación
-    // Este es un bypass temporal para resolver problemas de acceso
-    if (req.query.bypass === "true" || req.headers['x-auth-bypass'] === "true" || process.env.AUTH_BYPASS === "true") {
-      console.log("DEBUG - BYPASS DE AUTENTICACIÓN ACTIVADO");
-      req.user = { 
-        id: 1, 
-        username: 'admin@sistema.com',
-        rol: 'ADMIN',
-        nombre: 'Administrador Temporal',
-        email: 'admin@sistema.com'
-      } as Express.User;
-      return next();
-    }
-    
     if (req.isAuthenticated()) {
       console.log("DEBUG - Usuario autenticado correctamente:", req.user?.username);
       return next();
     }
     
-    // Modo de desarrollo/emergencia: permitir acceso con ID de usuario temporal
-    if (req.query.user_id) {
-      const userId = parseInt(req.query.user_id as string);
-      console.log(`DEBUG - MODO DESARROLLO: Simulando usuario con ID ${userId}`);
-      req.user = { id: userId, username: 'usuario_simulado_' + userId } as Express.User;
-      return next();
-    }
-    
-    console.log("DEBUG - Autenticación fallida en", req.path);
+    console.log("DEBUG - Usuario no autenticado, devolviendo 401");
     return res.status(401).json({ message: "No autorizado, por favor inicie sesión nuevamente" });
   };
 
@@ -716,18 +680,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Ruta para crear movimientos de caja (con bypass de autenticación)
-  app.post("/api/caja/movimientos", async (req, res, next) => {
+  // Ruta para crear movimientos de caja
+  app.post("/api/caja/movimientos", isAuthenticated, async (req, res, next) => {
     try {
       console.log("DEBUG - Recibiendo petición POST /api/caja/movimientos");
       console.log("DEBUG - Datos recibidos:", req.body);
       
-      // Verificar autenticación o usar el parámetro user_id para bypass de emergencia
-      const userId = req.isAuthenticated() 
-        ? req.user?.id 
-        : req.query.user_id 
-          ? parseInt(req.query.user_id as string) 
-          : req.body.creado_por || 1;
+      // Obtener el ID del usuario autenticado
+      const userId = req.user?.id;
       
       console.log("DEBUG - Usuario ID determinado:", userId);
       
@@ -818,7 +778,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/caja/movimientos/:id", async (req, res, next) => {
+  app.delete("/api/caja/movimientos/:id", isAuthenticated, async (req, res, next) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -1184,7 +1144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ===== Rutas para configuraciones =====
   
   // Obtener todas las configuraciones
-  app.get("/api/configuraciones", async (req, res, next) => {
+  app.get("/api/configuraciones", isAuthenticated, async (req, res, next) => {
     try {
       const configuraciones = await storage.getAllConfiguraciones();
       res.json(configuraciones);
@@ -1206,7 +1166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Obtener configuraciones por categoría
-  app.get("/api/configuraciones/categoria/:categoria", async (req, res, next) => {
+  app.get("/api/configuraciones/categoria/:categoria", isAuthenticated, async (req, res, next) => {
     try {
       const categoria = req.params.categoria;
       const configuraciones = await storage.getConfiguracionesPorCategoria(categoria);
@@ -1218,7 +1178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Obtener una configuración específica por clave
-  app.get("/api/configuraciones/clave/:clave", async (req, res, next) => {
+  app.get("/api/configuraciones/clave/:clave", isAuthenticated, async (req, res, next) => {
     try {
       const clave = req.params.clave;
       const configuracion = await storage.getConfiguracion(clave);
@@ -1480,7 +1440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Rutas de debug para administración de usuarios
-  app.get("/api/debug/ensure-admin", async (req, res) => {
+  app.get("/api/debug/ensure-admin", isAuthenticated, async (req, res) => {
     try {
       const adminUsername = "admin@sistema.com";
       const adminPassword = "admin123";
@@ -1529,7 +1489,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/debug/reset-password/:username", async (req, res) => {
+  app.get("/api/debug/reset-password/:username", isAuthenticated, async (req, res) => {
     try {
       const username = req.params.username;
       if (!username) {
@@ -1570,7 +1530,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Ruta para obtener información de depuración sobre el estado de autenticación
-  app.get("/api/debug/auth-status", (req, res) => {
+  app.get("/api/debug/auth-status", isAuthenticated, (req, res) => {
     console.log("DEBUG - GET /api/debug/auth-status - Estado de autenticación:", {
       session: !!req.session,
       sessionID: req.sessionID,

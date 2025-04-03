@@ -8,8 +8,6 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import { ResetPassword } from "@/components/login/ResetPassword";
-import { DirectAccess } from "@/components/login/DirectAccess";
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation, isLoading } = useAuth();
@@ -142,12 +140,6 @@ export default function AuthPage() {
                   </Button>
                 </CardFooter>
               </form>
-              
-              {/* Componente de reseteo de contraseña */}
-              <ResetPassword />
-              
-              {/* Componente de acceso directo */}
-              <DirectAccess />
             </Card>
           </TabsContent>
           

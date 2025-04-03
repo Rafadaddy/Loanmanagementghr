@@ -27,9 +27,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   
-  // Verificar si existe el modo bypass en localStorage
-  const shouldBypass = localStorage.getItem('auth_bypass') === 'true';
-  
   const {
     data: user,
     error,
@@ -38,13 +35,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   } = useQuery<SelectUser | undefined, Error>({
     queryKey: ["/api/user"],
     queryFn: async ({ signal }) => {
-      // Si el modo bypass está activado, incluir el parámetro de bypass
-      const url = shouldBypass ? '/api/user?bypass=true' : '/api/user';
-      
       try {
-        const response = await fetch(url, { 
+        const response = await fetch('/api/user', { 
           signal,
-          headers: shouldBypass ? { 'x-auth-bypass': 'true' } : undefined
+          credentials: "include"
         });
         
         if (!response.ok) {
@@ -57,17 +51,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return await response.json();
       } catch (error) {
         console.error("Error en la consulta de usuario:", error);
-        if (shouldBypass) {
-          console.log("Intentando modo de recuperación de bypass");
-          return {
-            id: 1,
-            username: 'admin@sistema.com',
-            rol: 'ADMIN',
-            nombre: 'Administrador (Recuperación)',
-            email: 'admin@sistema.com',
-            activo: true
-          };
-        }
         throw error;
       }
     },

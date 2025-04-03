@@ -12,22 +12,12 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  // Verificar si el acceso directo está activado
-  const hasDirectAccess = localStorage.getItem('direct_admin_access') === 'true';
-  
   // Construir los headers
   const headers: Record<string, string> = {};
   
   // Agregar Content-Type si hay datos
   if (data) {
     headers["Content-Type"] = "application/json";
-  }
-  
-  // Agregar cabecera de acceso directo si está activado
-  if (hasDirectAccess) {
-    headers["x-direct-admin-access"] = "true";
-    // Guardar también como cookie para mayor compatibilidad
-    document.cookie = "direct_admin_access=true; path=/; max-age=86400";
   }
   
   const res = await fetch(url, {
@@ -47,18 +37,8 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    // Verificar si el acceso directo está activado
-    const hasDirectAccess = localStorage.getItem('direct_admin_access') === 'true';
-    
     // Construir los headers
     const headers: Record<string, string> = {};
-    
-    // Agregar cabecera de acceso directo si está activado
-    if (hasDirectAccess) {
-      headers["x-direct-admin-access"] = "true";
-      // Guardar también como cookie para mayor compatibilidad
-      document.cookie = "direct_admin_access=true; path=/; max-age=86400";
-    }
     
     const res = await fetch(queryKey[0] as string, {
       credentials: "include",
