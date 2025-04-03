@@ -253,8 +253,25 @@ export function setupAuth(app: Express) {
       sessionID: req.sessionID,
       isAuthenticated: req.isAuthenticated(),
       hasUser: !!req.user,
-      userID: req.user?.id
+      userID: req.user?.id,
+      cookie_direct_access: req.cookies?.direct_admin_access
     });
+    
+    // Verificar acceso directo desde LocalStorage
+    // Esta es la nueva funcionalidad de acceso directo como administrador
+    if (req.headers['x-direct-admin-access'] === 'true' || req.cookies?.direct_admin_access === 'true') {
+      console.log("DEBUG - ACCESO DIRECTO ADMIN ACTIVADO EN /api/user");
+      const adminUser = { 
+        id: 1, 
+        username: 'admin@sistema.com',
+        rol: 'ADMIN',
+        nombre: 'Administrador Directo',
+        email: 'admin@sistema.com',
+        activo: true,
+        password: '**********' // No enviar la contraseña real
+      };
+      return res.json(adminUser);
+    }
     
     // MODO BYPASS: Permitir acceso sin autenticación
     // Este es un bypass temporal para resolver problemas de acceso

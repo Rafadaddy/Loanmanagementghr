@@ -65,6 +65,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       username: req.user?.username
     });
     
+    // Verificar acceso directo desde el cliente
+    // Esta es la nueva funcionalidad de acceso directo como administrador
+    if (req.headers['x-direct-admin-access'] === 'true' || req.cookies?.direct_admin_access === 'true') {
+      console.log("DEBUG - ACCESO DIRECTO ADMIN ACTIVADO");
+      req.user = { 
+        id: 1, 
+        username: 'admin@sistema.com',
+        rol: 'ADMIN',
+        nombre: 'Administrador Directo',
+        email: 'admin@sistema.com'
+      } as Express.User;
+      return next();
+    }
+    
     // MODO BYPASS: Permitir acceso sin autenticación
     // Este es un bypass temporal para resolver problemas de acceso
     if (req.query.bypass === "true" || req.headers['x-auth-bypass'] === "true" || process.env.AUTH_BYPASS === "true") {
