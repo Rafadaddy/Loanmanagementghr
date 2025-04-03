@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CardContent, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, KeyRound, UserCog } from "lucide-react";
 
 export function ResetPassword() {
   const [username, setUsername] = useState("");
@@ -57,7 +58,7 @@ export function ResetPassword() {
       if (response.ok) {
         toast({
           title: "Éxito",
-          description: "Usuario administrador creado/actualizado correctamente. Usuario: admin@sistema.com, Contraseña: admin123",
+          description: "Usuario administrador creado/actualizado correctamente.",
         });
       } else {
         toast({
@@ -78,53 +79,67 @@ export function ResetPassword() {
   };
 
   return (
-    <div className="mt-6 flex flex-col space-y-4 p-4 border border-muted rounded-md">
-      <h3 className="text-sm font-medium text-center">¿Olvidaste tu contraseña?</h3>
-      
-      <div className="flex flex-col space-y-2">
-        <Input
-          placeholder="Nombre de usuario"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
+    <>
+      <CardContent className="pt-1">
+        <div className="border-t border-border my-2"></div>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-foreground">Herramientas de recuperación</p>
+            <p className="text-xs text-muted-foreground">
+              Usuario admin: admin@sistema.com (Contraseña: admin123)
+            </p>
+          </div>
+        </div>
+        <div className="mt-3">
+          <Input
+            placeholder="Nombre de usuario"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="mb-2"
+          />
+        </div>
+      </CardContent>
+      <CardFooter className="pt-0 flex gap-2">
         <Button 
           variant="secondary" 
           size="sm" 
+          className="flex-1"
           onClick={handleResetPassword}
           disabled={isResetting}
         >
           {isResetting ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Restableciendo...
+              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+              Procesando...
             </>
           ) : (
-            "Restablecer contraseña"
+            <>
+              <KeyRound className="mr-1 h-3 w-3" />
+              Restablecer clave
+            </>
           )}
         </Button>
-      </div>
-      
-      <div className="flex flex-col space-y-2">
+        
         <Button 
           variant="outline" 
           size="sm" 
+          className="flex-1"
           onClick={handleCreateAdmin}
           disabled={isCreatingAdmin}
         >
           {isCreatingAdmin ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creando admin...
+              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+              Procesando...
             </>
           ) : (
-            "Crear/Actualizar usuario admin"
+            <>
+              <UserCog className="mr-1 h-3 w-3" />
+              Crear admin
+            </>
           )}
         </Button>
-        <p className="text-xs text-muted-foreground text-center">
-          Usuario: admin@sistema.com<br />
-          Contraseña: admin123
-        </p>
-      </div>
-    </div>
+      </CardFooter>
+    </>
   );
 }
