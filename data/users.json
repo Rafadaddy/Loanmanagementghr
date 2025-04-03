@@ -1,0 +1,24 @@
+[
+  {
+    "id": 1,
+    "username": "admin@sistema.com",
+    "password": "c83bedb614e140d5db8d5387cc1a7d02f7fbeff37584a62bcc8a8128ad6cb5d5222165beb7c6e0fae3f53c23252c7ccb304e4309e132b3df55336855c4f450f0.649ecc1b16597ab1f7950f1a26a09435",
+    "nombre": "Administrador",
+    "email": "admin@sistema.com",
+    "rol": "ADMIN",
+    "activo": true,
+    "created_at": "2025-04-03T03:52:58.581Z",
+    "updated_at": "2025-04-03T03:52:58.581Z"
+  },
+  {
+    "id": 2,
+    "username": "admin@sistema.com",
+    "password": "439d69bc957a8fd976d958bd5e6df60938f358bf7744e59c6dc06db2348baf3791b260007ebbaa9b0003210b0c0add090371d20e0a4f43a48b53bf8d83dd61e2.692257562073a0a1438d1b10088d08ba",
+    "nombre": "Administrador",
+    "email": "admin@sistema.com",
+    "rol": "ADMIN",
+    "activo": true,
+    "created_at": "2025-04-03T03:52:58.626Z",
+    "updated_at": "2025-04-03T03:52:58.626Z"
+  }
+]

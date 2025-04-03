@@ -2066,7 +2066,8 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Elegir la implementación adecuada según el entorno
-export const storage = usingRealDatabase 
-  ? new DatabaseStorage()  // En desarrollo con base de datos real
-  : new MemStorage();      // En despliegue sin base de datos
+// Importamos la nueva JsonStorage
+import { JsonStorage } from './json-storage';
+
+// Usamos JsonStorage como almacenamiento principal
+export const storage = new JsonStorage();

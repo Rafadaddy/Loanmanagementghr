@@ -1,0 +1,56 @@
+[
+  {
+    "id": 1,
+    "clave": "empresa_nombre",
+    "valor": "Mi Empresa de Préstamos",
+    "categoria": "empresa",
+    "descripcion": "Nombre de la empresa",
+    "created_at": "2025-04-03T03:52:58.582Z",
+    "updated_at": "2025-04-03T03:52:58.582Z"
+  },
+  {
+    "id": 2,
+    "clave": "empresa_direccion",
+    "valor": "Calle Principal #123",
+    "categoria": "empresa",
+    "descripcion": "Dirección de la empresa",
+    "created_at": "2025-04-03T03:52:58.582Z",
+    "updated_at": "2025-04-03T03:52:58.582Z"
+  },
+  {
+    "id": 3,
+    "clave": "empresa_telefono",
+    "valor": "123-456-7890",
+    "categoria": "empresa",
+    "descripcion": "Teléfono de contacto",
+    "created_at": "2025-04-03T03:52:58.582Z",
+    "updated_at": "2025-04-03T03:52:58.582Z"
+  },
+  {
+    "id": 4,
+    "clave": "prestamo_tasa_default",
+    "valor": "10",
+    "categoria": "prestamos",
+    "descripcion": "Tasa de interés predeterminada para préstamos",
+    "created_at": "2025-04-03T03:52:58.582Z",
+    "updated_at": "2025-04-03T03:52:58.582Z"
+  },
+  {
+    "id": 5,
+    "clave": "prestamo_plazo_default",
+    "valor": "12",
+    "categoria": "prestamos",
+    "descripcion": "Plazo predeterminado para préstamos (en semanas)",
+    "created_at": "2025-04-03T03:52:58.582Z",
+    "updated_at": "2025-04-03T03:52:58.582Z"
+  },
+  {
+    "id": 6,
+    "clave": "documento_siguiente_id",
+    "valor": "1000",
+    "categoria": "sistema",
+    "descripcion": "Siguiente ID para documentos de clientes",
+    "created_at": "2025-04-03T03:52:58.582Z",
+    "updated_at": "2025-04-03T03:52:58.582Z"
+  }
+]
