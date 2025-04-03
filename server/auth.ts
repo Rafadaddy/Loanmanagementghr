@@ -65,38 +65,12 @@ export function setupAuth(app: Express) {
   
   console.log("AMBIENTE:", isProduction ? "PRODUCCIÓN" : "DESARROLLO");
   
-  // Configurar session store dependiendo del entorno
-  let sessionStore;
-  
-  if (usingRealDatabase && process.env.DATABASE_URL) {
-    try {
-      // En producción, usamos PostgreSQL para las sesiones
-      const PostgreSQLStore = connectPgSimple(session);
-      
-      // Creamos un pool específico para el session store usando node-postgres
-      const sessionPool = new pg.Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false }
-      });
-      
-      sessionStore = new PostgreSQLStore({
-        pool: sessionPool,
-        tableName: 'sessions', 
-        createTableIfMissing: true
-      });
-      console.log("Usando PostgreSQL para el almacenamiento de sesiones");
-    } catch (error) {
-      console.error("Error al configurar PostgreSQL para sesiones:", error);
-      // Caer al MemoryStore como respaldo
-      const MemoryStore = createMemoryStore(session);
-      sessionStore = new MemoryStore({ checkPeriod: 86400000 });
-      console.log("FALLBACK: Usando almacenamiento en memoria para sesiones");
-    }
-  } else {
-    // En desarrollo, usamos el session store proporcionado por el storage
-    sessionStore = storage.sessionStore;
-    console.log("Usando almacenamiento en memoria para sesiones");
-  }
+  // Usando memorystore para todas las sesiones para evitar problemas con PostgreSQL
+  console.log("Usando almacenamiento en memoria para sesiones (MemoryStore)");
+  const MemoryStore = createMemoryStore(session);
+  const sessionStore = new MemoryStore({ 
+    checkPeriod: 86400000 // Limpia sesiones expiradas cada 24 horas
+  });
 
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "sistema-de-prestamos-secret",
