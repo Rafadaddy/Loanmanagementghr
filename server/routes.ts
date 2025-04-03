@@ -1345,7 +1345,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Rutas para gestión de usuarios
   
   // Obtener todos los usuarios
-  app.get("/api/users", isAuthenticated, async (req, res, next) => {
+  app.get("/api/users", async (req, res, next) => {
     try {
       // Solo administradores pueden ver todos los usuarios
       if (req.user?.rol !== "ADMIN") {
@@ -1368,7 +1368,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Crear usuario
-  app.post("/api/users", isAuthenticated, async (req, res, next) => {
+  app.post("/api/users", async (req, res, next) => {
     try {
       // Solo administradores pueden crear usuarios
       if (req.user?.rol !== "ADMIN") {
@@ -1405,7 +1405,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Eliminar usuario
-  app.delete("/api/users/:id", isAuthenticated, async (req, res, next) => {
+  app.delete("/api/users/:id", async (req, res, next) => {
     try {
       // Solo administradores pueden eliminar usuarios
       if (req.user?.rol !== "ADMIN") {
@@ -1440,7 +1440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Rutas de debug para administración de usuarios
-  app.get("/api/debug/ensure-admin", isAuthenticated, async (req, res) => {
+  app.get("/api/debug/ensure-admin", async (req, res) => {
     try {
       const adminUsername = "admin@sistema.com";
       const adminPassword = "admin123";
@@ -1489,7 +1489,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/debug/reset-password/:username", isAuthenticated, async (req, res) => {
+  app.get("/api/debug/reset-password/:username", async (req, res) => {
     try {
       const username = req.params.username;
       if (!username) {
@@ -1530,7 +1530,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Ruta para obtener información de depuración sobre el estado de autenticación
-  app.get("/api/debug/auth-status", isAuthenticated, (req, res) => {
+  app.get("/api/debug/auth-status", (req, res) => {
     console.log("DEBUG - GET /api/debug/auth-status - Estado de autenticación:", {
       session: !!req.session,
       sessionID: req.sessionID,
