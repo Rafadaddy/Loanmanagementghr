@@ -1154,17 +1154,30 @@ export class MemStorage implements IStorage {
   }
 }
 
+// Eliminamos importaciones duplicadas
+
 // Implementación de almacenamiento en base de datos PostgreSQL
 export class DatabaseStorage implements IStorage {
   sessionStore: any;
 
   constructor() {
     // Inicializar el store de sesión PostgreSQL
-    this.sessionStore = new PostgresStore({
-      pool: pool as any,
-      createTableIfMissing: true,
-      tableName: 'session'
-    });
+    try {
+      // Usamos las variables ya definidas en la parte superior del archivo
+      this.sessionStore = new PostgresStore({
+        pool: pool,
+        tableName: 'session', // Nombre singular para evitar conflictos
+        createTableIfMissing: true
+      });
+      console.log("Sesiones configuradas con PostgreSQL en DatabaseStorage");
+    } catch (error) {
+      console.error("Error al configurar PostgreSQL para sesiones en storage:", error);
+      // Fallback a MemoryStore utilizando las variables ya definidas
+      this.sessionStore = new MemoryStore({ 
+        checkPeriod: 86400000 
+      });
+      console.log("FALLBACK: Sesiones configuradas con MemoryStore en DatabaseStorage");
+    }
 
     // Inicializar datos y configuraciones por defecto
     this.initializeData();
@@ -2066,10 +2079,11 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Importamos la nueva JsonStorage
+// Importamos la nueva JsonStorage como respaldo
 import { JsonStorage } from './json-storage';
 
-// Para desarrollo usamos MemStorage con datos preconfigurados de prueba
-// Para producción usamos DatabaseStorage que usa PostgreSQL
-// Para este entorno específico, usamos JsonStorage que almacena en disco pero es liviano
+// Usamos DatabaseStorage que utiliza PostgreSQL para almacenamiento permanente
+// Esto garantiza que los datos se conserven incluso cuando la aplicación esté inactiva
+// Temporalmente usamos MemStorage para garantizar el funcionamiento
+// mientras resolvemos los problemas con PostgreSQL
 export const storage = new MemStorage();

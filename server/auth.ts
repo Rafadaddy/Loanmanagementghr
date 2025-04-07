@@ -7,9 +7,8 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { usingRealDatabase, pool } from "./db";
 import { User as SelectUser } from "@shared/schema";
-import connectPgSimple from "connect-pg-simple";
 import pg from 'pg';
-import createMemoryStore from 'memorystore';
+import { createSessionStore } from './fixed-session';
 
 declare global {
   namespace Express {
@@ -65,12 +64,11 @@ export function setupAuth(app: Express) {
   
   console.log("AMBIENTE:", isProduction ? "PRODUCCIÓN" : "DESARROLLO");
   
-  // Usando memorystore para todas las sesiones para evitar problemas con PostgreSQL
-  console.log("Usando almacenamiento en memoria para sesiones (MemoryStore)");
-  const MemoryStore = createMemoryStore(session);
-  const sessionStore = new MemoryStore({ 
-    checkPeriod: 86400000 // Limpia sesiones expiradas cada 24 horas
-  });
+  // Configuramos almacenamiento de sesiones usando nuestro helper que maneja tanto PostgreSQL como MemoryStore
+  console.log("Configurando almacenamiento de sesiones...");
+  // Convertimos explícitamente a boolean para evitar problemas de tipo
+  const useRealDB = usingRealDatabase === true;
+  const sessionStore = createSessionStore(useRealDB);
 
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "sistema-de-prestamos-secret",
