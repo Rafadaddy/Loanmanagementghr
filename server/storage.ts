@@ -2086,4 +2086,5 @@ import { JsonStorage } from './json-storage';
 // Esto garantiza que los datos se conserven incluso cuando la aplicación esté inactiva
 // Temporalmente usamos MemStorage para garantizar el funcionamiento
 // mientras resolvemos los problemas con PostgreSQL
-export const storage = new MemStorage();
+// Cambiamos de MemStorage a DatabaseStorage para persistencia de datos
+export const storage = new DatabaseStorage();
