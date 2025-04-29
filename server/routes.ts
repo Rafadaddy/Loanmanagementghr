@@ -116,6 +116,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/clientes", isAuthenticated, async (req, res, next) => {
     try {
       const clienteData = insertClienteSchema.parse(req.body);
+      // Si el cliente no tiene documento de identidad, asignar uno nuevo
+    // usando incrementarDocumentoIdentidad que sí incrementa el contador
+    if (!clienteData.documento_identidad || clienteData.documento_identidad.trim() === '') {
+      try {
+        clienteData.documento_identidad = await storage.incrementarDocumentoIdentidad();
+        console.log("Asignado nuevo documento de identidad al cliente:", clienteData.documento_identidad);
+      } catch (idError) {
+        console.error("Error al asignar documento de identidad:", idError);
+        // Continuar con la creación incluso si hay error en el ID
+      }
+    }
       const cliente = await storage.createCliente(clienteData);
       res.status(201).json(cliente);
     } catch (error) {
