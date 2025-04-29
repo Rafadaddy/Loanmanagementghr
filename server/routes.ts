@@ -1139,6 +1139,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Importar los datos
+       // Verificar que los datos están presentes y tienen el formato correcto
+      console.log("Verificando datos antes de importar:");
+      console.log(`- Clientes: ${req.body.clientes?.length || 0}`);
+      console.log(`- Préstamos: ${req.body.prestamos?.length || 0}`);
+      console.log(`- Pagos: ${req.body.pagos?.length || 0}`);
+      console.log(`- Cobradores: ${req.body.cobradores?.length || 0}`);
+      console.log(`- Movimientos: ${req.body.movimientosCaja?.length || 0}`);
+      // Importar los datos con el método mejorado que corrige fechas
       const resultado = await storage.importarDatos(req.body);
       
       if (resultado) {
