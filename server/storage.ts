@@ -1855,7 +1855,8 @@ export class DatabaseStorage implements IStorage {
       return false;
     }
   }
-   // Obtener el siguiente documento de identidad autogenerado SIN incrementar contador
+  
+  // Obtener el siguiente documento de identidad autogenerado SIN incrementar contador
   async getSiguienteDocumentoIdentidad(): Promise<string> {
     try {
       // Obtener la configuración actual
@@ -1968,6 +1969,7 @@ export class DatabaseStorage implements IStorage {
       return `ID-${timestamp.toString().padStart(4, '0')}`;
     }
   }
+
   // Exportación/Importación de datos
   async exportarDatos(): Promise<{
     users: User[];
@@ -2019,6 +2021,36 @@ export class DatabaseStorage implements IStorage {
       await db.delete(configuraciones);
       // No eliminamos los usuarios para mantener el administrador
       
+      // Función auxiliar para convertir campos de fecha
+      const convertirFechasEnObjeto = <T extends Record<string, any>>(objeto: T): T => {
+        const resultado = { ...objeto };
+        
+        // Lista de campos que podrían contener fechas
+        const camposFecha = [
+          'fecha_registro', 'fecha_prestamo', 'proxima_fecha_pago', 
+          'fecha_inicial_personalizada', 'fecha_pago', 'fecha'
+        ];
+        
+        for (const campo of camposFecha) {
+          if (campo in resultado && resultado[campo] !== null && !(resultado[campo] instanceof Date)) {
+            try {
+              resultado[campo] = new Date(resultado[campo]);
+              // Verificar que la conversión fue exitosa
+              if (isNaN(resultado[campo].getTime())) {
+                console.warn(`Campo ${campo} tiene una fecha inválida:`, resultado[campo]);
+                // Usar fecha actual como fallback para evitar errores
+                resultado[campo] = new Date();
+              }
+            } catch (err) {
+              console.warn(`Error al convertir campo ${campo}:`, err);
+              // Usar fecha actual como fallback
+              resultado[campo] = new Date();
+            }
+          }
+        }
+        return resultado;
+      };
+      
       // Importar configuraciones
       if (datos.configuraciones && datos.configuraciones.length > 0) {
         await db.insert(configuraciones).values(datos.configuraciones);
@@ -2031,22 +2063,30 @@ export class DatabaseStorage implements IStorage {
       
       // Importar clientes
       if (datos.clientes.length > 0) {
-        await db.insert(clientes).values(datos.clientes);
+        // Convertir fechas en cada cliente
+        const clientesConFechasCorrectas = datos.clientes.map(convertirFechasEnObjeto);
+        await db.insert(clientes).values(clientesConFechasCorrectas);
       }
       
       // Importar movimientos de caja
       if (datos.movimientosCaja.length > 0) {
-        await db.insert(movimientosCaja).values(datos.movimientosCaja);
+        // Convertir fechas en cada movimiento
+        const movimientosConFechasCorrectas = datos.movimientosCaja.map(convertirFechasEnObjeto);
+        await db.insert(movimientosCaja).values(movimientosConFechasCorrectas);
       }
       
       // Importar préstamos
       if (datos.prestamos.length > 0) {
-        await db.insert(prestamos).values(datos.prestamos);
+        // Convertir fechas en cada préstamo
+        const prestamosConFechasCorrectas = datos.prestamos.map(convertirFechasEnObjeto);
+        await db.insert(prestamos).values(prestamosConFechasCorrectas);
       }
       
       // Importar pagos
       if (datos.pagos.length > 0) {
-        await db.insert(pagos).values(datos.pagos);
+        // Convertir fechas en cada pago
+        const pagosConFechasCorrectas = datos.pagos.map(convertirFechasEnObjeto);
+        await db.insert(pagos).values(pagosConFechasCorrectas);
       }
       
       return true;
