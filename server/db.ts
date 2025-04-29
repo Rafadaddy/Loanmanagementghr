@@ -18,9 +18,11 @@ if (usingRealDatabase && process.env.DATABASE_URL) {
   // En producción, usamos PostgreSQL
   console.log("Configurando conexión a PostgreSQL para producción");
   try {
-    // Crear el pool de conexiones
+    // Crear el pool de conexiones con configuración SSL modificada
     realPool = postgres(process.env.DATABASE_URL, { 
-      ssl: true,
+      ssl: {
+        rejectUnauthorized: false // Permitir certificados autofirmados
+      },
       max: 10
     });
     
