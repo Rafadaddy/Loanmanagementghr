@@ -116,19 +116,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/clientes", isAuthenticated, async (req, res, next) => {
     try {
       const clienteData = insertClienteSchema.parse(req.body);
-      
-      // Si el cliente no tiene documento de identidad, asignar uno nuevo
-      // usando incrementarDocumentoIdentidad que sí incrementa el contador
-      if (!clienteData.documento_identidad || clienteData.documento_identidad.trim() === '') {
-        try {
-          clienteData.documento_identidad = await storage.incrementarDocumentoIdentidad();
-          console.log("Asignado nuevo documento de identidad al cliente:", clienteData.documento_identidad);
-        } catch (idError) {
-          console.error("Error al asignar documento de identidad:", idError);
-          // Continuar con la creación incluso si hay error en el ID
-        }
-      }
-      
+      //aqui inicia la correcion de rutas 
+     // Si el cliente no tiene documento de identidad, asignar uno nuevo
+if (!clienteData.documento_identidad || clienteData.documento_identidad.trim() === '') {
+  try {
+    // Intentar asignar un nuevo documento de identidad
+    clienteData.documento_identidad = await storage.incrementarDocumentoIdentidad();
+    console.log("Asignado nuevo documento de identidad al cliente:", clienteData.documento_identidad);
+  } catch (idError) {
+    // Registrar el error y asignar un ID temporal
+    console.error("Error al asignar documento de identidad:", idError);
+
+    // Asignar un ID temporal para evitar inconsistencias
+    clienteData.documento_identidad = `TEMP-${Date.now()}`;
+    console.warn("Se asignó un documento de identidad temporal:", clienteData.documento_identidad);
+  }
+}
+
+// Verificar que el documento de identidad sea válido antes de continuar
+if (!clienteData.documento_identidad) {
+  return res.status(500).json({
+    error: "No se pudo generar un documento de identidad válido para el cliente."
+  });
+}
+
+// Crear el cliente con los datos proporcionados
+try {
+  const cliente = await storage.createCliente(clienteData);
+  res.status(201).json(cliente);
+} catch (error) {
+  console.error("Error al crear el cliente:", error);
+  res.status(500).json({ error: "Error al crear el cliente." });
+}
+    // hasta aqui llega la correccion de rutas   
       const cliente = await storage.createCliente(clienteData);
       res.status(201).json(cliente);
     } catch (error) {
