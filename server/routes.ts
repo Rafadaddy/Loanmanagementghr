@@ -116,17 +116,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/clientes", isAuthenticated, async (req, res, next) => {
     try {
       const clienteData = insertClienteSchema.parse(req.body);
+      
       // Si el cliente no tiene documento de identidad, asignar uno nuevo
-    // usando incrementarDocumentoIdentidad que sí incrementa el contador
-    if (!clienteData.documento_identidad || clienteData.documento_identidad.trim() === '') {
-      try {
-        clienteData.documento_identidad = await storage.incrementarDocumentoIdentidad();
-        console.log("Asignado nuevo documento de identidad al cliente:", clienteData.documento_identidad);
-      } catch (idError) {
-        console.error("Error al asignar documento de identidad:", idError);
-        // Continuar con la creación incluso si hay error en el ID
+      // usando incrementarDocumentoIdentidad que sí incrementa el contador
+      if (!clienteData.documento_identidad || clienteData.documento_identidad.trim() === '') {
+        try {
+          clienteData.documento_identidad = await storage.incrementarDocumentoIdentidad();
+          console.log("Asignado nuevo documento de identidad al cliente:", clienteData.documento_identidad);
+        } catch (idError) {
+          console.error("Error al asignar documento de identidad:", idError);
+          // Continuar con la creación incluso si hay error en el ID
+        }
       }
-    }
+      
       const cliente = await storage.createCliente(clienteData);
       res.status(201).json(cliente);
     } catch (error) {
@@ -1138,14 +1140,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Importar los datos
-       // Verificar que los datos están presentes y tienen el formato correcto
+      // Verificar que los datos están presentes y tienen el formato correcto
       console.log("Verificando datos antes de importar:");
       console.log(`- Clientes: ${req.body.clientes?.length || 0}`);
       console.log(`- Préstamos: ${req.body.prestamos?.length || 0}`);
       console.log(`- Pagos: ${req.body.pagos?.length || 0}`);
       console.log(`- Cobradores: ${req.body.cobradores?.length || 0}`);
       console.log(`- Movimientos: ${req.body.movimientosCaja?.length || 0}`);
+      
       // Importar los datos con el método mejorado que corrige fechas
       const resultado = await storage.importarDatos(req.body);
       
@@ -1156,7 +1158,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("Error al importar datos:", error);
-      next(error);
+      // Enviar información más detallada del error al cliente
+      res.status(500).json({ 
+        message: "Error al importar datos", 
+        error: error.message || "Error desconocido",
+        stack: process.env.NODE_ENV === 'production' ? undefined : error.stack
+      });
     }
   });
 
@@ -1176,6 +1183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Obtener el siguiente documento de identidad autogenerado
   app.get("/api/siguiente-documento-identidad", isAuthenticated, async (req, res, next) => {
     try {
+      // Usamos la nueva implementación que no incrementa el contador
       const documento = await storage.getSiguienteDocumentoIdentidad();
       res.json({ documento });
     } catch (error) {
