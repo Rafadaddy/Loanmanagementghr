@@ -19,16 +19,19 @@ import { fromZodError } from "zod-validation-error";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
   setupAuth(app);
-
+  
   // Garantizar que el usuario administrador existe y tiene la contraseña correcta
   try {
     const adminUsername = "admin@sistema.com";
     const adminPassword = "admin123";
+    
     // Verificar si existe el usuario administrador
     let adminUser = await storage.getUserByUsername(adminUsername);
+    
     if (!adminUser) {
       // Crear el usuario administrador si no existe
       const adminHashPassword = await hashPassword(adminPassword);
+      
       adminUser = await storage.createUser({
         username: adminUsername,
         password: adminHashPassword,
@@ -37,6 +40,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rol: "ADMIN",
         activo: true
       });
+      
       console.log("Usuario administrador creado con ID:", adminUser.id);
     } else {
       // Actualizar la contraseña para garantizar acceso
@@ -60,10 +64,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       userId: req.user?.id,
       username: req.user?.username
     });
+    
     if (req.isAuthenticated()) {
       console.log("DEBUG - Usuario autenticado correctamente:", req.user?.username);
       return next();
     }
+    
     console.log("DEBUG - Usuario no autenticado, devolviendo 401");
     return res.status(401).json({ message: "No autorizado, por favor inicie sesión nuevamente" });
   };
@@ -106,10 +112,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
-
-  app.post("/api/clientes", isAuthenticated, async (req, res, next) => {
+//aqui inicia la correcion de rutas
+ app.post("/api/clientes", isAuthenticated, async (req, res, next) => {
     try {
       const clienteData = insertClienteSchema.parse(req.body);
+
       // Si el cliente no tiene documento de identidad, asignar uno nuevo
       if (!clienteData.documento_identidad || clienteData.documento_identidad.trim() === '') {
         try {
@@ -117,17 +124,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log("Asignado nuevo documento de identidad al cliente:", clienteData.documento_identidad);
         } catch (idError) {
           console.error("Error al asignar documento de identidad:", idError);
+
           // Asignar un ID temporal para evitar inconsistencias
           clienteData.documento_identidad = `TEMP-${Date.now()}`;
           console.warn("Se asignó un documento de identidad temporal:", clienteData.documento_identidad);
         }
       }
+
       // Verificar que el documento de identidad sea único
       const existeDocumento = await storage.verificarDocumentoIdentidad(clienteData.documento_identidad);
       if (existeDocumento) {
         return res.status(409).json({ error: "El documento de identidad ya existe." });
       }
+
       // Crear el cliente con los datos proporcionados
+      const cliente = await storage.createCliente(clienteData);
+      res.status(201).json(cliente);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: "Datos del cliente inválidos", 
+          errors: fromZodError(error).message 
+        });
+      }
+      next(error);
+    }
+  }
+    // hasta aqui llega la correccion de rutas   
       const cliente = await storage.createCliente(clienteData);
       res.status(201).json(cliente);
     } catch (error) {
@@ -159,15 +182,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
-
+  
   app.delete("/api/clientes/:id", isAuthenticated, async (req, res, next) => {
     try {
       const id = parseInt(req.params.id);
+      
       // Verificar si el cliente existe
       const cliente = await storage.getCliente(id);
       if (!cliente) {
         return res.status(404).json({ message: "Cliente no encontrado" });
       }
+      
       // Verificar si el cliente tiene préstamos asociados
       const prestamos = await storage.getPrestamosByClienteId(id);
       if (prestamos.length > 0) {
@@ -175,6 +200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "No se puede eliminar el cliente porque tiene préstamos asociados" 
         });
       }
+      
       // Eliminar el cliente
       const result = await storage.deleteCliente(id);
       if (result) {
