@@ -162,7 +162,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       next(error);
     }
-  });
+  }
 
   app.put("/api/clientes/:id", isAuthenticated, async (req, res, next) => {
     try {
