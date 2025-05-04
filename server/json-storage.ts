@@ -871,7 +871,7 @@ export class JsonStorage implements IStorage {
         categoria: 'sistema',
         descripcion: 'Siguiente ID para documentos de clientes'
       });
-      return '1000';
+      return '1001';
     }
     
     // Obtener el valor actual
