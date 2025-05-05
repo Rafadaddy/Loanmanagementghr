@@ -44,6 +44,7 @@ export interface IStorage {
   updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
   updateUserPassword(id: number, newPassword: string): Promise<boolean>;
   deleteUser(id: number): Promise<boolean>;
+  verificarDocumentoIdentidad(documentoIdentidad: string): Promise<boolean>;
   
   // Clientes
   getAllClientes(): Promise<Cliente[]>;
@@ -51,6 +52,7 @@ export interface IStorage {
   createCliente(cliente: InsertCliente): Promise<Cliente>;
   updateCliente(id: number, cliente: InsertCliente): Promise<Cliente | undefined>;
   deleteCliente(id: number): Promise<boolean>;
+  verificarDocumentoIdentidad(documentoIdentidad: string): Promise<boolean>;
   
   // Exportar/Importar datos
   exportarDatos(): Promise<{
@@ -261,7 +263,14 @@ export class MemStorage implements IStorage {
   async getAllClientes(): Promise<Cliente[]> {
     return Array.from(this.clientes.values());
   }
-
+async verificarDocumentoIdentidad(documentoIdentidad: string): Promise<boolean> {
+    for (const cliente of this.clientes.values()) {
+        if (cliente.documento_identidad === documentoIdentidad) {
+            return true;
+        }
+    }
+    return false;
+}
   async getCliente(id: number): Promise<Cliente | undefined> {
     return this.clientes.get(id);
   }
@@ -1289,6 +1298,14 @@ export class DatabaseStorage implements IStorage {
     const [cliente] = await db.select().from(clientes).where(eq(clientes.id, id));
     return cliente;
   }
+  
+async verificarDocumentoIdentidad(documentoIdentidad: string): Promise<boolean> {
+    const cliente = await db.select()
+        .from(clientes)
+        .where(eq(clientes.documento_identidad, documentoIdentidad))
+        .then(res => res[0]);
+    return cliente !== undefined;
+}
 
   async createCliente(cliente: InsertCliente): Promise<Cliente> {
     const [newCliente] = await db.insert(clientes).values({
