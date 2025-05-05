@@ -1306,14 +1306,20 @@ async verificarDocumentoIdentidad(documentoIdentidad: string): Promise<boolean> 
         .then(res => res[0]);
     return cliente !== undefined;
 }
+  
+async createCliente(cliente: InsertCliente): Promise<Cliente> {
+    // Generar el próximo documento de identidad
+    cliente.documento_identidad = await this.incrementarDocumentoIdentidad();
 
-  async createCliente(cliente: InsertCliente): Promise<Cliente> {
+    // Insertar el cliente en la base de datos
     const [newCliente] = await db.insert(clientes).values({
-      ...cliente,
-      fecha_registro: new Date()
+        ...cliente,
+        fecha_registro: new Date()
     }).returning();
+
     return newCliente;
-  }
+}
+  
 
   async updateCliente(id: number, clienteData: InsertCliente): Promise<Cliente | undefined> {
     const [updatedCliente] = await db.update(clientes)
@@ -1928,64 +1934,39 @@ async verificarDocumentoIdentidad(documentoIdentidad: string): Promise<boolean> 
   // Incrementar y obtener el siguiente documento de identidad al guardar un cliente
   async incrementarDocumentoIdentidad(): Promise<string> {
     try {
-      // Obtener la configuración actual
-      const configDocumento = await this.getConfiguracion('documento_siguiente_id');
-      
-      if (!configDocumento) {
-        // Si no existe, crear la configuración con valor inicial
-        console.log("Inicializando contador de documento_siguiente_id con valor 2");
-        const nuevaConfig = await this.saveConfiguracion({
-          clave: 'documento_siguiente_id',
-          valor: '2', // El próximo será 2
-          categoria: 'sistema',
-          descripcion: 'Siguiente ID para documentos de clientes',
-          tipo: 'NUMERO'
-        });
-        return 'ID-0001';
-      }
-      
-      // Obtener el valor actual como string
-      const valorNumerico = configDocumento.valor;
-      console.log("INCREMENTADOR - Valor actual de documento_siguiente_id:", valorNumerico);
-      
-      // Convertir a número para incrementar correctamente
-      let numeroActual: number;
-      if (valorNumerico.startsWith('ID-')) {
-        // Si el valor ya tiene el prefijo, extraer el número
-        numeroActual = parseInt(valorNumerico.substring(3));
-      } else {
-        // Si es solo un número
-        numeroActual = parseInt(valorNumerico);
-      }
-      
-      // Si hubo un error al parsear, usar valor por defecto
-      if (isNaN(numeroActual)) {
-        console.log("Error: valor actual no es un número válido, usando 1");
-        numeroActual = 1;
-      }
-      
-      // El ID actual a retornar
-      const idActual = `ID-${numeroActual.toString().padStart(4, '0')}`;
-      console.log("INCREMENTADOR - ID asignado:", idActual);
-      
-      // Incrementar para el próximo uso
-      const numeroSiguiente = numeroActual + 1;
-      console.log("INCREMENTADOR - Siguiente valor será:", numeroSiguiente);
-      
-      // Actualizar la configuración solo con el número, sin el prefijo
-      await this.updateConfiguracion(configDocumento.id, {
-        ...configDocumento,
-        valor: numeroSiguiente.toString()
-      });
-      
-      return idActual;
+        // Obtener el prefijo desde la configuración (por defecto "ID-")
+        const prefijo = await this.getValorConfiguracion("PREFIJO_DOCUMENTO", "ID-");
+
+        // Consultar la base de datos para obtener el documento con el número más alto
+        const clienteConMayorDocumento = await db.select()
+            .from(clientes)
+            .where(sql`${clientes.documento_identidad} LIKE ${prefijo + '%'}`)
+            .orderBy(desc(clientes.documento_identidad))
+            .limit(1)
+            .then(res => res[0]);
+
+        let siguienteNumero = 1; // Si no hay clientes, empezar desde 1
+
+        if (clienteConMayorDocumento) {
+            // Extraer el número del documento de identidad
+            const documentoActual = clienteConMayorDocumento.documento_identidad;
+            const numero = parseInt(documentoActual.replace(prefijo, ""), 10);
+
+            if (!isNaN(numero)) {
+                siguienteNumero = numero + 1;
+            }
+        }
+
+        // Generar el nuevo documento de identidad
+        const nuevoDocumento = `${prefijo}${siguienteNumero.toString().padStart(4, '0')}`;
+        console.log("Nuevo documento generado:", nuevoDocumento);
+
+        return nuevoDocumento;
     } catch (error) {
-      console.error("Error al incrementar documento de identidad:", error);
-      // En caso de error, devolver un ID secuencial predecible
-      const timestamp = new Date().getTime() % 10000;
-      return `ID-${timestamp.toString().padStart(4, '0')}`;
+        console.error("Error al generar el siguiente documento de identidad:", error);
+        throw new Error("No se pudo generar el siguiente documento de identidad.");
     }
-  }
+}
 
   // Exportación/Importación de datos
   async exportarDatos(): Promise<{
