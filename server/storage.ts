@@ -1887,10 +1887,10 @@ async createCliente(cliente: InsertCliente): Promise<Cliente> {
       
       if (!configDocumento) {
         // Si no existe, crear la configuración con valor inicial
-        console.log("Inicializando contador de documento_siguiente_id con valor 2");
+        console.log("Inicializando contador de documento_siguiente_id con valor 1");
         const nuevaConfig = await this.saveConfiguracion({
           clave: 'documento_siguiente_id',
-          valor: '2', // El próximo será 2
+          valor: '1', // El próximo será 2
           categoria: 'sistema',
           descripcion: 'Siguiente ID para documentos de clientes',
           tipo: 'NUMERO' // Agregamos el tipo que es obligatorio
