@@ -1967,7 +1967,6 @@ async createCliente(cliente: InsertCliente): Promise<Cliente> {
         throw new Error("No se pudo generar el siguiente documento de identidad.");
     }
 }
-
   // Exportación/Importación de datos
   async exportarDatos(): Promise<{
     users: User[];
