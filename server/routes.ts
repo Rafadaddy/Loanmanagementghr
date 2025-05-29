@@ -474,8 +474,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validar datos de actualización
       try {
-        // Permitimos actualizar el monto pagado y la fecha
-        const { monto_pagado, fecha_pago } = req.body;
+         // Permitimos actualizar el monto pagado, la fecha y el número de semana
+        const { monto_pagado, fecha_pago, numero_semana } = req.body;
         
         if (!monto_pagado || isNaN(Number(monto_pagado)) || Number(monto_pagado) <= 0) {
           return res.status(400).json({ message: "El monto pagado debe ser un número positivo" });
@@ -487,7 +487,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (fecha_pago) {
           datosActualizacion.fecha_pago = new Date(fecha_pago);
         }
-        
+        // Si se proporciona un nuevo número de semana, incluirlo
+        if (numero_semana && !isNaN(Number(numero_semana))) {
+          datosActualizacion.numero_semana = Number(numero_semana);
+        }
         console.log("DEBUG - Datos a actualizar en el pago:", JSON.stringify(datosActualizacion, null, 2));
         // Actualizar el pago
        const pagoActualizado = await storage.updatePago(id, datosActualizacion);
