@@ -50,7 +50,7 @@ interface PrestamoConCliente extends Prestamo {
   cliente?: Cliente;
 }
 
-export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFormProps) {
+export default function PaymentForm({ open, onOpenChange, onSuccess, prestamoId, clienteNombre }: PaymentFormProps) {
   const { toast } = useToast();
   const { startLoading, stopLoading } = useLoading();
   const [prestamoSeleccionado, setPrestamoSeleccionado] = useState<PrestamoConCliente | null>(null);
@@ -95,6 +95,30 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
       monto_pagado: ""
     }
   });
+
+  // Efecto para pre-seleccionar préstamo cuando se proporciona uno
+  useEffect(() => {
+    if (open && prestamoId && prestamosConCliente.length > 0) {
+      const prestamo = prestamosConCliente.find(p => p.id === prestamoId);
+      if (prestamo) {
+        setPrestamoSeleccionado(prestamo);
+        form.setValue("prestamo_id", prestamoId.toString());
+        form.setValue("monto_pagado", prestamo.pago_semanal.toString());
+        // Limpiar el término de búsqueda para mostrar solo el préstamo seleccionado
+        setSearchTerm("");
+      }
+    }
+  }, [open, prestamoId, prestamosConCliente, form]);
+
+  // Limpiar formulario cuando se cierra
+  useEffect(() => {
+    if (!open) {
+      form.reset();
+      setPrestamoSeleccionado(null);
+      setSearchTerm("");
+      setShowParcialAlert(false);
+    }
+  }, [open, form]);
 
   // Al cambiar el préstamo seleccionado, obtener detalles y actualizar el monto sugerido
   const handlePrestamoChange = (id: string) => {
@@ -265,61 +289,91 @@ export default function PaymentForm({ open, onOpenChange, onSuccess }: PaymentFo
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Préstamo</FormLabel>
-                    <div className="space-y-2">
-                      <div className="relative mb-2">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                          <i className="fas fa-search text-sm"></i>
-                        </span>
-                        <Input 
-                          className="pl-8 bg-gray-50" 
-                          placeholder="Buscar cliente o monto"
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          value={searchTerm}
-                          autoComplete="off"
-                        />
-                        {searchTerm.trim() !== "" && (
-                          <div className="flex justify-between text-xs text-gray-500 mt-1">
-                            <span>{filteredPrestamos.length} resultados encontrados</span>
-                            {searchTerm.trim() !== "" && (
-                              <button 
-                                type="button" 
-                                className="text-blue-500 hover:text-blue-700"
-                                onClick={() => setSearchTerm("")}
-                              >
-                                Limpiar
-                              </button>
-                            )}
+                    {prestamoId && prestamoSeleccionado ? (
+                      // Mostrar información del préstamo pre-seleccionado
+                      <div className="p-4 border rounded-lg bg-blue-50 border-blue-200">
+                        <div className="grid grid-cols-2 gap-4 mb-3">
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Cliente</p>
+                            <p className="text-sm font-medium text-gray-800">{clienteNombre || prestamoSeleccionado.cliente?.nombre}</p>
                           </div>
-                        )}
+                          
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Préstamo #</p>
+                            <p className="text-sm font-medium text-gray-800">{prestamoSeleccionado.id}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Monto del Préstamo</p>
+                            <p className="text-sm font-medium text-gray-800">{formatCurrency(prestamoSeleccionado.monto_prestado)}</p>
+                          </div>
+                          
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Pago Semanal</p>
+                            <p className="text-sm font-medium text-gray-800">{formatCurrency(prestamoSeleccionado.pago_semanal)}</p>
+                          </div>
+                        </div>
                       </div>
-                      
-                      <Select
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          handlePrestamoChange(value);
-                        }}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccione un préstamo" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="z-[10001]">
-                          {filteredPrestamos.length > 0 ? (
-                            filteredPrestamos.map((prestamo: PrestamoConCliente) => (
-                              <SelectItem key={prestamo.id} value={prestamo.id.toString()}>
-                                {prestamo.cliente?.nombre} - {formatCurrency(prestamo.monto_prestado)}
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <div className="p-2 text-center text-gray-500">
-                              No se encontraron préstamos
+                    ) : (
+                      // Mostrar selector de préstamo normal
+                      <div className="space-y-2">
+                        <div className="relative mb-2">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                            <i className="fas fa-search text-sm"></i>
+                          </span>
+                          <Input 
+                            className="pl-8 bg-gray-50" 
+                            placeholder="Buscar cliente o monto"
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            value={searchTerm}
+                            autoComplete="off"
+                          />
+                          {searchTerm.trim() !== "" && (
+                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                              <span>{filteredPrestamos.length} resultados encontrados</span>
+                              {searchTerm.trim() !== "" && (
+                                <button 
+                                  type="button" 
+                                  className="text-blue-500 hover:text-blue-700"
+                                  onClick={() => setSearchTerm("")}
+                                >
+                                  Limpiar
+                                </button>
+                              )}
                             </div>
                           )}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                        </div>
+                        
+                        <Select
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handlePrestamoChange(value);
+                          }}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccione un préstamo" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="z-[10001]">
+                            {filteredPrestamos.length > 0 ? (
+                              filteredPrestamos.map((prestamo: PrestamoConCliente) => (
+                                <SelectItem key={prestamo.id} value={prestamo.id.toString()}>
+                                  {prestamo.cliente?.nombre} - {formatCurrency(prestamo.monto_prestado)}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <div className="p-2 text-center text-gray-500">
+                                No se encontraron préstamos
+                              </div>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
