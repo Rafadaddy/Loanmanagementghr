@@ -64,6 +64,7 @@ export default function LoanDetails() {
   const [editPaymentDialogOpen, setEditPaymentDialogOpen] = useState(false);
   const [selectedPago, setSelectedPago] = useState<Pago | null>(null);
   const [nuevoMontoPagado, setNuevoMontoPagado] = useState<string>("");
+  const [nuevaFechaPagoEdit, setNuevaFechaPagoEdit] = useState<string>("");
   
   // Estado para cambiar el día de pago
   const [changeDayDialogOpen, setChangeDayDialogOpen] = useState(false);
