@@ -480,7 +480,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!monto_pagado || isNaN(Number(monto_pagado)) || Number(monto_pagado) <= 0) {
           return res.status(400).json({ message: "El monto pagado debe ser un número positivo" });
         }
-        
+        // Preparar datos de actualización
+        const datosActualizacion: any = { monto_pagado };
         // Actualizar el pago
         const pagoActualizado = await storage.updatePago(id, { monto_pagado });
         
