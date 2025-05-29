@@ -186,7 +186,7 @@ export default function Loans() {
                   <SelectItem value="TODOS">Todos</SelectItem>
                   <SelectItem value="ACTIVO">Activos</SelectItem>
                   <SelectItem value="PAGADO">Pagados</SelectItem>
-                  <SelectItem value="ATRASADO">Atrasados</SelectItem>
+                  <SelectItem value="ATRASO">Atrasados</SelectItem>
                 </SelectContent>
               </Select>
               
