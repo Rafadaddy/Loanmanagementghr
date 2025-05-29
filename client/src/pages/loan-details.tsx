@@ -200,8 +200,12 @@ export default function LoanDetails() {
   
   // Mutation para actualizar un pago
   const actualizarPagoMutation = useMutation({
-    mutationFn: async ({ id, monto_pagado }: { id: number; monto_pagado: string }) => {
-      const res = await apiRequest("PUT", `/api/pagos/${id}`, { monto_pagado });
+    mutationFn: async ({ id, monto_pagado, fecha_pago }: { id: number; monto_pagado: string; fecha_pago?: Date }) => {
+      const data: any = { monto_pagado };
+      if (fecha_pago) {
+        data.fecha_pago = fecha_pago;
+      }
+      const res = await apiRequest("PUT", `/api/pagos/${id}`, data);
       return res.json();
     },
     onSuccess: () => {
