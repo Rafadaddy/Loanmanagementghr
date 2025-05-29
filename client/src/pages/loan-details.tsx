@@ -912,6 +912,19 @@ export default function LoanDetails() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Formulario de Pago con préstamo pre-seleccionado */}
+      <PaymentForm 
+        open={paymentFormOpen} 
+        onOpenChange={setPaymentFormOpen}
+        prestamoId={prestamoId}
+        clienteNombre={cliente?.nombre}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['/api/pagos'] });
+          queryClient.invalidateQueries({ queryKey: [`/api/prestamos/${prestamoId}/total-pagado`] });
+          queryClient.invalidateQueries({ queryKey: [`/api/prestamos/${prestamoId}`] });
+        }}
+      />
     </div>
   );
 }
