@@ -872,7 +872,12 @@ export default function LoanDetails() {
                 </div>
                 <div>
                   <Label htmlFor="fecha">Fecha de Pago</Label>
-                  <Input id="fecha" value={formatDate(selectedPago.fecha_pago)} disabled />
+                  <Input 
+                    id="fecha" 
+                    type="date"
+                    value={nuevaFechaPagoEdit} 
+                    onChange={(e) => setNuevaFechaPagoEdit(e.target.value)}
+                  />
                 </div>
               </div>
               <div>
