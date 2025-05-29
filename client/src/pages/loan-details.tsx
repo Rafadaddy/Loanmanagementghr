@@ -873,8 +873,14 @@ export default function LoanDetails() {
             <div className="space-y-4 py-2">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="semana">Semana</Label>
-                  <Input id="semana" value={selectedPago.numero_semana} disabled />
+                 <Label htmlFor="semana">Número de Semana</Label>
+                  <Input 
+                    id="semana" 
+                    type="number"
+                    value={nuevoNumeroSemana} 
+                    onChange={(e) => setNuevoNumeroSemana(e.target.value)}
+                    placeholder="Número de semana"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="fecha">Fecha de Pago</Label>
