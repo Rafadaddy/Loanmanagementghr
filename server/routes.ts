@@ -474,8 +474,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validar datos de actualización
       try {
-        // Solo permitimos actualizar el monto pagado por ahora
-        const { monto_pagado } = req.body;
+        // Permitimos actualizar el monto pagado y la fecha
+        const { monto_pagado, fecha_pago } = req.body;
         
         if (!monto_pagado || isNaN(Number(monto_pagado)) || Number(monto_pagado) <= 0) {
           return res.status(400).json({ message: "El monto pagado debe ser un número positivo" });
