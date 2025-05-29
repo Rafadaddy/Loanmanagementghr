@@ -272,7 +272,8 @@ export default function LoanDetails() {
     actualizarPagoMutation.mutate(
       { 
         id: selectedPago.id, 
-        monto_pagado: nuevoMontoPagado 
+       monto_pagado: nuevoMontoPagado,
+        fecha_pago: new Date(nuevaFechaPagoEdit)
       },
       {
         onSettled: () => {
