@@ -44,7 +44,6 @@ export interface IStorage {
   updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
   updateUserPassword(id: number, newPassword: string): Promise<boolean>;
   deleteUser(id: number): Promise<boolean>;
-  verificarDocumentoIdentidad(documentoIdentidad: string): Promise<boolean>;
   
   // Clientes
   getAllClientes(): Promise<Cliente[]>;
@@ -52,7 +51,6 @@ export interface IStorage {
   createCliente(cliente: InsertCliente): Promise<Cliente>;
   updateCliente(id: number, cliente: InsertCliente): Promise<Cliente | undefined>;
   deleteCliente(id: number): Promise<boolean>;
-  verificarDocumentoIdentidad(documentoIdentidad: string): Promise<boolean>;
   
   // Exportar/Importar datos
   exportarDatos(): Promise<{
@@ -122,6 +120,9 @@ export interface IStorage {
   saveConfiguracion(configuracion: InsertConfiguracion): Promise<Configuracion>;
   updateConfiguracion(id: number, configuracion: Partial<Configuracion>): Promise<Configuracion | undefined>;
   deleteConfiguracion(id: number): Promise<boolean>;
+  
+  // Documentos de identidad
+  verificarDocumentoIdentidad(documento: string): Promise<boolean>;
   
   // Sesión
   sessionStore: any; // Tipo simplificado para la store de sesión
@@ -258,19 +259,32 @@ export class MemStorage implements IStorage {
     this.users.set(id, user);
     return user;
   }
+  
+  // Verificar si un documento de identidad ya existe en el sistema
+  async verificarDocumentoIdentidad(documento: string): Promise<boolean> {
+    console.log("Verificando si existe el documento de identidad:", documento);
+    
+    // Si el documento está vacío, consideramos que no existe
+    if (!documento || documento.trim() === '') {
+      return false;
+    }
+    
+    // Buscar clientes con el mismo documento de identidad
+    const clientesConDocumento = Array.from(this.clientes.values()).find(
+      cliente => cliente.documento_identidad === documento
+    );
+    
+    // Si encontramos un cliente con ese documento, existe
+    const existe = !!clientesConDocumento;
+    console.log("¿Documento de identidad existe?:", existe);
+    return existe;
+  }
 
   // Métodos para clientes
   async getAllClientes(): Promise<Cliente[]> {
     return Array.from(this.clientes.values());
   }
-async verificarDocumentoIdentidad(documentoIdentidad: string): Promise<boolean> {
-    for (const cliente of this.clientes.values()) {
-        if (cliente.documento_identidad === documentoIdentidad) {
-            return true;
-        }
-    }
-    return false;
-}
+
   async getCliente(id: number): Promise<Cliente | undefined> {
     return this.clientes.get(id);
   }
@@ -1289,6 +1303,30 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Verificar si un documento de identidad ya existe en la base de datos
+  async verificarDocumentoIdentidad(documento: string): Promise<boolean> {
+    console.log("Verificando si existe el documento de identidad:", documento);
+    
+    // Si el documento está vacío, consideramos que no existe
+    if (!documento || documento.trim() === '') {
+      return false;
+    }
+    
+    try {
+      // Ejecutar una consulta SQL directa para verificar si existe el documento
+      const query = `SELECT COUNT(*) as count FROM "clientes" WHERE "documento_identidad" = $1`;
+      const result = await pool.query(query, [documento]);
+      
+      // Verificar si hay al menos un cliente con ese documento
+      const existe = result.rows[0].count > 0;
+      console.log("¿Documento de identidad existe?:", existe);
+      return existe;
+    } catch (error) {
+      console.error("Error al verificar documento de identidad:", error);
+      return false; // En caso de error, asumimos que no existe
+    }
+  }
+  
   // CLIENTES
   async getAllClientes(): Promise<Cliente[]> {
     return db.select().from(clientes);
@@ -1298,28 +1336,14 @@ export class DatabaseStorage implements IStorage {
     const [cliente] = await db.select().from(clientes).where(eq(clientes.id, id));
     return cliente;
   }
-  
-async verificarDocumentoIdentidad(documentoIdentidad: string): Promise<boolean> {
-    const cliente = await db.select()
-        .from(clientes)
-        .where(eq(clientes.documento_identidad, documentoIdentidad))
-        .then(res => res[0]);
-    return cliente !== undefined;
-}
-  
-async createCliente(cliente: InsertCliente): Promise<Cliente> {
-    // Generar el próximo documento de identidad
-    cliente.documento_identidad = await this.incrementarDocumentoIdentidad();
 
-    // Insertar el cliente en la base de datos
+  async createCliente(cliente: InsertCliente): Promise<Cliente> {
     const [newCliente] = await db.insert(clientes).values({
-        ...cliente,
-        fecha_registro: new Date()
+      ...cliente,
+      fecha_registro: new Date()
     }).returning();
-
     return newCliente;
-}
-  
+  }
 
   async updateCliente(id: number, clienteData: InsertCliente): Promise<Cliente | undefined> {
     const [updatedCliente] = await db.update(clientes)
@@ -1573,10 +1597,72 @@ async createCliente(cliente: InsertCliente): Promise<Cliente> {
   }
 
   async updatePago(id: number, pagoData: Partial<Pago>): Promise<Pago | undefined> {
+    console.log("DEBUG - Iniciando actualización de pago en DB:", id, pagoData);
+    
+    // Obtener el pago existente
+    const pagoExistente = await db.select().from(pagos).where(eq(pagos.id, id)).then(res => res[0]);
+    if (!pagoExistente) {
+      console.log("DEBUG - Pago no encontrado:", id);
+      return undefined;
+    }
+    
+    console.log("DEBUG - Pago existente:", pagoExistente);
+    
+    // Obtener el préstamo asociado para calcular campos dependientes
+    const prestamo = await this.getPrestamo(pagoExistente.prestamo_id);
+    if (!prestamo) {
+      console.log("DEBUG - Préstamo asociado no encontrado:", pagoExistente.prestamo_id);
+      return undefined;
+    }
+    
+    // Preparar datos de actualización
+    const datosActualizacion: any = { ...pagoData };
+    
+    // Si se está actualizando el monto, recalcular campos dependientes
+    if (pagoData.monto_pagado) {
+      const nuevoMonto = Number(pagoData.monto_pagado);
+      const montoSemanal = Number(prestamo.pago_semanal);
+      const esPagoParcial = nuevoMonto < montoSemanal;
+      const montoRestante = esPagoParcial ? (montoSemanal - nuevoMonto).toString() : "0";
+      
+      datosActualizacion.es_pago_parcial = esPagoParcial ? "true" : "false";
+      datosActualizacion.monto_restante = montoRestante;
+      
+      console.log("DEBUG - Campos recalculados:", {
+        nuevoMonto,
+        montoSemanal,
+        esPagoParcial,
+        montoRestante
+      });
+    }
+    
+    console.log("DEBUG - Datos finales a actualizar:", datosActualizacion);
+    
+    // Actualizar el pago
     const [updatedPago] = await db.update(pagos)
-      .set(pagoData)
+      .set(datosActualizacion)
       .where(eq(pagos.id, id))
       .returning();
+    
+    console.log("DEBUG - Pago actualizado resultado:", updatedPago);
+    
+    // Recalcular el estado del préstamo si se cambió el monto
+    if (pagoData.monto_pagado) {
+      const pagosPrestamo = await this.getPagosByPrestamoId(prestamo.id);
+      const totalPagado = pagosPrestamo.reduce((sum, p) => sum + Number(p.monto_pagado), 0);
+      
+      console.log("DEBUG - Total pagado después de actualización:", totalPagado);
+      
+      const montoTotalPagar = Number(prestamo.monto_total_pagar);
+      let nuevoEstado = prestamo.estado;
+      
+      if (totalPagado >= montoTotalPagar && prestamo.estado !== "PAGADO") {
+        nuevoEstado = "PAGADO";
+        await this.updatePrestamo(prestamo.id, { estado: nuevoEstado });
+        console.log("DEBUG - Préstamo marcado como PAGADO");
+      }
+    }
+    
     return updatedPago;
   }
 
@@ -1882,24 +1968,24 @@ async createCliente(cliente: InsertCliente): Promise<Cliente> {
   // Obtener el siguiente documento de identidad autogenerado SIN incrementar contador
   async getSiguienteDocumentoIdentidad(): Promise<string> {
     try {
-      // Obtener la configuración actual
-      const configDocumento = await this.getConfiguracion('documento_siguiente_id');
+      // Consultar directamente a la base de datos para evitar problemas de caché
+      const result = await pool.query(`
+        SELECT valor FROM configuraciones WHERE clave = 'documento_siguiente_id' LIMIT 1
+      `);
       
-      if (!configDocumento) {
-        // Si no existe, crear la configuración con valor inicial
-        console.log("Inicializando contador de documento_siguiente_id con valor 1");
-        const nuevaConfig = await this.saveConfiguracion({
-          clave: 'documento_siguiente_id',
-          valor: '1', // El próximo será 2
-          categoria: 'sistema',
-          descripcion: 'Siguiente ID para documentos de clientes',
-          tipo: 'NUMERO' // Agregamos el tipo que es obligatorio
-        });
+      // Si no hay resultados, inicializar con valor 1
+      if (result.rowCount === 0) {
+        console.log("No se encontró configuración para documento_siguiente_id, inicializando con 1");
+        // Insertar con SQL directo
+        await pool.query(`
+          INSERT INTO configuraciones (clave, valor, categoria, descripcion, tipo)
+          VALUES ('documento_siguiente_id', '1', 'sistema', 'Siguiente ID para documentos de clientes', 'NUMERO')
+        `);
         return 'ID-0001';
       }
       
       // Obtener el valor actual como string
-      const valorNumerico = configDocumento.valor;
+      const valorNumerico = result.rows[0].valor;
       console.log("Valor actual de documento_siguiente_id:", valorNumerico);
       
       // Convertir a número para formatear correctamente
@@ -1931,42 +2017,71 @@ async createCliente(cliente: InsertCliente): Promise<Cliente> {
     }
   }
   
+  // Verificar si un documento de identidad ya existe en la base de datos
+  async verificarDocumentoIdentidad(documento: string): Promise<boolean> {
+    console.log("Verificando si existe el documento de identidad:", documento);
+    
+    // Si el documento está vacío, consideramos que no existe
+    if (!documento || documento.trim() === '') {
+      return false;
+    }
+    
+    // Buscar clientes con el mismo documento de identidad
+    const clientes = Array.from(this.clientes.values());
+    const existe = clientes.some(cliente => 
+      cliente.documento_identidad === documento
+    );
+    
+    console.log("¿Documento de identidad existe?:", existe);
+    return existe;
+  }
+  
   // Incrementar y obtener el siguiente documento de identidad al guardar un cliente
   async incrementarDocumentoIdentidad(): Promise<string> {
     try {
-        // Obtener el prefijo desde la configuración (por defecto "ID-")
-        const prefijo = await this.getValorConfiguracion("PREFIJO_DOCUMENTO", "ID-");
-
-        // Consultar la base de datos para obtener el documento con el número más alto
-        const clienteConMayorDocumento = await db.select()
-            .from(clientes)
-            .where(sql`${clientes.documento_identidad} LIKE ${prefijo + '%'}`)
-            .orderBy(desc(clientes.documento_identidad))
-            .limit(1)
-            .then(res => res[0]);
-
-        let siguienteNumero = 1; // Si no hay clientes, empezar desde 1
-
-        if (clienteConMayorDocumento) {
-            // Extraer el número del documento de identidad
-            const documentoActual = clienteConMayorDocumento.documento_identidad;
-            const numero = parseInt(documentoActual.replace(prefijo, ""), 10);
-
-            if (!isNaN(numero)) {
-                siguienteNumero = numero + 1;
-            }
-        }
-
-        // Generar el nuevo documento de identidad
-        const nuevoDocumento = `${prefijo}${siguienteNumero.toString().padStart(4, '0')}`;
-        console.log("Nuevo documento generado:", nuevoDocumento);
-
-        return nuevoDocumento;
+      console.log("MÉTODO INCREMENTAR: Obteniendo e incrementando ID de documento...");
+      
+      // Ejecutar una transacción atómica para obtener e incrementar el valor en un solo paso
+      // Esto garantiza que no haya problemas de concurrencia
+      const result = await pool.query(`
+        UPDATE configuraciones 
+        SET valor = (valor::integer + 1)::text 
+        WHERE clave = 'documento_siguiente_id'
+        RETURNING valor, id
+      `);
+      
+      // Si no se encontró la configuración, crearla
+      if (result.rowCount === 0) {
+        console.log("No se encontró configuración de ID, creándola...");
+        const insertResult = await pool.query(`
+          INSERT INTO configuraciones (clave, valor, categoria, descripcion, tipo)
+          VALUES ('documento_siguiente_id', '2', 'sistema', 'Siguiente ID para documentos de clientes', 'NUMERO')
+          RETURNING valor
+        `);
+        
+        // Devolvemos ID-0001 porque el valor 1 ya lo usamos y guardamos 2 como siguiente
+        return 'ID-0001';
+      }
+      
+      // El valor devuelto ya es el incrementado, así que para el ID actual restamos 1
+      const valorIncrementado = parseInt(result.rows[0].valor);
+      const valorActual = valorIncrementado - 1;
+      
+      console.log(`INCREMENTADOR - Valor anterior: ${valorActual}, Próximo valor: ${valorIncrementado}`);
+      
+      // Formatear el ID actual con ceros a la izquierda
+      const idActual = `ID-${valorActual.toString().padStart(4, '0')}`;
+      console.log(`INCREMENTADOR - ID asignado: ${idActual}`);
+      
+      return idActual;
     } catch (error) {
-        console.error("Error al generar el siguiente documento de identidad:", error);
-        throw new Error("No se pudo generar el siguiente documento de identidad.");
+      console.error("Error al incrementar documento de identidad:", error);
+      // En caso de error, devolver un ID secuencial basado en timestamp
+      const timestamp = new Date().getTime() % 10000;
+      return `ID-${timestamp.toString().padStart(4, '0')}`;
     }
-}
+  }
+
   // Exportación/Importación de datos
   async exportarDatos(): Promise<{
     users: User[];
@@ -2018,7 +2133,7 @@ async createCliente(cliente: InsertCliente): Promise<Cliente> {
       await db.delete(configuraciones);
       // No eliminamos los usuarios para mantener el administrador
       
-      // Función auxiliar para convertir campos de fecha
+      // Función auxiliar para convertir campos de fecha a formato ISO string
       const convertirFechasEnObjeto = <T extends Record<string, any>>(objeto: T): T => {
         const resultado = { ...objeto };
         
@@ -2029,19 +2144,48 @@ async createCliente(cliente: InsertCliente): Promise<Cliente> {
         ];
         
         for (const campo of camposFecha) {
-          if (campo in resultado && resultado[campo] !== null && !(resultado[campo] instanceof Date)) {
+          if (campo in resultado && resultado[campo] !== null && resultado[campo] !== undefined) {
             try {
-              resultado[campo] = new Date(resultado[campo]);
-              // Verificar que la conversión fue exitosa
-              if (isNaN(resultado[campo].getTime())) {
-                console.warn(`Campo ${campo} tiene una fecha inválida:`, resultado[campo]);
-                // Usar fecha actual como fallback para evitar errores
-                resultado[campo] = new Date();
+              let fechaValida = null;
+              
+              // Si ya es un string ISO válido, mantenerlo
+              if (typeof resultado[campo] === 'string' && resultado[campo].includes('T') && resultado[campo].includes('Z')) {
+                const fecha = new Date(resultado[campo]);
+                if (!isNaN(fecha.getTime())) {
+                  fechaValida = resultado[campo]; // Ya está en formato ISO
+                }
               }
+              // Si es un objeto Date válido
+              else if (resultado[campo] instanceof Date && !isNaN(resultado[campo].getTime())) {
+                fechaValida = resultado[campo].toISOString();
+              }
+              // Si es un string de fecha
+              else if (typeof resultado[campo] === 'string') {
+                const fecha = new Date(resultado[campo]);
+                if (!isNaN(fecha.getTime())) {
+                  fechaValida = fecha.toISOString();
+                }
+              }
+              // Si es un número (timestamp)
+              else if (typeof resultado[campo] === 'number') {
+                const fecha = new Date(resultado[campo]);
+                if (!isNaN(fecha.getTime())) {
+                  fechaValida = fecha.toISOString();
+                }
+              }
+              
+              // Si no se pudo convertir, usar fecha actual como fallback
+              if (!fechaValida) {
+                console.warn(`Campo ${campo} tiene un valor de fecha inválido:`, resultado[campo], 'Tipo:', typeof resultado[campo]);
+                fechaValida = new Date().toISOString();
+              }
+              
+              resultado[campo] = fechaValida;
+              
             } catch (err) {
-              console.warn(`Error al convertir campo ${campo}:`, err);
+              console.warn(`Error al convertir campo ${campo}:`, err, 'Valor:', resultado[campo]);
               // Usar fecha actual como fallback
-              resultado[campo] = new Date();
+              resultado[campo] = new Date().toISOString();
             }
           }
         }
