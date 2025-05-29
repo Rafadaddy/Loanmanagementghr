@@ -482,8 +482,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         // Preparar datos de actualización
         const datosActualizacion: any = { monto_pagado };
+        
+        // Si se proporciona una nueva fecha, incluirla
+        if (fecha_pago) {
+          datosActualizacion.fecha_pago = new Date(fecha_pago);
+        }
+        
+        console.log("DEBUG - Datos a actualizar en el pago:", JSON.stringify(datosActualizacion, null, 2));
         // Actualizar el pago
-        const pagoActualizado = await storage.updatePago(id, { monto_pagado });
+       const pagoActualizado = await storage.updatePago(id, datosActualizacion);
+        
+        console.log("DEBUG - Pago actualizado resultado:", JSON.stringify(pagoActualizado, null, 2));
         
         if (pagoActualizado) {
           res.status(200).json(pagoActualizado);
