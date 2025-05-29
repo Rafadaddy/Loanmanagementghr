@@ -65,6 +65,7 @@ export default function LoanDetails() {
   const [selectedPago, setSelectedPago] = useState<Pago | null>(null);
   const [nuevoMontoPagado, setNuevoMontoPagado] = useState<string>("");
   const [nuevaFechaPagoEdit, setNuevaFechaPagoEdit] = useState<string>("");
+  const [nuevoNumeroSemana, setNuevoNumeroSemana] = useState<string>("");
   
   // Estado para cambiar el día de pago
   const [changeDayDialogOpen, setChangeDayDialogOpen] = useState(false);
@@ -201,10 +202,13 @@ export default function LoanDetails() {
   
   // Mutation para actualizar un pago
   const actualizarPagoMutation = useMutation({
-    mutationFn: async ({ id, monto_pagado, fecha_pago }: { id: number; monto_pagado: string; fecha_pago?: Date }) => {
+     mutationFn: async ({ id, monto_pagado, fecha_pago, numero_semana }: { id: number; monto_pagado: string; fecha_pago?: Date; numero_semana?: number }) => {
       const data: any = { monto_pagado };
       if (fecha_pago) {
         data.fecha_pago = fecha_pago;
+         }
+      if (numero_semana) {
+        data.numero_semana = numero_semana;
       }
       const res = await apiRequest("PUT", `/api/pagos/${id}`, data);
       return res.json();
@@ -262,6 +266,7 @@ export default function LoanDetails() {
     // Formatear la fecha para el input date (YYYY-MM-DD)
     const fechaFormateada = new Date(pago.fecha_pago).toISOString().split('T')[0];
     setNuevaFechaPagoEdit(fechaFormateada)
+    setNuevoNumeroSemana(pago.numero_semana?.toString() || "");
     setEditPaymentDialogOpen(true);
   };
   
@@ -273,7 +278,8 @@ export default function LoanDetails() {
       { 
         id: selectedPago.id, 
        monto_pagado: nuevoMontoPagado,
-        fecha_pago: new Date(nuevaFechaPagoEdit)
+        fecha_pago: new Date(nuevaFechaPagoEdit),
+        numero_semana: parseInt(nuevoNumeroSemana) || undefined
       },
       {
         onSettled: () => {
