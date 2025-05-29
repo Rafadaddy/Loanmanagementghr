@@ -254,6 +254,9 @@ export default function LoanDetails() {
   const handleEditPayment = (pago: Pago) => {
     setSelectedPago(pago);
     setNuevoMontoPagado(pago.monto_pagado);
+    // Formatear la fecha para el input date (YYYY-MM-DD)
+    const fechaFormateada = new Date(pago.fecha_pago).toISOString().split('T')[0];
+    setNuevaFechaPagoEdit(fechaFormateada)
     setEditPaymentDialogOpen(true);
   };
   
