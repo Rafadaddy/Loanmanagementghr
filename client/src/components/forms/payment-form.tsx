@@ -42,6 +42,8 @@ interface PaymentFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  prestamoId?: number; // ID del préstamo pre-seleccionado
+  clienteNombre?: string; // Nombre del cliente pre-seleccionado
 }
 
 interface PrestamoConCliente extends Prestamo {
