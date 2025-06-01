@@ -2146,46 +2146,43 @@ export class DatabaseStorage implements IStorage {
         for (const campo of camposFecha) {
           if (campo in resultado && resultado[campo] !== null && resultado[campo] !== undefined) {
             try {
-              let fechaValida = null;
+              // Convertir todo a objeto Date válido para PostgreSQL
+              let fechaObj = null;
               
-              // Si ya es un string ISO válido, mantenerlo
+              // Si ya es un string ISO válido
               if (typeof resultado[campo] === 'string' && resultado[campo].includes('T') && resultado[campo].includes('Z')) {
-                const fecha = new Date(resultado[campo]);
-                if (!isNaN(fecha.getTime())) {
-                  fechaValida = resultado[campo]; // Ya está en formato ISO
-                }
+                fechaObj = new Date(resultado[campo]);
               }
               // Si es un objeto Date válido
-              else if (resultado[campo] instanceof Date && !isNaN(resultado[campo].getTime())) {
-                fechaValida = resultado[campo].toISOString();
+              else if (resultado[campo] instanceof Date) {
+                fechaObj = resultado[campo];
               }
-              // Si es un string de fecha
+              // Si es un string de fecha (como YYYY-MM-DD)
               else if (typeof resultado[campo] === 'string') {
-                const fecha = new Date(resultado[campo]);
-                if (!isNaN(fecha.getTime())) {
-                  fechaValida = fecha.toISOString();
+                // Para fechas en formato YYYY-MM-DD, agregar hora por defecto
+                let fechaString = resultado[campo];
+                if (/^\d{4}-\d{2}-\d{2}$/.test(fechaString)) {
+                  fechaString += 'T12:00:00.000Z';
                 }
+                fechaObj = new Date(fechaString);
               }
               // Si es un número (timestamp)
               else if (typeof resultado[campo] === 'number') {
-                const fecha = new Date(resultado[campo]);
-                if (!isNaN(fecha.getTime())) {
-                  fechaValida = fecha.toISOString();
-                }
+                fechaObj = new Date(resultado[campo]);
               }
               
-              // Si no se pudo convertir, usar fecha actual como fallback
-              if (!fechaValida) {
+              // Verificar que el objeto Date sea válido
+              if (!fechaObj || isNaN(fechaObj.getTime())) {
                 console.warn(`Campo ${campo} tiene un valor de fecha inválido:`, resultado[campo], 'Tipo:', typeof resultado[campo]);
-                fechaValida = new Date().toISOString();
+                fechaObj = new Date(); // Usar fecha actual como fallback
               }
               
-              resultado[campo] = fechaValida;
+              resultado[campo] = fechaObj;
               
             } catch (err) {
               console.warn(`Error al convertir campo ${campo}:`, err, 'Valor:', resultado[campo]);
               // Usar fecha actual como fallback
-              resultado[campo] = new Date().toISOString();
+              resultado[campo] = new Date();
             }
           }
         }
