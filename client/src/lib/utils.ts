@@ -122,7 +122,19 @@ export function getDateTimeFormat(date: Date | string) {
   
   return `${getShortDate(consistentDate)}, ${formatTime(consistentDate)}`;
 }
-
+// Formato de fecha para tablas: DD/MM/YYYY
+export function formatTableDate(date: Date | string) {
+  if (!date) return "-";
+  
+  // Usar nuestra función de creación de fecha consistente
+  const consistentDate = createConsistentDate(date);
+  
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "2-digit",
+    month: "2-digit", 
+    year: "numeric",
+  }).format(consistentDate);
+}
 export function getInitials(name: string): string {
   return name
     .split(' ')
