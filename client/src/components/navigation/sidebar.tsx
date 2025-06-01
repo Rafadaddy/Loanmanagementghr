@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
-import { Home, Users, Calculator, BarChart, CreditCard, Route, DollarSign, Receipt, UserCheck } from "lucide-react";
+import { Home, Users, Calculator, BarChart, CreditCard, Route, DollarSign, Receipt, UserCheck, Calendar } from "lucide-react";
 
 interface SidebarProps {
   className?: string;
@@ -21,6 +21,7 @@ export default function Sidebar({ className }: SidebarProps) {
     { href: "/prestamos", label: "Préstamos", icon: DollarSign },
     { href: "/pagos", label: "Pagos", icon: CreditCard },
     { href: "/cobros-dia", label: "Cobros del Día", icon: Route },
+    { href: "/cronograma-global", label: "Cronograma Global", icon: Calendar },
     { href: "/cobradores", label: "Cobradores", icon: UserCheck },
     { href: "/registro-caja", label: "Registro de Caja", icon: Receipt },
     { href: "/calculadora", label: "Calculadora", icon: Calculator },
