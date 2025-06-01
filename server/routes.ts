@@ -4,6 +4,8 @@ import { storage } from "./storage";
 import { setupAuth, hashPassword, comparePasswords } from "./auth";
 import { ZodError } from "zod";
 import { formatISO } from "date-fns";
+import { sql } from "drizzle-orm";
+import { db } from "./db";
 import { 
   insertClienteSchema, 
   insertPrestamoSchema, 
@@ -19,16 +21,19 @@ import { fromZodError } from "zod-validation-error";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
   setupAuth(app);
-
+  
   // Garantizar que el usuario administrador existe y tiene la contraseña correcta
   try {
     const adminUsername = "admin@sistema.com";
     const adminPassword = "admin123";
+    
     // Verificar si existe el usuario administrador
     let adminUser = await storage.getUserByUsername(adminUsername);
+    
     if (!adminUser) {
       // Crear el usuario administrador si no existe
       const adminHashPassword = await hashPassword(adminPassword);
+      
       adminUser = await storage.createUser({
         username: adminUsername,
         password: adminHashPassword,
@@ -37,6 +42,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rol: "ADMIN",
         activo: true
       });
+      
       console.log("Usuario administrador creado con ID:", adminUser.id);
     } else {
       // Actualizar la contraseña para garantizar acceso
@@ -60,10 +66,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       userId: req.user?.id,
       username: req.user?.username
     });
+    
     if (req.isAuthenticated()) {
       console.log("DEBUG - Usuario autenticado correctamente:", req.user?.username);
       return next();
     }
+    
     console.log("DEBUG - Usuario no autenticado, devolviendo 401");
     return res.status(401).json({ message: "No autorizado, por favor inicie sesión nuevamente" });
   };
@@ -110,24 +118,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/clientes", isAuthenticated, async (req, res, next) => {
     try {
       const clienteData = insertClienteSchema.parse(req.body);
+      
       // Si el cliente no tiene documento de identidad, asignar uno nuevo
+      // usando incrementarDocumentoIdentidad que sí incrementa el contador
       if (!clienteData.documento_identidad || clienteData.documento_identidad.trim() === '') {
         try {
           clienteData.documento_identidad = await storage.incrementarDocumentoIdentidad();
           console.log("Asignado nuevo documento de identidad al cliente:", clienteData.documento_identidad);
         } catch (idError) {
           console.error("Error al asignar documento de identidad:", idError);
-          // Asignar un ID temporal para evitar inconsistencias
-          clienteData.documento_identidad = `TEMP-${Date.now()}`;
-          console.warn("Se asignó un documento de identidad temporal:", clienteData.documento_identidad);
+          // Continuar con la creación incluso si hay error en el ID
         }
       }
-      // Verificar que el documento de identidad sea único
-      const existeDocumento = await storage.verificarDocumentoIdentidad(clienteData.documento_identidad);
-      if (existeDocumento) {
-        return res.status(409).json({ error: "El documento de identidad ya existe." });
-      }
-      // Crear el cliente con los datos proporcionados
+      
       const cliente = await storage.createCliente(clienteData);
       res.status(201).json(cliente);
     } catch (error) {
@@ -159,15 +162,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
-
+  
   app.delete("/api/clientes/:id", isAuthenticated, async (req, res, next) => {
     try {
       const id = parseInt(req.params.id);
+      
       // Verificar si el cliente existe
       const cliente = await storage.getCliente(id);
       if (!cliente) {
         return res.status(404).json({ message: "Cliente no encontrado" });
       }
+      
       // Verificar si el cliente tiene préstamos asociados
       const prestamos = await storage.getPrestamosByClienteId(id);
       if (prestamos.length > 0) {
@@ -175,6 +180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "No se puede eliminar el cliente porque tiene préstamos asociados" 
         });
       }
+      
       // Eliminar el cliente
       const result = await storage.deleteCliente(id);
       if (result) {
@@ -184,6 +190,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       next(error);
+    }
+  });
+  
+  // Ruta para obtener el conteo total de clientes
+  app.get("/api/estadisticas/conteo-clientes", isAuthenticated, async (req, res, next) => {
+    try {
+      // Verificar autenticación (ya se hace con el middleware isAuthenticated)
+      
+      // Obtener conteo de clientes usando SQL directo
+      const totalClientes = await db.select({ count: sql`count(*)` }).from(sql`clientes`);
+      
+      // Registrar para depuración
+      console.log('Conteo de clientes solicitado:', totalClientes[0].count);
+      
+      // Devolver el resultado
+      res.json({
+        total: Number(totalClientes[0].count),
+        mensaje: `Total de clientes registrados: ${totalClientes[0].count}`
+      });
+    } catch (error) {
+      console.error('Error al obtener conteo de clientes:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
     }
   });
 
@@ -474,12 +502,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validar datos de actualización
       try {
-         // Permitimos actualizar el monto pagado, la fecha y el número de semana
+        // Permitimos actualizar el monto pagado, la fecha y el número de semana
         const { monto_pagado, fecha_pago, numero_semana } = req.body;
         
         if (!monto_pagado || isNaN(Number(monto_pagado)) || Number(monto_pagado) <= 0) {
           return res.status(400).json({ message: "El monto pagado debe ser un número positivo" });
         }
+        
         // Preparar datos de actualización
         const datosActualizacion: any = { monto_pagado };
         
@@ -487,13 +516,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (fecha_pago) {
           datosActualizacion.fecha_pago = new Date(fecha_pago);
         }
+        
         // Si se proporciona un nuevo número de semana, incluirlo
         if (numero_semana && !isNaN(Number(numero_semana))) {
           datosActualizacion.numero_semana = Number(numero_semana);
         }
+        
         console.log("DEBUG - Datos a actualizar en el pago:", JSON.stringify(datosActualizacion, null, 2));
+        
         // Actualizar el pago
-       const pagoActualizado = await storage.updatePago(id, datosActualizacion);
+        const pagoActualizado = await storage.updatePago(id, datosActualizacion);
         
         console.log("DEBUG - Pago actualizado resultado:", JSON.stringify(pagoActualizado, null, 2));
         
@@ -1587,6 +1619,243 @@ export async function registerRoutes(app: Express): Promise<Server> {
         nombre: req.user.nombre
       } : null
     });
+  });
+
+  // Endpoint para crear datos de prueba
+  app.post("/api/test-data/create-sample", isAuthenticated, async (req, res) => {
+    try {
+      console.log("Creando datos de prueba...");
+      
+      // Crear cobradores de ejemplo
+      const cobrador1 = await storage.createCobrador({
+        nombre: "Carlos Mendoza",
+        telefono: "555-0101",
+        user_id: req.user!.id,
+        zona: "Norte",
+        activo: true
+      });
+
+      const cobrador2 = await storage.createCobrador({
+        nombre: "Ana García",
+        telefono: "555-0102", 
+        user_id: req.user!.id,
+        zona: "Sur",
+        activo: true
+      });
+
+      // Crear clientes de ejemplo
+      const clientes = [
+        {
+          nombre: "María Rodriguez",
+          telefono: "555-1001",
+          direccion: "Calle 123 #45-67, Barrio Norte",
+          email: "maria@example.com",
+          documento_identidad: "",
+          notas: "Cliente confiable",
+          cobrador_id: cobrador1.id,
+          ruta: "Norte"
+        },
+        {
+          nombre: "Juan Pérez",
+          telefono: "555-1002", 
+          direccion: "Avenida 456 #78-90, Centro",
+          email: "juan@example.com",
+          documento_identidad: "",
+          notas: "Buen pagador",
+          cobrador_id: cobrador1.id,
+          ruta: "Norte"
+        },
+        {
+          nombre: "Carmen López",
+          telefono: "555-1003",
+          direccion: "Carrera 789 #12-34, Barrio Sur",
+          email: "carmen@example.com", 
+          documento_identidad: "",
+          notas: "Cliente nuevo",
+          cobrador_id: cobrador2.id,
+          ruta: "Sur"
+        },
+        {
+          nombre: "Roberto Silva",
+          telefono: "555-1004",
+          direccion: "Transversal 321 #56-78, Sur",
+          email: "roberto@example.com",
+          documento_identidad: "",
+          notas: "Cliente frecuente",
+          cobrador_id: cobrador2.id,
+          ruta: "Sur"
+        }
+      ];
+
+      const clientesCreados = [];
+      for (const clienteData of clientes) {
+        const cliente = await storage.createCliente(clienteData);
+        clientesCreados.push(cliente);
+      }
+
+      // Crear préstamos con diferentes fechas de próximo pago
+      const hoy = new Date();
+      const mañana = new Date(hoy);
+      mañana.setDate(hoy.getDate() + 1);
+      const pasadoMañana = new Date(hoy);
+      pasadoMañana.setDate(hoy.getDate() + 2);
+
+      const prestamos = [
+        {
+          cliente_id: clientesCreados[0].id,
+          monto_prestado: "500000",
+          interes_porcentaje: "20",
+          numero_semanas: 10,
+          pago_semanal: "60000",
+          fecha_inicio: hoy.toISOString().split('T')[0],
+          proxima_fecha_pago: hoy.toISOString().split('T')[0], // Hoy
+          estado: "ACTIVO" as const,
+          semanas_pagadas: 3,
+          monto_total: "600000",
+          balance_pendiente: "420000"
+        },
+        {
+          cliente_id: clientesCreados[1].id,
+          monto_prestado: "300000",
+          interes_porcentaje: "18",
+          numero_semanas: 8,
+          pago_semanal: "45000", 
+          fecha_inicio: hoy.toISOString().split('T')[0],
+          proxima_fecha_pago: mañana.toISOString().split('T')[0], // Mañana
+          estado: "ACTIVO" as const,
+          semanas_pagadas: 2,
+          monto_total: "360000",
+          balance_pendiente: "270000"
+        },
+        {
+          cliente_id: clientesCreados[2].id,
+          monto_prestado: "750000",
+          interes_porcentaje: "22",
+          numero_semanas: 12,
+          pago_semanal: "76250",
+          fecha_inicio: hoy.toISOString().split('T')[0],
+          proxima_fecha_pago: hoy.toISOString().split('T')[0], // Hoy
+          estado: "ACTIVO" as const,
+          semanas_pagadas: 1,
+          monto_total: "915000",
+          balance_pendiente: "838750"
+        },
+        {
+          cliente_id: clientesCreados[3].id,
+          monto_prestado: "400000",
+          interes_porcentaje: "19",
+          numero_semanas: 10,
+          pago_semanal: "47600",
+          fecha_inicio: hoy.toISOString().split('T')[0],
+          proxima_fecha_pago: pasadoMañana.toISOString().split('T')[0], // Pasado mañana
+          estado: "ACTIVO" as const,
+          semanas_pagadas: 4,
+          monto_total: "476000",
+          balance_pendiente: "285600"
+        }
+      ];
+
+      const prestamosCreados = [];
+      for (const prestamoData of prestamos) {
+        const prestamo = await storage.createPrestamo(prestamoData);
+        prestamosCreados.push(prestamo);
+      }
+
+      console.log("Datos de prueba creados exitosamente");
+      
+      res.json({
+        success: true,
+        message: "Datos de prueba creados exitosamente",
+        data: {
+          cobradores: [cobrador1, cobrador2],
+          clientes: clientesCreados,
+          prestamos: prestamosCreados,
+          fechas_prueba: {
+            hoy: hoy.toISOString().split('T')[0],
+            mañana: mañana.toISOString().split('T')[0], 
+            pasado_mañana: pasadoMañana.toISOString().split('T')[0]
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error("Error creando datos de prueba:", error);
+      res.status(500).json({ 
+        error: "Error interno del servidor",
+        details: error instanceof Error ? error.message : "Error desconocido"
+      });
+    }
+  });
+
+  // Endpoint para actualizar fechas de pago de préstamos vencidos
+  app.post("/api/prestamos/actualizar-fechas", isAuthenticated, async (req, res) => {
+    try {
+      console.log("Actualizando fechas de pago de préstamos...");
+      
+      const prestamos = await storage.getAllPrestamos();
+      const hoy = new Date();
+      let prestamosActualizados = 0;
+      
+      for (const prestamo of prestamos) {
+        if (prestamo.estado !== "ACTIVO") continue;
+        
+        const proximaFechaPago = new Date(prestamo.proxima_fecha_pago);
+        
+        // Si la próxima fecha de pago ya pasó, calcular la nueva fecha considerando los pagos ya realizados
+        if (proximaFechaPago < hoy) {
+          const fechaInicio = new Date(prestamo.fecha_prestamo);
+          
+          // Calcular cuántas semanas han pasado desde el inicio del préstamo
+          const diasTranscurridos = Math.floor((hoy.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24));
+          const semanasTranscurridas = Math.floor(diasTranscurridos / 7);
+          
+          // La próxima fecha de pago debería considerar las semanas ya pagadas
+          // Si no se han hecho pagos, la próxima fecha es fecha_inicio + 7 días
+          // Si se han hecho pagos, la próxima fecha es fecha_inicio + (semanas_pagadas + 1) * 7 días
+          // Pero si han pasado más semanas de las pagadas, usar las semanas transcurridas
+          const semanasPagadas = prestamo.semanas_pagadas || 0;
+          let semanasParaCalcular = Math.max(semanasPagadas, semanasTranscurridas);
+          
+          // Asegurarse de que la próxima fecha esté cerca de hoy, no en el futuro lejano
+          if (semanasParaCalcular > semanasTranscurridas) {
+            semanasParaCalcular = semanasTranscurridas;
+          }
+          
+          const nuevaProximaFecha = new Date(fechaInicio);
+          nuevaProximaFecha.setDate(fechaInicio.getDate() + ((semanasParaCalcular + 1) * 7));
+          
+          // Si la nueva fecha calculada sigue siendo anterior a hoy, usar la fecha más próxima a hoy
+          if (nuevaProximaFecha <= hoy) {
+            nuevaProximaFecha.setDate(fechaInicio.getDate() + ((semanasTranscurridas + 1) * 7));
+          }
+          
+          const nuevaFechaStr = nuevaProximaFecha.toISOString().split('T')[0];
+          
+          // Solo actualizar si la nueva fecha es diferente
+          if (nuevaFechaStr !== prestamo.proxima_fecha_pago) {
+            await storage.updatePrestamo(prestamo.id, {
+              proxima_fecha_pago: nuevaFechaStr
+            });
+            
+            console.log(`Préstamo ${prestamo.id}: Fecha actualizada de ${prestamo.proxima_fecha_pago} a ${nuevaFechaStr} (semanas transcurridas: ${semanasTranscurridas}, semanas pagadas: ${semanasPagadas})`);
+            prestamosActualizados++;
+          }
+        }
+      }
+      
+      res.json({
+        success: true,
+        message: `Se actualizaron ${prestamosActualizados} préstamos`,
+        prestamosActualizados
+      });
+      
+    } catch (error) {
+      console.error("Error actualizando fechas de préstamos:", error);
+      res.status(500).json({
+        error: "Error interno del servidor",
+        details: error instanceof Error ? error.message : "Error desconocido"
+      });
+    }
   });
 
   const httpServer = createServer(app);
