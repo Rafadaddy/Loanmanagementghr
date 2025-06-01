@@ -2133,60 +2133,76 @@ export class DatabaseStorage implements IStorage {
       await db.delete(configuraciones);
       // No eliminamos los usuarios para mantener el administrador
       
-      // Función auxiliar para convertir campos de fecha a formato ISO string
+      // Función auxiliar para convertir campos de fecha según el tipo esperado por Drizzle
       const convertirFechasEnObjeto = <T extends Record<string, any>>(objeto: T): T => {
         const resultado = { ...objeto };
         
-        // Lista de campos que podrían contener fechas
-        const camposFecha = [
-          'fecha_registro', 'fecha_prestamo', 'proxima_fecha_pago', 
-          'fecha_inicial_personalizada', 'fecha_pago', 'fecha'
+        // Campos que usan timestamp (esperan objetos Date)
+        const camposTimestamp = ['fecha_registro', 'fecha'];
+        
+        // Campos que usan date (esperan strings YYYY-MM-DD)
+        const camposDate = [
+          'fecha_prestamo', 'proxima_fecha_pago', 'fecha_inicial_personalizada', 'fecha_pago'
         ];
         
-        for (const campo of camposFecha) {
+        // Procesar campos timestamp
+        for (const campo of camposTimestamp) {
           if (campo in resultado && resultado[campo] !== null && resultado[campo] !== undefined) {
             try {
-              // Convertir todo a objeto Date válido para PostgreSQL
               let fechaObj = null;
               
-              // Si ya es un string ISO válido
-              if (typeof resultado[campo] === 'string' && resultado[campo].includes('T') && resultado[campo].includes('Z')) {
+              if (typeof resultado[campo] === 'string') {
                 fechaObj = new Date(resultado[campo]);
-              }
-              // Si es un objeto Date válido
-              else if (resultado[campo] instanceof Date) {
+              } else if (resultado[campo] instanceof Date) {
                 fechaObj = resultado[campo];
-              }
-              // Si es un string de fecha (como YYYY-MM-DD)
-              else if (typeof resultado[campo] === 'string') {
-                // Para fechas en formato YYYY-MM-DD, agregar hora por defecto
-                let fechaString = resultado[campo];
-                if (/^\d{4}-\d{2}-\d{2}$/.test(fechaString)) {
-                  fechaString += 'T12:00:00.000Z';
-                }
-                fechaObj = new Date(fechaString);
-              }
-              // Si es un número (timestamp)
-              else if (typeof resultado[campo] === 'number') {
+              } else if (typeof resultado[campo] === 'number') {
                 fechaObj = new Date(resultado[campo]);
               }
               
-              // Verificar que el objeto Date sea válido
               if (!fechaObj || isNaN(fechaObj.getTime())) {
-                console.warn(`Campo ${campo} tiene un valor de fecha inválido:`, resultado[campo], 'Tipo:', typeof resultado[campo]);
-                fechaObj = new Date(); // Usar fecha actual como fallback
+                fechaObj = new Date();
               }
               
-              // Mantener como objeto Date para Drizzle ORM
-              resultado[campo] = fechaObj;
+              resultado[campo] = fechaObj; // Mantener como Date para timestamp
               
             } catch (err) {
-              console.warn(`Error al convertir campo ${campo}:`, err, 'Valor:', resultado[campo]);
-              // Usar fecha actual como fallback
               resultado[campo] = new Date();
             }
           }
         }
+        
+        // Procesar campos date
+        for (const campo of camposDate) {
+          if (campo in resultado && resultado[campo] !== null && resultado[campo] !== undefined) {
+            try {
+              let fechaObj = null;
+              
+              if (typeof resultado[campo] === 'string') {
+                // Si ya está en formato YYYY-MM-DD, mantenerlo
+                if (/^\d{4}-\d{2}-\d{2}$/.test(resultado[campo])) {
+                  resultado[campo] = resultado[campo]; // Ya está correcto
+                  continue;
+                }
+                fechaObj = new Date(resultado[campo]);
+              } else if (resultado[campo] instanceof Date) {
+                fechaObj = resultado[campo];
+              } else if (typeof resultado[campo] === 'number') {
+                fechaObj = new Date(resultado[campo]);
+              }
+              
+              if (!fechaObj || isNaN(fechaObj.getTime())) {
+                fechaObj = new Date();
+              }
+              
+              // Convertir a string YYYY-MM-DD para campos date
+              resultado[campo] = fechaObj.toISOString().split('T')[0];
+              
+            } catch (err) {
+              resultado[campo] = new Date().toISOString().split('T')[0];
+            }
+          }
+        }
+        
         return resultado;
       };
       
