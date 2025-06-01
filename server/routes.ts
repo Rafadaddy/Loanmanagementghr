@@ -1183,14 +1183,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Verificar que los datos están presentes y tienen el formato correcto
       console.log("Verificando datos antes de importar:");
+      console.log(`- Users: ${req.body.users?.length || 0}`);
       console.log(`- Clientes: ${req.body.clientes?.length || 0}`);
       console.log(`- Préstamos: ${req.body.prestamos?.length || 0}`);
       console.log(`- Pagos: ${req.body.pagos?.length || 0}`);
       console.log(`- Cobradores: ${req.body.cobradores?.length || 0}`);
       console.log(`- Movimientos: ${req.body.movimientosCaja?.length || 0}`);
+      console.log(`- Configuraciones: ${req.body.configuraciones?.length || 0}`);
       
+      // Verificar estructura de algunos elementos para debug
+      if (req.body.clientes?.length > 0) {
+        console.log("Ejemplo de cliente:", JSON.stringify(req.body.clientes[0], null, 2));
+      }
+      if (req.body.prestamos?.length > 0) {
+        console.log("Ejemplo de préstamo:", JSON.stringify(req.body.prestamos[0], null, 2));
+      }
+      
+      console.log("Iniciando importación de datos...");
       // Importar los datos con el método mejorado que corrige fechas
       const resultado = await storage.importarDatos(req.body);
+      console.log("Resultado de importación:", resultado);
       
       if (resultado) {
         res.status(200).json({ message: "Datos importados correctamente" });
