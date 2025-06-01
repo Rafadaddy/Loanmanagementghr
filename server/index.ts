@@ -8,8 +8,8 @@ app.use(cors({
   origin: true, // Permitir solicitudes desde cualquier origen en desarrollo
   credentials: true, // Importante para que las cookies funcionen
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: false, limit: '100mb' }));
 
 app.use((req, res, next) => {
   const start = Date.now();
