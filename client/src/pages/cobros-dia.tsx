@@ -56,24 +56,60 @@ export default function CobrosDia() {
     queryKey: ['/api/cobradores'],
   });
 
-  // Filtrar préstamos que tienen pago programado para la fecha seleccionada
+  // Filtrar préstamos que tienen pago programado para la fecha seleccionada o están atrasados
   const pagosDia = prestamos
     .filter(prestamo => {
       // Solo procesar préstamos activos
       if (prestamo.estado !== "ACTIVO") return false;
       
-      // Usar directamente la próxima fecha de pago del préstamo
-      // Esta es la forma más precisa y coherente con el resto del sistema
+      const fechaFiltro = new Date(filterDate);
       const proximaFechaPago = new Date(prestamo.proxima_fecha_pago);
+      const fechaInicio = new Date(prestamo.fecha_prestamo);
       
-      // Convertir a formato YYYY-MM-DD para comparar
+      // Calcular cuántas semanas han pasado desde el inicio del préstamo hasta la fecha del filtro
+      const diasTranscurridos = Math.floor((fechaFiltro.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24));
+      const semanasTranscurridas = Math.floor(diasTranscurridos / 7);
+      
+      // Convertir fechas a formato YYYY-MM-DD para comparar
       const fechaFormateada = proximaFechaPago.toISOString().split('T')[0];
+      const fechaInicioFormateada = fechaInicio.toISOString().split('T')[0];
       
-      // Verificar si coincide con la fecha filtrada
-      return fechaFormateada === filterDate;
+      // Para préstamos semanales, los pagos son cada 7 días desde la fecha de inicio
+      // Calcular si la fecha del filtro corresponde exactamente a un día de pago programado
+      const esSemanaDePago = diasTranscurridos >= 7 && (diasTranscurridos % 7 === 0);
+      
+      // Verificar si el préstamo ha completado todas sus semanas
+      const semanasPagadas = prestamo.semanas_pagadas || 0;
+      const semanasTotal = prestamo.numero_semanas || 0;
+      const prestamoCompleto = semanasPagadas >= semanasTotal;
+      
+      // Solo mostrar si es exactamente una fecha de pago programada:
+      // La fecha debe ser un múltiplo exacto de 7 días desde la fecha de inicio
+      // Y el préstamo no debe estar completo
+      const esFechaDePagoExacta = esSemanaDePago && !prestamoCompleto && semanasTranscurridas <= semanasTotal && semanasTranscurridas > 0;
+      
+      const resultado = esFechaDePagoExacta;
+      
+      // Debug mejorado
+      console.log(`Préstamo ID ${prestamo.id} - ${filterDate}:
+        Días transcurridos: ${diasTranscurridos} (${semanasTranscurridas} semanas)
+        Semanas pagadas: ${semanasPagadas}/${semanasTotal}
+        Es semana de pago: ${esSemanaDePago}
+        Préstamo completo: ${prestamoCompleto}
+        INCLUIDO: ${resultado}`);
+      
+      return resultado;
     })
     .map(prestamo => {
       const cliente = clientes.find(c => c.id === prestamo.cliente_id);
+      
+      // Debug: verificar estructura de datos
+      console.log(`Préstamo ID ${prestamo.id} - Campos disponibles:`, {
+        fecha_prestamo: prestamo.fecha_prestamo,
+        proxima_fecha_pago: prestamo.proxima_fecha_pago,
+        todasLasClaves: Object.keys(prestamo)
+      });
+      
       return { ...prestamo, cliente };
     })
     .filter(prestamo => {
@@ -350,6 +386,8 @@ export default function CobrosDia() {
     setFilterDate(event.target.value);
   };
 
+
+
   return (
     <MainLayout>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
@@ -370,6 +408,8 @@ export default function CobrosDia() {
               onChange={handleDateChange}
             />
           </div>
+          
+
           
           <Button 
             variant="default"
@@ -561,6 +601,7 @@ export default function CobrosDia() {
                           <TableHead className="w-[180px]">Cliente</TableHead>
                           <TableHead>Dirección</TableHead>
                           <TableHead>Teléfono</TableHead>
+                          <TableHead>Fecha Inicio</TableHead>
                           <TableHead>Préstamo</TableHead>
                           <TableHead>Semana</TableHead>
                           <TableHead>Monto a Cobrar</TableHead>
@@ -579,6 +620,9 @@ export default function CobrosDia() {
                               </div>
                             </TableCell>
                             <TableCell>{item.cliente?.telefono || 'Sin teléfono'}</TableCell>
+                            <TableCell className="text-sm">
+                              {item.fecha_prestamo ? formatDate(item.fecha_prestamo) : 'Sin fecha'}
+                            </TableCell>
                             <TableCell>{formatCurrency(item.monto_prestado)}</TableCell>
                             <TableCell>
                               <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800">
