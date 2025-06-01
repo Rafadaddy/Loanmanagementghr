@@ -15,7 +15,8 @@ import {
   DollarSign, 
   Receipt,
   LogOut,
-  UserCheck
+  UserCheck,
+  Calendar
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +31,7 @@ export default function MobileHeader() {
     { href: "/prestamos", label: "Préstamos", icon: DollarSign },
     { href: "/pagos", label: "Pagos", icon: CreditCard },
     { href: "/cobros-dia", label: "Cobros del Día", icon: Route },
+    { href: "/cronograma-global", label: "Cronograma Global", icon: Calendar },
     { href: "/cobradores", label: "Cobradores", icon: UserCheck },
     { href: "/registro-caja", label: "Registro de Caja", icon: Receipt },
     { href: "/calculadora", label: "Calculadora", icon: Calculator },
