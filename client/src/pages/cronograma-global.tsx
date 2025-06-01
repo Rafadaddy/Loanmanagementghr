@@ -169,80 +169,98 @@ export default function CronogramaGlobal() {
         description: "El reporte de cronograma se está generando...",
       });
 
-      // Importar jsPDF dinámicamente
-      const jsPDF = (await import('jspdf')).default;
-      require('jspdf-autotable');
-
-      const doc = new jsPDF();
-      
-      // Título del reporte
-      doc.setFontSize(16);
-      doc.text('Cronograma Global de Pagos', 14, 22);
-      
-      // Información de filtros aplicados
-      doc.setFontSize(10);
-      let yPos = 35;
-      if (filterDate) {
-        doc.text(`Fecha: ${formatTableDate(filterDate)}`, 14, yPos);
-        yPos += 6;
-      }
-      if (statusFilter !== "todos") {
-        doc.text(`Estado: ${statusFilter.toUpperCase()}`, 14, yPos);
-        yPos += 6;
-      }
+      // Crear contenido HTML para el PDF
+      const filtrosAplicados = [];
+      if (filterDate) filtrosAplicados.push(`Fecha: ${formatTableDate(filterDate)}`);
+      if (statusFilter !== "todos") filtrosAplicados.push(`Estado: ${statusFilter.toUpperCase()}`);
       if (cobradorFilter !== "todos") {
         const cobrador = cobradores.find(c => c.id.toString() === cobradorFilter);
-        doc.text(`Cobrador: ${cobrador?.nombre || 'Desconocido'}`, 14, yPos);
-        yPos += 6;
+        filtrosAplicados.push(`Cobrador: ${cobrador?.nombre || 'Desconocido'}`);
       }
-      
-      // Resumen
-      doc.text(`Total a cobrar: ${formatCurrency(totalACobrar)}`, 14, yPos);
-      yPos += 6;
-      doc.text(`Pagos: ${pagosPendientes} pendientes, ${pagosAtrasados} atrasados, ${pagosPagados} pagados`, 14, yPos);
-      yPos += 10;
 
-      // Preparar datos para la tabla
-      const tableData = cronogramaOrdenado.map(pago => [
-        pago.cliente_nombre,
-        pago.cliente_telefono,
-        formatTableDate(pago.fecha_pago),
-        `${pago.semana}/${pago.total_semanas}`,
-        formatCurrency(pago.monto_pago),
-        pago.estado_pago,
-        formatCurrency(pago.monto_prestado)
-      ]);
+      // Crear tabla HTML
+      const tablaHTML = `
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Cronograma Global de Pagos</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              h1 { color: #333; text-align: center; }
+              .filtros { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
+              .resumen { background: #e8f4f8; padding: 10px; margin: 10px 0; border-radius: 5px; }
+              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 10px; }
+              th { background-color: #2969b0; color: white; }
+              tr:nth-child(even) { background-color: #f9f9f9; }
+              .pendiente { background-color: #cce5ff; }
+              .atrasado { background-color: #ffcccc; }
+              .pagado { background-color: #ccffcc; }
+            </style>
+          </head>
+          <body>
+            <h1>Cronograma Global de Pagos</h1>
+            ${filtrosAplicados.length > 0 ? `<div class="filtros"><strong>Filtros aplicados:</strong> ${filtrosAplicados.join(' | ')}</div>` : ''}
+            <div class="resumen">
+              <strong>Resumen:</strong> Total a cobrar: ${formatCurrency(totalACobrar)} | 
+              Pendientes: ${pagosPendientes} | Atrasados: ${pagosAtrasados} | Pagados: ${pagosPagados}
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Teléfono</th>
+                  <th>Fecha Pago</th>
+                  <th>Semana</th>
+                  <th>Monto</th>
+                  <th>Estado</th>
+                  <th>Préstamo</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${cronogramaOrdenado.map(pago => `
+                  <tr class="${pago.estado_pago.toLowerCase()}">
+                    <td>${pago.cliente_nombre}</td>
+                    <td>${pago.cliente_telefono}</td>
+                    <td>${formatTableDate(pago.fecha_pago)}</td>
+                    <td>${pago.semana}/${pago.total_semanas}</td>
+                    <td>${formatCurrency(pago.monto_pago)}</td>
+                    <td>${pago.estado_pago}</td>
+                    <td>${formatCurrency(pago.monto_prestado)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            <div style="margin-top: 20px; text-align: center; font-size: 10px; color: #666;">
+              Reporte generado el ${formatTableDate(new Date().toISOString().split('T')[0])}
+            </div>
+          </body>
+        </html>
+      `;
 
-      // Generar tabla
-      (doc as any).autoTable({
-        startY: yPos,
-        head: [['Cliente', 'Teléfono', 'Fecha Pago', 'Semana', 'Monto', 'Estado', 'Préstamo']],
-        body: tableData,
-        styles: {
-          fontSize: 8,
-          cellPadding: 2,
-        },
-        headStyles: {
-          fillColor: [41, 105, 176],
-          textColor: 255,
-        },
-        margin: { left: 14 },
-        tableWidth: 'auto'
-      });
-
-      // Guardar el PDF
-      const fechaReporte = new Date().toISOString().split('T')[0];
-      doc.save(`cronograma_global_${fechaReporte}.pdf`);
-      
-      toast({
-        title: "PDF generado",
-        description: "El reporte de cronograma ha sido descargado exitosamente.",
-      });
+      // Abrir ventana de impresión
+      const ventana = window.open('', '_blank');
+      if (ventana) {
+        ventana.document.write(tablaHTML);
+        ventana.document.close();
+        
+        // Esperar a que se cargue y luego imprimir
+        ventana.onload = () => {
+          ventana.print();
+        };
+        
+        toast({
+          title: "PDF generado",
+          description: "Se abrió la ventana de impresión. Guarda como PDF desde ahí.",
+        });
+      } else {
+        throw new Error("No se pudo abrir la ventana de impresión");
+      }
     } catch (error) {
       console.error("Error al generar PDF:", error);
       toast({
         title: "Error al generar PDF",
-        description: "Ocurrió un error al generar el reporte.",
+        description: "Ocurrió un error al generar el reporte. Revisa que no estén bloqueadas las ventanas emergentes.",
         variant: "destructive",
       });
     }
@@ -265,79 +283,53 @@ export default function CronogramaGlobal() {
         description: "El reporte de cronograma se está generando...",
       });
 
-      // Importar XLSX dinámicamente
-      const XLSX = await import('xlsx');
+      // Preparar datos para CSV (como alternativa simple)
+      const csvHeader = "Cliente,Teléfono,Dirección,Cobrador,Fecha de Pago,Semana,Total Semanas,Monto a Pagar,Estado,Monto Préstamo,Fecha Inicio\n";
       
-      // Preparar datos para Excel
-      const excelData = cronogramaOrdenado.map(pago => {
+      const csvData = cronogramaOrdenado.map(pago => {
         const cliente = clientes.find(c => c.id === pago.cliente_id);
         const cobrador = cliente?.cobrador_id ? 
           cobradores.find(c => c.id === cliente.cobrador_id) : null;
         
-        return {
-          'Cliente': pago.cliente_nombre,
-          'Teléfono': pago.cliente_telefono,
-          'Dirección': pago.cliente_direccion,
-          'Cobrador': cobrador?.nombre || 'Sin asignar',
-          'Fecha de Pago': formatTableDate(pago.fecha_pago),
-          'Semana': pago.semana,
-          'Total Semanas': pago.total_semanas,
-          'Monto a Pagar': pago.monto_pago,
-          'Estado': pago.estado_pago,
-          'Monto Préstamo': pago.monto_prestado,
-          'Fecha Inicio': formatTableDate(pago.fecha_inicio),
-        };
-      });
+        return [
+          `"${pago.cliente_nombre}"`,
+          `"${pago.cliente_telefono}"`,
+          `"${pago.cliente_direccion}"`,
+          `"${cobrador?.nombre || 'Sin asignar'}"`,
+          `"${formatTableDate(pago.fecha_pago)}"`,
+          pago.semana,
+          pago.total_semanas,
+          pago.monto_pago,
+          `"${pago.estado_pago}"`,
+          pago.monto_prestado,
+          `"${formatTableDate(pago.fecha_inicio)}"`
+        ].join(',');
+      }).join('\n');
 
-      // Crear libro de trabajo
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(excelData);
+      const csvContent = csvHeader + csvData;
 
-      // Ajustar anchos de columna
-      const colWidths = [
-        { wch: 20 }, // Cliente
-        { wch: 15 }, // Teléfono
-        { wch: 25 }, // Dirección
-        { wch: 15 }, // Cobrador
-        { wch: 12 }, // Fecha de Pago
-        { wch: 8 },  // Semana
-        { wch: 8 },  // Total Semanas
-        { wch: 12 }, // Monto a Pagar
-        { wch: 10 }, // Estado
-        { wch: 12 }, // Monto Préstamo
-        { wch: 12 }, // Fecha Inicio
-      ];
-      ws['!cols'] = colWidths;
-
-      // Agregar hoja al libro
-      XLSX.utils.book_append_sheet(wb, ws, 'Cronograma Global');
-
-      // Crear hoja de resumen
-      const resumenData = [
-        { 'Concepto': 'Total a Cobrar', 'Valor': formatCurrency(totalACobrar) },
-        { 'Concepto': 'Pagos Pendientes', 'Valor': pagosPendientes },
-        { 'Concepto': 'Pagos Atrasados', 'Valor': pagosAtrasados },
-        { 'Concepto': 'Pagos Realizados', 'Valor': pagosPagados },
-        { 'Concepto': 'Total de Pagos', 'Valor': cronogramaOrdenado.length },
-        { 'Concepto': 'Fecha del Reporte', 'Valor': formatTableDate(new Date().toISOString().split('T')[0]) },
-      ];
-
-      const wsResumen = XLSX.utils.json_to_sheet(resumenData);
-      wsResumen['!cols'] = [{ wch: 20 }, { wch: 15 }];
-      XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen');
-
-      // Descargar archivo
+      // Crear archivo CSV
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
       const fechaReporte = new Date().toISOString().split('T')[0];
-      XLSX.writeFile(wb, `cronograma_global_${fechaReporte}.xlsx`);
+      link.setAttribute('download', `cronograma_global_${fechaReporte}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       
       toast({
-        title: "Excel generado",
-        description: "El reporte de cronograma ha sido descargado exitosamente.",
+        title: "Archivo CSV generado",
+        description: "El reporte de cronograma ha sido descargado como archivo CSV.",
       });
     } catch (error) {
-      console.error("Error al generar Excel:", error);
+      console.error("Error al generar CSV:", error);
       toast({
-        title: "Error al generar Excel",
+        title: "Error al generar reporte",
         description: "Ocurrió un error al generar el reporte.",
         variant: "destructive",
       });
