@@ -1200,8 +1200,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log("Iniciando importación de datos...");
+      
       // Importar los datos con el método mejorado que corrige fechas
       const resultado = await storage.importarDatos(req.body);
+      
       console.log("Resultado de importación:", resultado);
       
       if (resultado) {
