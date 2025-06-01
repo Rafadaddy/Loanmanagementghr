@@ -2152,14 +2152,21 @@ export class DatabaseStorage implements IStorage {
               let fechaObj = null;
               
               if (typeof resultado[campo] === 'string') {
-                fechaObj = new Date(resultado[campo]);
+                // Validar que no sea una fecha corrupta
+                if (resultado[campo].includes('+020224') || resultado[campo].length > 30) {
+                  console.warn(`Fecha corrupta detectada en ${campo}:`, resultado[campo]);
+                  fechaObj = new Date();
+                } else {
+                  fechaObj = new Date(resultado[campo]);
+                }
               } else if (resultado[campo] instanceof Date) {
                 fechaObj = resultado[campo];
               } else if (typeof resultado[campo] === 'number') {
                 fechaObj = new Date(resultado[campo]);
               }
               
-              if (!fechaObj || isNaN(fechaObj.getTime())) {
+              if (!fechaObj || isNaN(fechaObj.getTime()) || fechaObj.getFullYear() > 3000 || fechaObj.getFullYear() < 1900) {
+                console.warn(`Fecha inválida detectada en ${campo}:`, resultado[campo]);
                 fechaObj = new Date();
               }
               
@@ -2183,14 +2190,21 @@ export class DatabaseStorage implements IStorage {
                   resultado[campo] = resultado[campo]; // Ya está correcto
                   continue;
                 }
-                fechaObj = new Date(resultado[campo]);
+                // Validar que no sea una fecha corrupta
+                if (resultado[campo].includes('+020224') || resultado[campo].length > 30) {
+                  console.warn(`Fecha corrupta detectada en ${campo}:`, resultado[campo]);
+                  fechaObj = new Date();
+                } else {
+                  fechaObj = new Date(resultado[campo]);
+                }
               } else if (resultado[campo] instanceof Date) {
                 fechaObj = resultado[campo];
               } else if (typeof resultado[campo] === 'number') {
                 fechaObj = new Date(resultado[campo]);
               }
               
-              if (!fechaObj || isNaN(fechaObj.getTime())) {
+              if (!fechaObj || isNaN(fechaObj.getTime()) || fechaObj.getFullYear() > 3000 || fechaObj.getFullYear() < 1900) {
+                console.warn(`Fecha inválida detectada en ${campo}:`, resultado[campo]);
                 fechaObj = new Date();
               }
               
