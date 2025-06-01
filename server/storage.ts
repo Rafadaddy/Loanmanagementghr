@@ -2177,12 +2177,13 @@ export class DatabaseStorage implements IStorage {
                 fechaObj = new Date(); // Usar fecha actual como fallback
               }
               
-              resultado[campo] = fechaObj;
+               // Convertir a string ISO para PostgreSQL
+              resultado[campo] = fechaObj.toISOString();
               
             } catch (err) {
               console.warn(`Error al convertir campo ${campo}:`, err, 'Valor:', resultado[campo]);
               // Usar fecha actual como fallback
-              resultado[campo] = new Date();
+              resultado[campo] = new Date().toISOString();
             }
           }
         }
