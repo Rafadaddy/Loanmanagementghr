@@ -2177,13 +2177,13 @@ export class DatabaseStorage implements IStorage {
                 fechaObj = new Date(); // Usar fecha actual como fallback
               }
               
-               // Convertir a string ISO para PostgreSQL
-              resultado[campo] = fechaObj.toISOString();
+              // Mantener como objeto Date para Drizzle ORM
+              resultado[campo] = fechaObj;
               
             } catch (err) {
               console.warn(`Error al convertir campo ${campo}:`, err, 'Valor:', resultado[campo]);
               // Usar fecha actual como fallback
-              resultado[campo] = new Date().toISOString();
+              resultado[campo] = new Date();
             }
           }
         }
