@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { formatCurrency, formatDate, getDateTimeFormat, getShortDate } from "@/lib/utils";
+import { formatCurrency, formatDate, formatTableDate, getDateTimeFormat, getShortDate, createConsistentDate } from "@/lib/utils";
 import MainLayout from "@/components/layout/main-layout";
 import { Prestamo, Cliente, Cobrador } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -453,7 +453,7 @@ export default function CobrosDia() {
               {formatDate(filterDate)}
             </div>
             <p className="text-xs md:text-sm text-muted-foreground">
-              {new Date(filterDate).toLocaleDateString('es-ES', { weekday: 'long' }).replace(/^\w/, c => c.toUpperCase())}
+              {createConsistentDate(filterDate).toLocaleDateString('es-ES', { weekday: 'long' }).replace(/^\w/, c => c.toUpperCase())}
             </p>
           </CardContent>
         </Card>
@@ -621,7 +621,7 @@ export default function CobrosDia() {
                             </TableCell>
                             <TableCell>{item.cliente?.telefono || 'Sin teléfono'}</TableCell>
                             <TableCell className="text-sm">
-                              {item.fecha_prestamo ? formatDate(item.fecha_prestamo) : 'Sin fecha'}
+                              {item.fecha_prestamo ? formatTableDate(item.fecha_prestamo) : 'Sin fecha'}
                             </TableCell>
                             <TableCell>{formatCurrency(item.monto_prestado)}</TableCell>
                             <TableCell>
