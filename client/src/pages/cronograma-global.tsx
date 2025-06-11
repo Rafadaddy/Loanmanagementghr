@@ -63,10 +63,19 @@ export default function CronogramaGlobal() {
 
   // Generar cronograma completo de todos los préstamos
   const cronogramaCompleto: CronogramaPago[] = prestamos
-    .filter(prestamo => prestamo.estado === "ACTIVO")
+    .filter(prestamo => {
+      const esActivo = prestamo.estado === "ACTIVO";
+      if (!esActivo) {
+        console.log(`Préstamo ${prestamo.id} excluido - Estado: ${prestamo.estado}`);
+      }
+      return esActivo;
+    })
     .flatMap(prestamo => {
       const cliente = clientes.find(c => c.id === prestamo.cliente_id);
-      if (!cliente) return [];
+      if (!cliente) {
+        console.warn(`Cliente no encontrado para préstamo ${prestamo.id}, cliente_id: ${prestamo.cliente_id}`);
+        return [];
+      }
 
       const cronogramaPrestamo: CronogramaPago[] = [];
       
@@ -116,10 +125,34 @@ export default function CronogramaGlobal() {
         });
       }
 
+      console.log(`Préstamo ${prestamo.id} - Cliente: ${cliente.nombre} - Generadas ${cronogramaPrestamo.length} cuotas`);
       return cronogramaPrestamo;
     });
 
-  // Aplicar filtros
+  // Agregar estadísticas de debug
+  console.log('--- Estadísticas del Cronograma Global ---');
+  console.log(`Total préstamos en base: ${prestamos.length}`);
+  console.log(`Préstamos activos: ${prestamos.filter(p => p.estado === "ACTIVO").length}`);
+  console.log(`Total clientes en base: ${clientes.length}`);
+  console.log(`Total cuotas generadas: ${cronogramaCompleto.length}`);
+  
+  // Verificar si hay préstamos activos sin cronograma
+  const prestamosActivos = prestamos.filter(p => p.estado === "ACTIVO");
+  const prestamosIdsConCronograma = cronogramaCompleto.map(c => c.prestamo_id);
+  const prestamosUnicos = prestamosIdsConCronograma.filter((id, index) => prestamosIdsConCronograma.indexOf(id) === index);
+  const prestamosSinCronograma = prestamosActivos.filter(p => !prestamosUnicos.includes(p.id));
+  
+  if (prestamosSinCronograma.length > 0) {
+    console.warn(`⚠️ Préstamos activos sin cronograma:`, prestamosSinCronograma.map(p => ({
+      id: p.id,
+      cliente_id: p.cliente_id,
+      monto: p.monto_prestado,
+      estado: p.estado,
+      semanas: p.numero_semanas
+    })));
+  }
+
+  // Aplicar filtros con logging detallado
   const cronogramaFiltrado = cronogramaCompleto.filter(pago => {
     // Filtro por fecha
     const coincideFecha = !filterDate || pago.fecha_pago === filterDate;
@@ -138,8 +171,24 @@ export default function CronogramaGlobal() {
       pago.cliente_telefono.includes(searchTerm) ||
       pago.cliente_direccion.toLowerCase().includes(searchTerm.toLowerCase());
 
-    return coincideFecha && coincifeEstado && coincideCobrador && coincideBusqueda;
+    const pasaFiltros = coincideFecha && coincifeEstado && coincideCobrador && coincideBusqueda;
+    
+    // Debug de filtros aplicados
+    if (!pasaFiltros && (filterDate || statusFilter !== "todos" || cobradorFilter !== "todos" || searchTerm)) {
+      console.log(`Pago filtrado - Préstamo ${pago.prestamo_id}, Cliente: ${pago.cliente_nombre}`, {
+        fecha: { valor: pago.fecha_pago, filtro: filterDate, pasa: coincideFecha },
+        estado: { valor: pago.estado_pago, filtro: statusFilter, pasa: coincifeEstado },
+        cobrador: { cliente_cobrador_id: cliente?.cobrador_id, filtro: cobradorFilter, pasa: coincideCobrador },
+        busqueda: { termino: searchTerm, pasa: coincideBusqueda }
+      });
+    }
+
+    return pasaFiltros;
   });
+  
+  // Estadísticas de filtrado
+  console.log(`Filtros aplicados - Fecha: ${filterDate}, Estado: ${statusFilter}, Cobrador: ${cobradorFilter}, Búsqueda: "${searchTerm}"`);
+  console.log(`Cuotas después del filtrado: ${cronogramaFiltrado.length} de ${cronogramaCompleto.length}`);
 
   // Ordenar por fecha de pago y luego por nombre del cliente
   const cronogramaOrdenado = cronogramaFiltrado.sort((a, b) => {
