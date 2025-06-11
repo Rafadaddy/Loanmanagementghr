@@ -72,9 +72,10 @@ export default function CronogramaGlobal() {
       const cronogramaPrestamo: CronogramaPago[] = [];
 
       for (let semana = 1; semana <= prestamo.numero_semanas; semana++) {
-        // Calcular fecha de pago: fecha_inicio + (semana-1) * 7 días
+         // Calcular fecha de pago: 7 días después del préstamo + (semana-1) * 7 días
+        // Esto garantiza que el primer pago sea 7 días después del préstamo, no el mismo día
         const fechaPago = new Date(fechaInicio);
-        fechaPago.setDate(fechaPago.getDate() + (semana - 1) * 7);
+        fechaPago.setDate(fechaPago.getDate() + 7 + (semana - 1) * 7);
         
         // Determinar estado del pago
         let estadoPago: 'PENDIENTE' | 'PAGADO' | 'ATRASADO' = 'PENDIENTE';
