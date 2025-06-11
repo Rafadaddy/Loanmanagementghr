@@ -68,14 +68,29 @@ export default function CronogramaGlobal() {
       const cliente = clientes.find(c => c.id === prestamo.cliente_id);
       if (!cliente) return [];
 
-      const fechaInicio = new Date(prestamo.fecha_prestamo);
       const cronogramaPrestamo: CronogramaPago[] = [];
+      
+      // Determinar la fecha de la primera cuota, considerando fechas personalizadas
+      let primeraFechaPago: Date;
+      const semanasYaPagadas = prestamo.semanas_pagadas || 0;
+      
+      if (prestamo.fecha_inicial_personalizada) {
+        // Si hay una fecha inicial personalizada, la usamos
+        primeraFechaPago = new Date(prestamo.fecha_inicial_personalizada);
+      } else if (semanasYaPagadas === 0) {
+        // Si no hay semanas pagadas, la primera fecha es 7 días después del préstamo
+        primeraFechaPago = new Date(prestamo.fecha_prestamo);
+        primeraFechaPago.setDate(primeraFechaPago.getDate() + 7);
+      } else {
+        // Si hay semanas pagadas, calculamos la primera fecha a partir de la próxima fecha de pago
+        primeraFechaPago = new Date(prestamo.proxima_fecha_pago);
+        primeraFechaPago.setDate(primeraFechaPago.getDate() - (semanasYaPagadas * 7));
+      }
 
       for (let semana = 1; semana <= prestamo.numero_semanas; semana++) {
-         // Calcular fecha de pago: 7 días después del préstamo + (semana-1) * 7 días
-        // Esto garantiza que el primer pago sea 7 días después del préstamo, no el mismo día
-        const fechaPago = new Date(fechaInicio);
-        fechaPago.setDate(fechaPago.getDate() + 7 + (semana - 1) * 7);
+        // Calcular fecha de pago basada en la primera fecha + incrementos semanales
+        const fechaPago = new Date(primeraFechaPago);
+        fechaPago.setDate(primeraFechaPago.getDate() + (semana - 1) * 7);
         
         // Determinar estado del pago
         let estadoPago: 'PENDIENTE' | 'PAGADO' | 'ATRASADO' = 'PENDIENTE';
