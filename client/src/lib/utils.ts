@@ -43,6 +43,18 @@ export function normalizeDate(date: Date | string): string {
 }
 
 /**
+ * Obtiene la fecha actual en formato local YYYY-MM-DD
+ * sin problemas de zona horaria
+ */
+export function getTodayLocalDate(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Crea una fecha nueva con correcto manejo de timezone.
  * Acepta tanto formato YYYY-MM-DD como instancias de Date.
  * Garantiza que se muestre la fecha exacta ingresada, sin ajustes de zona horaria.
