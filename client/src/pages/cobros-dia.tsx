@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { formatCurrency, formatDate, formatTableDate, getDateTimeFormat, getShortDate, createConsistentDate } from "@/lib/utils";
+import { formatCurrency, formatDate, formatTableDate, getDateTimeFormat, getShortDate, createConsistentDate, getTodayLocalDate } from "@/lib/utils";
 import MainLayout from "@/components/layout/main-layout";
 import { Prestamo, Cliente, Cobrador } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -36,8 +36,7 @@ export default function CobrosDia() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   // Configurar fecha actual (sin offset adicional)
-  const todayDate = new Date();
-  const [filterDate, setFilterDate] = useState(todayDate.toISOString().split('T')[0]);
+  const [filterDate, setFilterDate] = useState(getTodayLocalDate());
   const [sortBy, setSortBy] = useState("direccion");
   const [filterByCobrador, setFilterByCobrador] = useState<number | "todos">("todos");
 
