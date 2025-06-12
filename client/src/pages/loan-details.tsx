@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { formatCurrency, formatDate, getLoanStatus, getPaymentStatus } from "@/lib/utils";
 import PaymentForm from "@/components/forms/payment-form";
+import EditLoanForm from "@/components/forms/edit-loan-form";
 import LoanSchedule from "@/components/loan/loan-schedule";
 import { Prestamo, Cliente, Pago } from "@shared/schema";
 import { PrestamoDisplay, PagoDisplay } from "@/types/loan";
@@ -61,6 +62,7 @@ import { Input } from "@/components/ui/input";
 
 export default function LoanDetails() {
   const [paymentFormOpen, setPaymentFormOpen] = useState(false);
+  const [editLoanFormOpen, setEditLoanFormOpen] = useState(false);
   const [editPaymentDialogOpen, setEditPaymentDialogOpen] = useState(false);
   const [selectedPago, setSelectedPago] = useState<Pago | null>(null);
   const [nuevoMontoPagado, setNuevoMontoPagado] = useState<string>("");
@@ -202,11 +204,11 @@ export default function LoanDetails() {
   
   // Mutation para actualizar un pago
   const actualizarPagoMutation = useMutation({
-     mutationFn: async ({ id, monto_pagado, fecha_pago, numero_semana }: { id: number; monto_pagado: string; fecha_pago?: Date; numero_semana?: number }) => {
+    mutationFn: async ({ id, monto_pagado, fecha_pago, numero_semana }: { id: number; monto_pagado: string; fecha_pago?: Date; numero_semana?: number }) => {
       const data: any = { monto_pagado };
       if (fecha_pago) {
         data.fecha_pago = fecha_pago;
-         }
+      }
       if (numero_semana) {
         data.numero_semana = numero_semana;
       }
@@ -265,7 +267,7 @@ export default function LoanDetails() {
     setNuevoMontoPagado(pago.monto_pagado);
     // Formatear la fecha para el input date (YYYY-MM-DD)
     const fechaFormateada = new Date(pago.fecha_pago).toISOString().split('T')[0];
-    setNuevaFechaPagoEdit(fechaFormateada)
+    setNuevaFechaPagoEdit(fechaFormateada);
     setNuevoNumeroSemana(pago.numero_semana?.toString() || "");
     setEditPaymentDialogOpen(true);
   };
@@ -277,7 +279,7 @@ export default function LoanDetails() {
     actualizarPagoMutation.mutate(
       { 
         id: selectedPago.id, 
-       monto_pagado: nuevoMontoPagado,
+        monto_pagado: nuevoMontoPagado,
         fecha_pago: new Date(nuevaFechaPagoEdit),
         numero_semana: parseInt(nuevoNumeroSemana) || undefined
       },
@@ -455,6 +457,15 @@ export default function LoanDetails() {
             </div>
             
             <div className="mt-4 md:mt-0 flex flex-wrap items-center gap-2">
+              <Button 
+                variant="outline"
+                onClick={() => setEditLoanFormOpen(true)}
+                className="text-sm sm:text-base w-full sm:w-auto border-orange-500 text-orange-600 hover:bg-orange-50"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Editar Préstamo
+              </Button>
+
               {prestamo.estado !== "PAGADO" && (
                 <Button 
                   className="bg-primary hover:bg-primary/90 text-sm sm:text-base w-full sm:w-auto"
@@ -873,7 +884,7 @@ export default function LoanDetails() {
             <div className="space-y-4 py-2">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                 <Label htmlFor="semana">Número de Semana</Label>
+                  <Label htmlFor="semana">Número de Semana</Label>
                   <Input 
                     id="semana" 
                     type="number"
@@ -951,6 +962,20 @@ export default function LoanDetails() {
           queryClient.invalidateQueries({ queryKey: [`/api/prestamos/${prestamoId}`] });
         }}
       />
+
+      {/* Formulario de Edición de Préstamo */}
+      {prestamo && (
+        <EditLoanForm 
+          open={editLoanFormOpen} 
+          onOpenChange={setEditLoanFormOpen}
+          prestamo={prestamo}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['/api/prestamos'] });
+            queryClient.invalidateQueries({ queryKey: [`/api/prestamos/${prestamoId}`] });
+            queryClient.invalidateQueries({ queryKey: [`/api/prestamos/${prestamoId}/total-pagado`] });
+          }}
+        />
+      )}
     </div>
   );
 }
