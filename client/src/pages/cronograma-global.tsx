@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { formatCurrency, formatTableDate, createConsistentDate } from "@/lib/utils";
+import { formatCurrency, formatTableDate, createConsistentDate, getTodayLocalDate } from "@/lib/utils";
 import MainLayout from "@/components/layout/main-layout";
 import { Prestamo, Cliente, Cobrador } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -36,8 +36,7 @@ type CronogramaPago = {
 
 export default function CronogramaGlobal() {
   const [filterDate, setFilterDate] = useState(() => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
+    return getTodayLocalDate();
   });
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
