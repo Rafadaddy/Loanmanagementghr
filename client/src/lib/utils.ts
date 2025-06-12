@@ -64,6 +64,14 @@ export function createConsistentDate(date: Date | string): Date {
  * Esta función asegura que el día calculado sea exactamente 'days' después
  * del día indicado, sin problemas de zona horaria.
  */
+export function getLocalDateString(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export function addDaysToDate(date: Date | string, days: number): string {
   // Normalizar primero el formato de la fecha a YYYY-MM-DD
   const normalizedDate = normalizeDate(date);
@@ -71,15 +79,18 @@ export function addDaysToDate(date: Date | string, days: number): string {
   // Separar la fecha en componentes
   const [year, month, day] = normalizedDate.split('-').map(Number);
   
-  // Crear una fecha UTC para evitar problemas de zona horaria
-  // Nota: month-1 porque los meses en JavaScript son 0-indexados
-  const utcDate = new Date(Date.UTC(year, month-1, day, 12, 0, 0));
+  // Crear una fecha local para evitar problemas de zona horaria
+  const localDate = new Date(year, month - 1, day);
   
-  // Agregar los días (usando 12:00 UTC asegura que no hay problemas de DST)
-  utcDate.setUTCDate(utcDate.getUTCDate() + days);
+  // Agregar los días
+  localDate.setDate(localDate.getDate() + days);
   
-  // Convertir de vuelta a formato YYYY-MM-DD
-  return utcDate.toISOString().split('T')[0];
+  // Convertir de vuelta a formato YYYY-MM-DD usando la fecha local
+  const resultYear = localDate.getFullYear();
+  const resultMonth = String(localDate.getMonth() + 1).padStart(2, '0');
+  const resultDay = String(localDate.getDate()).padStart(2, '0');
+  
+  return `${resultYear}-${resultMonth}-${resultDay}`;
 }
 
 export function formatDate(date: Date | string) {
