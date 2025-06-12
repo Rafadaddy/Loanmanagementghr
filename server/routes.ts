@@ -399,6 +399,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Ruta para actualizar préstamo
+  app.put("/api/prestamos/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de préstamo inválido" });
+      }
+
+      console.log("Datos recibidos para actualización:", req.body);
+
+      // Verificar que el préstamo existe
+      const prestamoExistente = await storage.getPrestamo(id);
+      if (!prestamoExistente) {
+        return res.status(404).json({ message: "Préstamo no encontrado" });
+      }
+
+      // Validar que el cliente existe si se está cambiando
+      const clienteId = req.body.cliente_id ? parseInt(req.body.cliente_id) : prestamoExistente.cliente_id;
+      const cliente = await storage.getCliente(clienteId);
+      if (!cliente) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+
+      // Preparar datos de actualización
+      const datosActualizacion: any = {};
+      
+      // Campos que se pueden actualizar
+      if (req.body.cliente_id !== undefined) {
+        datosActualizacion.cliente_id = clienteId;
+      }
+      if (req.body.monto_prestado !== undefined) {
+        datosActualizacion.monto_prestado = req.body.monto_prestado;
+      }
+      if (req.body.tasa_interes !== undefined) {
+        datosActualizacion.tasa_interes = req.body.tasa_interes;
+      }
+      if (req.body.tasa_mora !== undefined) {
+        datosActualizacion.tasa_mora = req.body.tasa_mora;
+      }
+      if (req.body.fecha_prestamo !== undefined) {
+        datosActualizacion.fecha_prestamo = req.body.fecha_prestamo;
+      }
+      if (req.body.numero_semanas !== undefined) {
+        datosActualizacion.numero_semanas = parseInt(req.body.numero_semanas);
+      }
+      if (req.body.frecuencia_pago !== undefined) {
+        datosActualizacion.frecuencia_pago = req.body.frecuencia_pago;
+      }
+      if (req.body.monto_total_pagar !== undefined) {
+        datosActualizacion.monto_total_pagar = req.body.monto_total_pagar;
+      }
+      if (req.body.pago_semanal !== undefined) {
+        datosActualizacion.pago_semanal = req.body.pago_semanal;
+      }
+      if (req.body.proxima_fecha_pago !== undefined) {
+        datosActualizacion.proxima_fecha_pago = req.body.proxima_fecha_pago;
+      }
+
+      console.log("Datos a actualizar:", datosActualizacion);
+
+      // Actualizar préstamo
+      const prestamoActualizado = await storage.updatePrestamo(id, datosActualizacion);
+      
+      if (!prestamoActualizado) {
+        return res.status(500).json({ message: "Error al actualizar el préstamo" });
+      }
+
+      console.log("Préstamo actualizado exitosamente:", prestamoActualizado.id);
+      res.json(prestamoActualizado);
+    } catch (error) {
+      console.error("Error al actualizar préstamo:", error);
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: "Datos del préstamo inválidos", 
+          errors: fromZodError(error).message 
+        });
+      }
+      next(error);
+    }
+  });
+
   // Rutas para pagos
   app.get("/api/pagos", isAuthenticated, async (req, res, next) => {
     try {
@@ -1146,6 +1227,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const datos = await storage.exportarDatos();
       
+      // Función para validar y limpiar fechas en el proceso de exportación
+      const limpiarFechasParaExportacion = (obj: any): any => {
+        if (obj === null || obj === undefined) return obj;
+        
+        if (Array.isArray(obj)) {
+          return obj.map(limpiarFechasParaExportacion);
+        }
+        
+        if (typeof obj === 'object' && obj instanceof Date) {
+          // Validar que la fecha sea válida
+          if (isNaN(obj.getTime()) || obj.getFullYear() > 3000 || obj.getFullYear() < 1900) {
+            console.warn('Fecha inválida detectada durante exportación:', obj);
+            return new Date().toISOString();
+          }
+          return obj.toISOString();
+        }
+        
+        if (typeof obj === 'object') {
+          const resultado: any = {};
+          for (const [key, value] of Object.entries(obj)) {
+            // Campos de fecha conocidos - validar especialmente
+            if (['fecha_registro', 'fecha_prestamo', 'proxima_fecha_pago', 'fecha_inicial_personalizada', 'fecha_pago', 'fecha'].includes(key)) {
+              if (typeof value === 'string') {
+                // Detectar patrones corruptos de fecha
+                if (value.includes('20224') || value.includes('+020224') || value.length > 30) {
+                  console.warn(`Fecha corrupta detectada en campo ${key}:`, value);
+                  resultado[key] = key.startsWith('fecha_registro') || key === 'fecha' 
+                    ? new Date().toISOString() 
+                    : new Date().toISOString().split('T')[0];
+                } else {
+                  resultado[key] = value;
+                }
+              } else if (value instanceof Date) {
+                if (isNaN(value.getTime()) || value.getFullYear() > 3000 || value.getFullYear() < 1900) {
+                  console.warn(`Fecha inválida en campo ${key}:`, value);
+                  resultado[key] = key.startsWith('fecha_registro') || key === 'fecha' 
+                    ? new Date().toISOString() 
+                    : new Date().toISOString().split('T')[0];
+                } else {
+                  resultado[key] = key.startsWith('fecha_registro') || key === 'fecha' 
+                    ? value.toISOString() 
+                    : value.toISOString().split('T')[0];
+                }
+              } else {
+                resultado[key] = limpiarFechasParaExportacion(value);
+              }
+            } else {
+              resultado[key] = limpiarFechasParaExportacion(value);
+            }
+          }
+          return resultado;
+        }
+        
+        return obj;
+      };
+      
+      // Limpiar todos los datos antes de exportar
+      const datosLimpios = limpiarFechasParaExportacion(datos);
+      
+      console.log('Datos de exportación validados:', {
+        users: datosLimpios.users?.length || 0,
+        clientes: datosLimpios.clientes?.length || 0,
+        prestamos: datosLimpios.prestamos?.length || 0,
+        pagos: datosLimpios.pagos?.length || 0,
+        cobradores: datosLimpios.cobradores?.length || 0,
+        movimientosCaja: datosLimpios.movimientosCaja?.length || 0,
+        configuraciones: datosLimpios.configuraciones?.length || 0
+      });
+      
       // Crear un nombre de archivo para la descarga
       const fechaActual = new Date().toISOString().split('T')[0];
       const nombreArchivo = `backup_sistema_${fechaActual}.json`;
@@ -1154,8 +1304,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Content-Disposition', `attachment; filename="${nombreArchivo}"`);
       res.setHeader('Content-Type', 'application/json');
       
-      // Enviar los datos
-      res.json(datos);
+      // Enviar los datos limpios
+      res.json(datosLimpios);
     } catch (error) {
       console.error("Error al exportar datos:", error);
       next(error);
@@ -1201,8 +1351,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Iniciando importación de datos...");
       
+      // Pre-validar y limpiar fechas antes de enviar a la función de importación
+      const validarYLimpiarFechas = (datos: any) => {
+        let fechasCorruptasEncontradas = 0;
+        
+        const procesarObjeto = (obj: any): any => {
+          if (obj === null || obj === undefined) return obj;
+          
+          if (Array.isArray(obj)) {
+            return obj.map(procesarObjeto);
+          }
+          
+          if (typeof obj === 'object') {
+            const resultado: any = {};
+            for (const [key, value] of Object.entries(obj)) {
+              // Campos de fecha que necesitan validación especial
+              if (['fecha_registro', 'fecha_prestamo', 'proxima_fecha_pago', 'fecha_inicial_personalizada', 'fecha_pago', 'fecha'].includes(key)) {
+                if (typeof value === 'string') {
+                  // Detectar y corregir fechas corruptas
+                  if (value.includes('20224') || value.includes('+020224') || value.length > 30) {
+                    fechasCorruptasEncontradas++;
+                    console.warn(`Fecha corrupta detectada y corregida en ${key}:`, value);
+                    // Corregir fecha según el tipo de campo
+                    if (key.startsWith('fecha_registro') || key === 'fecha') {
+                      resultado[key] = new Date().toISOString();
+                    } else {
+                      resultado[key] = new Date().toISOString().split('T')[0];
+                    }
+                  } else {
+                    // Validar formato de fecha válido
+                    const fecha = new Date(value);
+                    if (isNaN(fecha.getTime()) || fecha.getFullYear() > 3000 || fecha.getFullYear() < 1900) {
+                      fechasCorruptasEncontradas++;
+                      console.warn(`Fecha inválida detectada y corregida en ${key}:`, value);
+                      if (key.startsWith('fecha_registro') || key === 'fecha') {
+                        resultado[key] = new Date().toISOString();
+                      } else {
+                        resultado[key] = new Date().toISOString().split('T')[0];
+                      }
+                    } else {
+                      resultado[key] = value;
+                    }
+                  }
+                } else {
+                  resultado[key] = procesarObjeto(value);
+                }
+              } else {
+                resultado[key] = procesarObjeto(value);
+              }
+            }
+            return resultado;
+          }
+          
+          return obj;
+        };
+        
+        const datosLimpios = procesarObjeto(datos);
+        
+        if (fechasCorruptasEncontradas > 0) {
+          console.log(`Se encontraron y corrigieron ${fechasCorruptasEncontradas} fechas corruptas durante la pre-validación`);
+        }
+        
+        return datosLimpios;
+      };
+      
+      // Limpiar datos antes de importar
+      const datosLimpios = validarYLimpiarFechas(req.body);
+      
       // Importar los datos con el método mejorado que corrige fechas
-      const resultado = await storage.importarDatos(req.body);
+      const resultado = await storage.importarDatos(datosLimpios);
       
       console.log("Resultado de importación:", resultado);
       
