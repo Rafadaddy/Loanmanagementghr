@@ -14,7 +14,7 @@ import { useLoading } from "@/hooks/use-loading";
 import { LoadingButton } from "@/components/ui/loading";
 import { insertPrestamoSchema, CalculoPrestamo, ResultadoCalculoPrestamo, Cliente } from "@shared/schema";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { formatCurrency, addDaysToDate, normalizeDate, createConsistentDate } from "@/lib/utils";
+import { formatCurrency, addDaysToDate, normalizeDate, createConsistentDate, getLocalDateString } from "@/lib/utils";
 import { Search } from "lucide-react";
 
 // Extender el esquema para validación
@@ -70,7 +70,7 @@ export default function LoanForm({ open, onOpenChange, onSuccess }: LoanFormProp
       monto_prestado: "",
       tasa_interes: "40",
       tasa_mora: "0", // Valor predeterminado del 0%
-      fecha_prestamo: new Date().toISOString().split('T')[0],
+      fecha_prestamo: getLocalDateString(),
       numero_semanas: "16",
       frecuencia_pago: "SEMANAL",
       monto_total_pagar: "",
