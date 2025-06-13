@@ -4,6 +4,7 @@ import { useParams, useLocation } from "wouter";
 import { formatCurrency, formatDate, getLoanStatus, getPaymentStatus } from "@/lib/utils";
 import PaymentForm from "@/components/forms/payment-form";
 import EditLoanForm from "@/components/forms/edit-loan-form";
+import LoanNotes from "@/components/loan/loan-notes";
 import LoanSchedule from "@/components/loan/loan-schedule";
 import { Prestamo, Cliente, Pago } from "@shared/schema";
 import { PrestamoDisplay, PagoDisplay } from "@/types/loan";
@@ -854,6 +855,11 @@ export default function LoanDetails() {
               pagosRealizados={pagos as unknown as PagoDisplay[]}
               nombreCliente={cliente.nombre}
             />
+          </div>
+          
+          {/* Notas y Anexos del Préstamo */}
+          <div className="mt-6">
+            <LoanNotes prestamoId={prestamoId} />
           </div>
         </div>
       </div>
