@@ -109,6 +109,8 @@ export const pagos = pgTable("pagos", {
 
 export const insertPagoSchema = createInsertSchema(pagos).omit({
   id: true,
+}).extend({
+  fecha_pago: z.union([z.string(), z.date()]).optional(), // Permitir fecha como string o Date
 });
 
 // Tipos exportados
@@ -196,6 +198,7 @@ export const insertConfiguracionSchema = createInsertSchema(configuraciones).omi
 
 export type InsertConfiguracion = z.infer<typeof insertConfiguracionSchema>;
 export type Configuracion = typeof configuraciones.$inferSelect;
+
 // Notas de préstamos
 export const notasPrestamos = pgTable("notas_prestamos", {
   id: serial("id").primaryKey(),
