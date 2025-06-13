@@ -66,14 +66,7 @@ import {
 } from "lucide-react";
 import { utils, writeFile } from "xlsx";
 import { jsPDF } from "jspdf";
-import 'jspdf-autotable';
-
-// Extender el tipo de jsPDF para incluir autoTable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
-}
+import autoTable from "jspdf-autotable";
 
 // Tipo personalizado para los formateadores de tooltips de recharts
 type TooltipFormatter = (value: any, name?: string, props?: any) => [string | number, string];
@@ -554,7 +547,7 @@ export default function Reports() {
           ];
         });
         
-        doc.autoTable({
+        autoTable(doc, {
           head: [["ID", "Cliente", "Monto", "Interés", "Fecha", "Semanas", "Estado"]],
           body: data,
           startY: 40,
@@ -575,7 +568,7 @@ export default function Reports() {
           ];
         });
         
-        doc.autoTable({
+        autoTable(doc, {
           head: [["ID", "Cliente", "Préstamo ID", "Monto", "Fecha", "Semana", "Estado"]],
           body: data,
           startY: 40,
@@ -591,7 +584,7 @@ export default function Reports() {
         item.interes > 0 ? `${((item.interes / item.total) * 100).toFixed(2)}%` : "0%"
       ]);
       
-      doc.autoTable({
+      autoTable(doc, {
         head: [["Mes", "Interés", "Capital", "Total", "% Interés"]],
         body: data,
         startY: 40,
@@ -607,7 +600,7 @@ export default function Reports() {
         `${item.eficiencia.toFixed(2)}%`
       ]);
       
-      doc.autoTable({
+      autoTable(doc, {
         head: [["Cobrador", "Clientes", "Préstamos", "Prestado", "Recaudado", "Eficiencia"]],
         body: data,
         startY: 40,
@@ -621,7 +614,7 @@ export default function Reports() {
         formatCurrency(item.neto)
       ]);
       
-      doc.autoTable({
+      autoTable(doc, {
         head: [["Mes", "Entradas", "Salidas", "Flujo Neto"]],
         body: data,
         startY: 40,
@@ -642,7 +635,7 @@ export default function Reports() {
         datos.totalPrestamos > 0 ? `${((item.valor / datos.totalPrestamos) * 100).toFixed(2)}%` : "0%"
       ]);
       
-      doc.autoTable({
+      autoTable(doc, {
         head: [["Categoría", "Cantidad", "Porcentaje"]],
         body: data,
         startY: 65,
