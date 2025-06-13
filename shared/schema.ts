@@ -196,3 +196,26 @@ export const insertConfiguracionSchema = createInsertSchema(configuraciones).omi
 
 export type InsertConfiguracion = z.infer<typeof insertConfiguracionSchema>;
 export type Configuracion = typeof configuraciones.$inferSelect;
+// Notas de préstamos
+export const notasPrestamos = pgTable("notas_prestamos", {
+  id: serial("id").primaryKey(),
+  prestamo_id: integer("prestamo_id")
+    .notNull()
+    .references(() => prestamos.id),
+  titulo: text("titulo").notNull(),
+  contenido: text("contenido").notNull(),
+  fecha_creacion: timestamp("fecha_creacion").defaultNow().notNull(),
+  usuario_id: integer("usuario_id")
+    .notNull()
+    .references(() => users.id),
+  tipo: text("tipo").default("GENERAL").notNull(), // GENERAL, PAGO, INCIDENCIA, RECORDATORIO
+  importante: boolean("importante").default(false).notNull(),
+});
+
+export const insertNotaPrestamoSchema = createInsertSchema(notasPrestamos).omit({
+  id: true,
+  fecha_creacion: true,
+});
+
+export type InsertNotaPrestamo = z.infer<typeof insertNotaPrestamoSchema>;
+export type NotaPrestamo = typeof notasPrestamos.$inferSelect;
