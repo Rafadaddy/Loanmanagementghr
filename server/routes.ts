@@ -506,8 +506,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const pagoData = insertPagoSchema.parse(req.body);
         
+        // Convertir fecha string a Date si viene como string
+        let fechaPagoProcessed = pagoData.fecha_pago;
+        if (pagoData.fecha_pago && typeof pagoData.fecha_pago === 'string') {
+          fechaPagoProcessed = new Date(pagoData.fecha_pago + 'T12:00:00.000Z');
+        }
+        
+        // Crear objeto con la fecha procesada
+        const pagoDataProcessed = {
+          ...pagoData,
+          fecha_pago: fechaPagoProcessed
+        };
+        
         // Validar que el préstamo existe
-        const prestamo = await storage.getPrestamo(pagoData.prestamo_id);
+        const prestamo = await storage.getPrestamo(pagoDataProcessed.prestamo_id);
         if (!prestamo) {
           return res.status(404).json({ message: "Préstamo no encontrado" });
         }
@@ -518,7 +530,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Crear pago
-        const pago = await storage.createPago(pagoData);
+        const pago = await storage.createPago(pagoDataProcessed);
         
         // Registrar automáticamente el pago en la caja
         try {
