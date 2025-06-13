@@ -32,6 +32,7 @@ const paymentFormSchema = z.object({
   monto_pagado: z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, {
     message: "El monto debe ser un número positivo"
   }),
+  fecha_pago: z.string().min(1, "Debe seleccionar una fecha de pago"),
   // Añadimos un mensaje opcional que no se enviará al servidor
   es_pago_parcial_confirmado: z.boolean().optional()
 });
@@ -56,6 +57,8 @@ export default function PaymentForm({ open, onOpenChange, onSuccess, prestamoId,
   const [prestamoSeleccionado, setPrestamoSeleccionado] = useState<PrestamoConCliente | null>(null);
   const [showParcialAlert, setShowParcialAlert] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [montoEditado, setMontoEditado] = useState(false); // Track if user has manually edited the amount
+  const [montoLimpiado, setMontoLimpiado] = useState(false); // Track if user has manually cleared the amount
 
   // Obtener la lista de préstamos activos
   const { data: prestamos = [] } = useQuery<Prestamo[]>({ 
@@ -92,7 +95,8 @@ export default function PaymentForm({ open, onOpenChange, onSuccess, prestamoId,
     resolver: zodResolver(paymentFormSchema),
     defaultValues: {
       prestamo_id: "",
-      monto_pagado: ""
+      monto_pagado: "",
+      fecha_pago: new Date().toISOString().split('T')[0] // Fecha actual en formato YYYY-MM-DD
     }
   });
 
@@ -103,35 +107,49 @@ export default function PaymentForm({ open, onOpenChange, onSuccess, prestamoId,
       if (prestamo) {
         setPrestamoSeleccionado(prestamo);
         form.setValue("prestamo_id", prestamoId.toString());
-        form.setValue("monto_pagado", prestamo.pago_semanal.toString());
+        // Solo establecer el monto si no ha sido editado manualmente y no ha sido limpiado
+        if (!montoEditado && !montoLimpiado) {
+          form.setValue("monto_pagado", prestamo.pago_semanal.toString());
+        }
         // Limpiar el término de búsqueda para mostrar solo el préstamo seleccionado
         setSearchTerm("");
       }
     }
-  }, [open, prestamoId, prestamosConCliente, form]);
+  }, [open, prestamoId, prestamosConCliente, form, montoEditado, montoLimpiado]);
 
   // Limpiar formulario cuando se cierra
   useEffect(() => {
     if (!open) {
-      form.reset();
+      form.reset({
+        prestamo_id: "",
+        monto_pagado: "",
+        fecha_pago: new Date().toISOString().split('T')[0]
+      });
       setPrestamoSeleccionado(null);
       setSearchTerm("");
       setShowParcialAlert(false);
+      setMontoEditado(false); // Reset edit state
+      setMontoLimpiado(false); // Reset cleared state
     }
   }, [open, form]);
 
-  // Al cambiar el préstamo seleccionado, obtener detalles y actualizar el monto sugerido
+  // Al cambiar el préstamo seleccionado, establecer monto semanal por defecto solo si no se ha editado
   const handlePrestamoChange = (id: string) => {
     if (!id) {
       setPrestamoSeleccionado(null);
       form.setValue("monto_pagado", "");
+      setMontoEditado(false);
+      setMontoLimpiado(false);
       return;
     }
     
     const prestamo = prestamosConCliente.find(p => p.id === parseInt(id));
     if (prestamo) {
       setPrestamoSeleccionado(prestamo);
-      form.setValue("monto_pagado", prestamo.pago_semanal.toString());
+      // Solo establecer el monto si no ha sido editado manualmente y no ha sido limpiado
+      if (!montoEditado && !montoLimpiado) {
+        form.setValue("monto_pagado", prestamo.pago_semanal.toString());
+      }
     }
   };
 
@@ -142,7 +160,8 @@ export default function PaymentForm({ open, onOpenChange, onSuccess, prestamoId,
       // Asegurarse de que los tipos son correctos para la API
       const dataToSend = {
         prestamo_id: Number(values.prestamo_id),
-        monto_pagado: String(values.monto_pagado)
+        monto_pagado: String(values.monto_pagado),
+        fecha_pago: values.fecha_pago
       };
       console.log("Datos a enviar a la API:", dataToSend);
       const res = await apiRequest("POST", "/api/pagos", dataToSend);
@@ -208,7 +227,8 @@ export default function PaymentForm({ open, onOpenChange, onSuccess, prestamoId,
     // Si no es parcial o ya está confirmado, proceder con el pago
     const dataToSend = {
       prestamo_id: Number(values.prestamo_id),
-      monto_pagado: String(montoPagado)
+      monto_pagado: String(montoPagado),
+      fecha_pago: values.fecha_pago
     };
     
     // Depuración
@@ -237,7 +257,8 @@ export default function PaymentForm({ open, onOpenChange, onSuccess, prestamoId,
     const values = form.getValues();
     const dataToSend = {
       prestamo_id: Number(values.prestamo_id),
-      monto_pagado: String(values.monto_pagado)
+      monto_pagado: String(values.monto_pagado),
+      fecha_pago: values.fecha_pago
     };
     
     console.log("Datos de pago parcial a enviar:", dataToSend);
@@ -420,10 +441,79 @@ export default function PaymentForm({ open, onOpenChange, onSuccess, prestamoId,
                   <FormItem>
                     <FormLabel>Monto a Pagar</FormLabel>
                     <FormControl>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                        <Input className="pl-6" {...field} />
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                          <Input 
+                            className="pl-6" 
+                            value={field.value}
+                            onChange={(e) => {
+                              field.onChange(e.target.value);
+                              setMontoEditado(true); // Mark as manually edited
+                            }}
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            onFocus={(e) => e.target.select()}
+                            onKeyDown={(e) => {
+                              // Permitir teclas especiales
+                              if (['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', '.'].includes(e.key)) {
+                                return;
+                              }
+                              // Permitir números
+                              if (e.key >= '0' && e.key <= '9') {
+                                return;
+                              }
+                              // Bloquear otras teclas
+                              e.preventDefault();
+                            }}
+                          />
+                        </div>
+                        {prestamoSeleccionado && (
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                form.setValue("monto_pagado", prestamoSeleccionado.pago_semanal.toString());
+                                setMontoEditado(false); // Reset edit state when using full payment
+                              }}
+                              className="text-xs"
+                            >
+                              Pago Completo ({formatCurrency(prestamoSeleccionado.pago_semanal)})
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                form.setValue("monto_pagado", "");
+                                setMontoLimpiado(true); // Mark as manually cleared
+                                setMontoEditado(true); // Also mark as edited
+                              }}
+                              className="text-xs"
+                            >
+                              Limpiar
+                            </Button>
+                          </div>
+                        )}
                       </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="fecha_pago"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Fecha de Pago</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
