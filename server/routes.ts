@@ -716,8 +716,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pagos = await storage.getAllPagos();
       const clientes = await storage.getAllClientes();
       
-      // Préstamos activos
+      // Conteo de préstamos por estado
+      const totalPrestamos = prestamos.length;
       const prestamosActivos = prestamos.filter(p => p.estado === "ACTIVO").length;
+      const prestamosAtrasados = prestamos.filter(p => p.estado === "ATRASO").length;
+      const prestamosPagados = prestamos.filter(p => p.estado === "PAGADO").length;
       
       // Total prestado
       const totalPrestado = prestamos.reduce((sum, p) => sum + Number(p.monto_prestado), 0);
@@ -748,9 +751,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const montosPagosHoy = pagosHoy.reduce((sum, p) => sum + Number(p.monto_pagado), 0);
-      
-      // Pagos atrasados
-      const prestamosAtrasados = prestamos.filter(p => p.estado === "ATRASADO").length;
       
       // Total de moras acumuladas
       const totalMoras = prestamos.reduce((sum, p) => sum + Number(p.monto_mora_acumulada || 0), 0);
@@ -2090,6 +2090,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
   // Rutas para notas de préstamos (implementación temporal)
   let notasTemporales: any[] = [];
   let nextNotaId = 1;
