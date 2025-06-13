@@ -2088,6 +2088,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  // Rutas para notas de préstamos (implementación temporal)
+  let notasTemporales: any[] = [];
+  let nextNotaId = 1;
+
+  app.get("/api/prestamos/:id/notas", isAuthenticated, async (req, res) => {
+    try {
+      const prestamoId = parseInt(req.params.id);
+      const notas = notasTemporales.filter(nota => nota.prestamo_id === prestamoId);
+      res.json(notas);
+    } catch (error) {
+      console.error("Error obteniendo notas del préstamo:", error);
+      res.status(500).json({ error: "Error interno del servidor" });
+    }
+  });
+
+  app.post("/api/prestamos/:id/notas", isAuthenticated, async (req, res) => {
+    try {
+      const prestamoId = parseInt(req.params.id);
+      const usuarioId = req.user!.id;
+      
+      const nuevaNota = {
+        id: nextNotaId++,
+        prestamo_id: prestamoId,
+        usuario_id: usuarioId,
+        titulo: req.body.titulo,
+        contenido: req.body.contenido,
+        tipo: req.body.tipo || 'GENERAL',
+        importante: req.body.importante || false,
+        fecha_creacion: new Date()
+      };
+
+      notasTemporales.push(nuevaNota);
+      res.status(201).json(nuevaNota);
+    } catch (error) {
+      console.error("Error creando nota del préstamo:", error);
+      res.status(500).json({ error: "Error interno del servidor" });
+    }
+  });
+
+  app.put("/api/notas/:id", isAuthenticated, async (req, res) => {
+    try {
+      const notaId = parseInt(req.params.id);
+      const notaIndex = notasTemporales.findIndex(nota => nota.id === notaId);
+      
+      if (notaIndex === -1) {
+        return res.status(404).json({ error: "Nota no encontrada" });
+      }
+      
+      notasTemporales[notaIndex] = {
+        ...notasTemporales[notaIndex],
+        ...req.body
+      };
+      
+      res.json(notasTemporales[notaIndex]);
+    } catch (error) {
+      console.error("Error actualizando nota:", error);
+      res.status(500).json({ error: "Error interno del servidor" });
+    }
+  });
+
+  app.delete("/api/notas/:id", isAuthenticated, async (req, res) => {
+    try {
+      const notaId = parseInt(req.params.id);
+      const notaIndex = notasTemporales.findIndex(nota => nota.id === notaId);
+      
+      if (notaIndex === -1) {
+        return res.status(404).json({ error: "Nota no encontrada" });
+      }
+      
+      notasTemporales.splice(notaIndex, 1);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error eliminando nota:", error);
+      res.status(500).json({ error: "Error interno del servidor" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
