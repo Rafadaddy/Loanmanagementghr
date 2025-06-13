@@ -769,12 +769,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .slice(0, 5);
       
       res.json({
+        totalPrestamos,
         prestamosActivos,
+        prestamosAtrasados,
+        prestamosPagados,
         totalPrestado,
         totalIntereses,
         interesesPorCobrar,
         montosPagosHoy,
-        prestamosAtrasados,
         totalMoras,
         ultimosPrestamos,
         ultimosPagos,
