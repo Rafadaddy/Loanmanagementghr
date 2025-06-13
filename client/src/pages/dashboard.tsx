@@ -11,12 +11,14 @@ import MainLayout from "@/components/layout/main-layout";
 import { Cliente, Prestamo, Pago } from "@shared/schema";
 
 interface Estadisticas {
+  totalPrestamos: number;
   prestamosActivos: number;
+  prestamosAtrasados: number;
+  prestamosPagados: number;
   totalPrestado: number;
   totalIntereses: number;
   interesesPorCobrar: number;
   montosPagosHoy: number;
-  prestamosAtrasados: number;
   totalMoras: number;
   ultimosPrestamos: Prestamo[];
   ultimosPagos: Pago[];
@@ -110,16 +112,40 @@ export default function Dashboard() {
       
       {/* Stats Section */}
       <section className="mb-8">
-        <h2 className="text-lg font-semibold text-foreground mb-4">Estadísticas</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-4">Resumen de Préstamos</h2>
         
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <StatCard 
-            title="Préstamos Activos" 
+            title="Total Préstamos" 
+            value={isLoading ? "..." : estadisticas?.totalPrestamos.toString() || "0"} 
+            icon="file-text" 
+            color="bg-gray-100" 
+          />
+          
+          <StatCard 
+            title="Activos" 
             value={isLoading ? "..." : estadisticas?.prestamosActivos.toString() || "0"} 
             icon="file-invoice-dollar" 
             color="bg-blue-100" 
           />
           
+          <StatCard 
+            title="En Atraso" 
+            value={isLoading ? "..." : estadisticas?.prestamosAtrasados.toString() || "0"} 
+            icon="exclamation-triangle" 
+            color="bg-red-100" 
+          />
+          
+          <StatCard 
+            title="Completados" 
+            value={isLoading ? "..." : estadisticas?.prestamosPagados.toString() || "0"} 
+            icon="check-circle" 
+            color="bg-green-100" 
+          />
+        </div>
+        
+        <h3 className="text-md font-medium text-foreground mb-3">Estadísticas Financieras</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <StatCard 
             title="Total Prestado" 
             value={isLoading ? "..." : formatCurrency(estadisticas?.totalPrestado || 0)} 
@@ -149,10 +175,10 @@ export default function Dashboard() {
           />
           
           <StatCard 
-            title="Préstamos Atrasados" 
-            value={isLoading ? "..." : estadisticas?.prestamosAtrasados.toString() || "0"} 
-            icon="exclamation-triangle" 
-            color="bg-red-100" 
+            title="Total Moras" 
+            value={isLoading ? "..." : formatCurrency(estadisticas?.totalMoras || 0)} 
+            icon="triangle-exclamation" 
+            color="bg-orange-100" 
           />
         </div>
       </section>
