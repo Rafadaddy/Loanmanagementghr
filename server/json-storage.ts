@@ -2,9 +2,9 @@ import fs from 'fs/promises';
 import path from 'path';
 import { IStorage } from './storage';
 import {
-  User, Cliente, Prestamo, Pago, Cobrador, MovimientoCaja, Configuracion,
+  User, Cliente, Prestamo, Pago, Cobrador, MovimientoCaja, Configuracion, NotaPrestamo,
   InsertUser, InsertCliente, InsertPrestamo, InsertPago, InsertCobrador, 
-  InsertMovimientoCaja, InsertConfiguracion, CalculoPrestamo, ResultadoCalculoPrestamo
+  InsertMovimientoCaja, InsertConfiguracion, InsertNotaPrestamo, CalculoPrestamo, ResultadoCalculoPrestamo
 } from '@shared/schema';
 import { hashPassword } from './auth';
 
@@ -19,6 +19,7 @@ export class JsonStorage implements IStorage {
   private cobradores: Map<number, Cobrador> = new Map();
   private movimientosCaja: Map<number, MovimientoCaja> = new Map();
   private configuraciones: Map<number, Configuracion> = new Map();
+  private notasPrestamos: Map<number, NotaPrestamo> = new Map();
   
   private nextUserId: number = 1;
   private nextClienteId: number = 1;
@@ -27,6 +28,7 @@ export class JsonStorage implements IStorage {
   private nextCobradorId: number = 1;
   private nextMovimientoCajaId: number = 1;
   private nextConfiguracionId: number = 1;
+  private nextNotaPrestamoId: number = 1;
   
   sessionStore: any;
 
