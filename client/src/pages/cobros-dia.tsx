@@ -58,8 +58,8 @@ export default function CobrosDia() {
   // Filtrar préstamos que tienen pago programado para la fecha seleccionada o están atrasados
   const pagosDia = prestamos
     .filter(prestamo => {
-      // Solo procesar préstamos activos
-      if (prestamo.estado !== "ACTIVO") return false;
+      // Solo procesar préstamos activos o atrasados (no pagados)
+      if (prestamo.estado === "PAGADO") return false;
       
       const fechaFiltro = new Date(filterDate);
       const proximaFechaPago = new Date(prestamo.proxima_fecha_pago);
