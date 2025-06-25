@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -33,6 +33,7 @@ const paymentFormSchema = z.object({
     message: "El monto debe ser un número positivo"
   }),
   fecha_pago: z.string().min(1, "Debe seleccionar una fecha de pago"),
+  semana_pago: z.string().optional(), // Campo para la semana del pago
   // Añadimos un mensaje opcional que no se enviará al servidor
   es_pago_parcial_confirmado: z.boolean().optional()
 });
@@ -96,7 +97,8 @@ export default function PaymentForm({ open, onOpenChange, onSuccess, prestamoId,
     defaultValues: {
       prestamo_id: "",
       monto_pagado: "",
-      fecha_pago: new Date().toISOString().split('T')[0] // Fecha actual en formato YYYY-MM-DD
+      fecha_pago: new Date().toISOString().split('T')[0], // Fecha actual en formato YYYY-MM-DD
+      semana_pago: ""
     }
   });
 
@@ -123,7 +125,8 @@ export default function PaymentForm({ open, onOpenChange, onSuccess, prestamoId,
       form.reset({
         prestamo_id: "",
         monto_pagado: "",
-        fecha_pago: new Date().toISOString().split('T')[0]
+        fecha_pago: new Date().toISOString().split('T')[0],
+        semana_pago: ""
       });
       setPrestamoSeleccionado(null);
       setSearchTerm("");
@@ -133,11 +136,27 @@ export default function PaymentForm({ open, onOpenChange, onSuccess, prestamoId,
     }
   }, [open, form]);
 
-  // Al cambiar el préstamo seleccionado, establecer monto semanal por defecto solo si no se ha editado
+  // Función para calcular la semana del pago basada en la fecha de inicio del préstamo
+  const calcularSemanaPago = (fechaInicioPrestamo: string, fechaPago: string): number => {
+    const fechaInicio = new Date(fechaInicioPrestamo);
+    const fechaPagoDate = new Date(fechaPago);
+    
+    // Calcular la diferencia en días
+    const diffTime = fechaPagoDate.getTime() - fechaInicio.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Calcular la semana (cada 7 días es una semana)
+    const semana = Math.ceil(diffDays / 7);
+    
+    return semana > 0 ? semana : 1;
+  };
+
+  // Al cambiar el préstamo seleccionado, establecer monto semanal y semana por defecto
   const handlePrestamoChange = (id: string) => {
     if (!id) {
       setPrestamoSeleccionado(null);
       form.setValue("monto_pagado", "");
+      form.setValue("semana_pago", "");
       setMontoEditado(false);
       setMontoLimpiado(false);
       return;
@@ -150,6 +169,23 @@ export default function PaymentForm({ open, onOpenChange, onSuccess, prestamoId,
       if (!montoEditado && !montoLimpiado) {
         form.setValue("monto_pagado", prestamo.pago_semanal.toString());
       }
+      
+      // Calcular y establecer la semana del pago basada en la fecha actual
+      const fechaPago = form.getValues("fecha_pago");
+      if (fechaPago && prestamo.fecha_inicio) {
+        const semana = calcularSemanaPago(prestamo.fecha_inicio, fechaPago);
+        form.setValue("semana_pago", semana.toString());
+      }
+    }
+  };
+
+  // Función para actualizar la semana cuando cambie la fecha de pago
+  const handleFechaPagoChange = (fecha: string) => {
+    form.setValue("fecha_pago", fecha);
+    
+    if (prestamoSeleccionado && prestamoSeleccionado.fecha_inicio) {
+      const semana = calcularSemanaPago(prestamoSeleccionado.fecha_inicio, fecha);
+      form.setValue("semana_pago", semana.toString());
     }
   };
 
@@ -161,7 +197,8 @@ export default function PaymentForm({ open, onOpenChange, onSuccess, prestamoId,
       const dataToSend = {
         prestamo_id: Number(values.prestamo_id),
         monto_pagado: String(values.monto_pagado),
-        fecha_pago: values.fecha_pago
+        fecha_pago: values.fecha_pago,
+        numero_semana: values.semana_pago ? Number(values.semana_pago) : undefined
       };
       console.log("Datos a enviar a la API:", dataToSend);
       const res = await apiRequest("POST", "/api/pagos", dataToSend);
@@ -513,8 +550,37 @@ export default function PaymentForm({ open, onOpenChange, onSuccess, prestamoId,
                   <FormItem>
                     <FormLabel>Fecha de Pago</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input 
+                        type="date" 
+                        {...field}
+                        onChange={(e) => handleFechaPagoChange(e.target.value)}
+                      />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="semana_pago"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Semana de Pago</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number"
+                        min="1"
+                        placeholder="Ej: 1, 2, 3..."
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {prestamoSeleccionado ? 
+                        `Semana calculada automáticamente basada en fecha de inicio: ${prestamoSeleccionado.fecha_inicio}` :
+                        "Se calcula automáticamente al seleccionar préstamo y fecha"
+                      }
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
