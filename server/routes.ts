@@ -506,10 +506,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const pagoData = insertPagoSchema.parse(req.body);
         
-        // Convertir fecha string a Date si viene como string
+        // Convertir fecha string a Date sin problemas de zona horaria
         let fechaPagoProcessed = pagoData.fecha_pago;
         if (pagoData.fecha_pago && typeof pagoData.fecha_pago === 'string') {
-          fechaPagoProcessed = new Date(pagoData.fecha_pago + 'T12:00:00.000Z');
+          // Usar la fecha tal como viene, sin agregar hora UTC
+          fechaPagoProcessed = new Date(pagoData.fecha_pago);
         }
         
         // Crear objeto con la fecha procesada
