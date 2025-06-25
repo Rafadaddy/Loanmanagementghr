@@ -192,7 +192,7 @@ export default function Reports() {
   const datosPrestamosEstado = [
     { name: "Activos", value: prestamos.filter(p => p.estado === "ACTIVO").length },
     { name: "Pagados", value: prestamos.filter(p => p.estado === "PAGADO").length },
-    { name: "Atrasados", value: prestamos.filter(p => p.estado === "ATRASADO").length },
+    { name: "Atrasados", value: prestamos.filter(p => p.estado === "ATRASO").length },
   ];
 
   const COLORS = ["#3B82F6", "#10B981", "#EF4444"];
@@ -285,7 +285,7 @@ export default function Reports() {
       
       const prestamosDeCobrador = prestamos.filter(p => 
         clientesIds.includes(p.cliente_id) && 
-        (p.estado === "ACTIVO" || p.estado === "ATRASADO")
+        (p.estado === "ACTIVO" || p.estado === "ATRASO")
       );
       
       const prestamoIds = prestamosDeCobrador.map(p => p.id);
@@ -328,7 +328,7 @@ export default function Reports() {
     
     // Proyectar pagos futuros
     prestamos
-      .filter(p => p.estado === "ACTIVO" || p.estado === "ATRASADO")
+      .filter(p => p.estado === "ACTIVO" || p.estado === "ATRASO")
       .forEach(prestamo => {
         const prestamoId = prestamo.id;
         const pagoActual = prestamo.semanas_pagadas;
@@ -766,7 +766,7 @@ export default function Reports() {
                   {prestamos.filter(p => p.estado === "ACTIVO").length}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {prestamos.filter(p => p.estado === "ATRASADO").length} atrasados
+                  {prestamos.filter(p => p.estado === "ATRASO").length} atrasados
                 </p>
               </div>
               
@@ -786,7 +786,7 @@ export default function Reports() {
                   <p className="text-sm font-medium">Clientes activos</p>
                 </div>
                 <div className="text-2xl font-bold mt-2">
-                  {new Set(prestamos.filter(p => p.estado === "ACTIVO" || p.estado === "ATRASADO").map(p => p.cliente_id)).size}
+                  {new Set(prestamos.filter(p => p.estado === "ACTIVO" || p.estado === "ATRASO").map(p => p.cliente_id)).size}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   De {clientes.length} clientes totales
@@ -1273,7 +1273,7 @@ export default function Reports() {
                         <p className="text-sm font-medium">Total préstamos</p>
                         <p className="text-2xl font-bold">{prestamos.length}</p>
                         <p className="text-sm text-muted-foreground mt-2">
-                          {prestamos.filter(p => p.estado === "ACTIVO" || p.estado === "ATRASADO").length} activos
+                          {prestamos.filter(p => p.estado === "ACTIVO" || p.estado === "ATRASO").length} activos
                         </p>
                       </div>
                     </CardContent>
