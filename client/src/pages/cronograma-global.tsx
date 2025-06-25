@@ -63,7 +63,7 @@ export default function CronogramaGlobal() {
   // Generar cronograma completo de todos los préstamos
   const cronogramaCompleto: CronogramaPago[] = prestamos
     .filter(prestamo => {
-      const esActivo = prestamo.estado === "ACTIVO";
+      const esActivo = prestamo.estado !== "PAGADO"; // Incluir ACTIVO y ATRASO
       if (!esActivo) {
         console.log(`Préstamo ${prestamo.id} excluido - Estado: ${prestamo.estado}`);
       }
