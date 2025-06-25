@@ -92,12 +92,24 @@ export default function PaymentForm({ open, onOpenChange, onSuccess, prestamoId,
               pagoSemanalStr.includes(searchTermLower);
       });
 
+  // Función para obtener fecha local en formato YYYY-MM-DD sin problemas de zona horaria
+  const getFechaLocal = (): string => {
+    // Crear fecha con el año, mes y día actuales sin conversiones UTC
+    const hoy = new Date();
+    const año = hoy.getFullYear();
+    const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+    const dia = String(hoy.getDate()).padStart(2, '0');
+    const fechaLocal = `${año}-${mes}-${dia}`;
+    console.log("DEBUG - Fecha local generada:", fechaLocal, "vs fecha actual:", hoy.toLocaleDateString());
+    return fechaLocal;
+  };
+
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
     defaultValues: {
       prestamo_id: "",
       monto_pagado: "",
-      fecha_pago: new Date().toISOString().split('T')[0], // Fecha actual en formato YYYY-MM-DD
+      fecha_pago: getFechaLocal(), // Fecha actual en formato YYYY-MM-DD sin problemas de zona horaria
       semana_pago: ""
     }
   });
@@ -125,7 +137,7 @@ export default function PaymentForm({ open, onOpenChange, onSuccess, prestamoId,
       form.reset({
         prestamo_id: "",
         monto_pagado: "",
-        fecha_pago: new Date().toISOString().split('T')[0],
+        fecha_pago: getFechaLocal(), // Usar la función local consistente
         semana_pago: ""
       });
       setPrestamoSeleccionado(null);
@@ -226,7 +238,12 @@ export default function PaymentForm({ open, onOpenChange, onSuccess, prestamoId,
         description: "El pago ha sido registrado con éxito"
       });
       
-      form.reset();
+      form.reset({
+        prestamo_id: "",
+        monto_pagado: "",
+        fecha_pago: getFechaLocal(), // Resetear con la fecha actual correcta
+        semana_pago: ""
+      });
       setPrestamoSeleccionado(null);
       onOpenChange(false);
       if (onSuccess) onSuccess();
@@ -553,6 +570,7 @@ export default function PaymentForm({ open, onOpenChange, onSuccess, prestamoId,
                       <Input 
                         type="date" 
                         {...field}
+                        value={field.value || getFechaLocal()} // Asegurar que siempre tenga la fecha local
                         onChange={(e) => handleFechaPagoChange(e.target.value)}
                       />
                     </FormControl>
